@@ -13,7 +13,7 @@ Flush permalinks: **Settings → Permalinks → Save** if routes 404 after deplo
 ## Admin
 
 - **Local SEO → Templates** — Global templates for `states_index`, `state_cities`, `city_landing` (meta title/description, H1, WYSIWYG). Variables documented on screen.
-- **Local SEO → Import** — Imports `raw_data.csv` from the plugin directory (or a custom absolute path). USA **50 states + DC** only; rows grouped by state + city; ZIPs merged.
+- **Local SEO → Import** — Upload a `.csv` from your computer, or leave the file field empty to use `raw_data.csv` on the server (if present). USA **50 states + DC** only; rows grouped by state + city; ZIPs merged.
 - **Local SEO → Locations** — Map a row to an existing Page/Post ID, create a hidden CPT override, or clear overrides.
 
 ## WP-CLI

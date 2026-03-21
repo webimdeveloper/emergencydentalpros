@@ -139,63 +139,117 @@ final class EDP_Admin
         check_admin_referer('edp_seo_import', 'edp_seo_import_nonce');
 
         $default_path = EDP_PLUGIN_DIR . 'raw_data.csv';
-        $path = $default_path;
+        $path = '';
+        $cleanup_temp = null;
+        $upload_label = '';
 
-        $custom_raw = isset($_POST['edp_csv_path']) && is_string($_POST['edp_csv_path'])
-            ? sanitize_text_field(wp_unslash($_POST['edp_csv_path']))
-            : '';
+        $file = isset($_FILES['edp_csv_file']) && is_array($_FILES['edp_csv_file']) ? $_FILES['edp_csv_file'] : null;
 
-        if ($custom_raw !== '') {
-            if (!is_readable($custom_raw)) {
-                update_option(
-                    self::OPTION_IMPORT_LOG,
-                    [
-                        'at' => time(),
-                        'path' => $custom_raw,
-                        'ok' => false,
-                        'error' => 'custom_path_not_readable',
-                        'rows' => 0,
-                        'skipped' => 0,
-                        'groups' => 0,
-                    ],
-                    false
-                );
+        if ($file !== null && !empty($file['name'])) {
+            $err = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
 
-                wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=custom_path'));
-                exit;
+            if ($err !== UPLOAD_ERR_OK) {
+                if ($err === UPLOAD_ERR_NO_FILE) {
+                    // Treat as "no upload" and fall through to server default below.
+                } else {
+                    $reason = self::map_php_upload_error_code($err);
+                    wp_safe_redirect(
+                        admin_url('admin.php?page=edp-seo-import&import_error=upload&reason=' . rawurlencode($reason))
+                    );
+                    exit;
+                }
+            } else {
+                $original_name = isset($file['name']) ? (string) $file['name'] : '';
+
+                if ($original_name === '' || !preg_match('/\.csv$/i', $original_name)) {
+                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload_wp'));
+                    exit;
+                }
+
+                if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload_wp'));
+                    exit;
+                }
+
+                $tmp = trailingslashit(get_temp_dir()) . 'edp-seo-' . wp_generate_password(16, false, false) . '.csv';
+
+                if (!@move_uploaded_file($file['tmp_name'], $tmp)) {
+                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload&reason=write'));
+                    exit;
+                }
+
+                $path = $tmp;
+                $cleanup_temp = $path;
+                $upload_label = 'upload:' . sanitize_file_name($original_name);
             }
-
-            $path = $custom_raw;
         }
 
-        $result = EDP_Importer::import_from_csv_file($path);
+        if ($path === '') {
+            $path = $default_path;
+        }
+
+        $result = null;
+
+        try {
+            $result = EDP_Importer::import_from_csv_file($path);
+        } finally {
+            if ($cleanup_temp !== null && is_string($cleanup_temp) && $cleanup_temp !== '' && is_file($cleanup_temp)) {
+                wp_delete_file($cleanup_temp);
+            }
+        }
+
+        if ($upload_label !== '' && is_array($result)) {
+            $result['path'] = $upload_label;
+        }
 
         $log = [
             'at' => time(),
-            'path' => $result['path'] ?? $path,
-            'ok' => empty($result['error']),
-            'error' => isset($result['error']) ? (string) $result['error'] : '',
-            'rows' => (int) ($result['rows'] ?? 0),
-            'skipped' => (int) ($result['skipped'] ?? 0),
-            'groups' => (int) ($result['groups'] ?? 0),
+            'path' => is_array($result) ? ($result['path'] ?? $path) : $path,
+            'ok' => is_array($result) && empty($result['error']),
+            'error' => is_array($result) && isset($result['error']) ? (string) $result['error'] : '',
+            'rows' => is_array($result) ? (int) ($result['rows'] ?? 0) : 0,
+            'skipped' => is_array($result) ? (int) ($result['skipped'] ?? 0) : 0,
+            'groups' => is_array($result) ? (int) ($result['groups'] ?? 0) : 0,
         ];
 
         update_option(self::OPTION_IMPORT_LOG, $log, false);
 
-        set_transient(
-            'edp_seo_last_import',
-            $result,
-            MINUTE_IN_SECONDS * 30
-        );
+        if (is_array($result)) {
+            set_transient(
+                'edp_seo_last_import',
+                $result,
+                MINUTE_IN_SECONDS * 30
+            );
+        }
 
         $query = ['imported' => '1'];
 
-        if (!empty($result['error'])) {
+        if (is_array($result) && !empty($result['error'])) {
             $query['import_error'] = '1';
         }
 
         wp_safe_redirect(add_query_arg($query, admin_url('admin.php?page=edp-seo-import')));
         exit;
+    }
+
+    private static function map_php_upload_error_code(int $code): string
+    {
+        switch ($code) {
+            case UPLOAD_ERR_INI_SIZE:
+                return 'ini';
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'form';
+            case UPLOAD_ERR_PARTIAL:
+                return 'partial';
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return 'tmp';
+            case UPLOAD_ERR_CANT_WRITE:
+                return 'write';
+            case UPLOAD_ERR_EXTENSION:
+                return 'ext';
+            default:
+                return 'unknown';
+        }
     }
 
     /**

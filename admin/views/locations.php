@@ -46,7 +46,7 @@ $edp_debug_data = $edp_debug_data ?? [];
 			<?php if ($default_csv_ok) : ?>
 				<span style="color:#008a20;"><?php esc_html_e('readable', 'emergencydentalpros'); ?></span>
 			<?php else : ?>
-				<span style="color:#b32d2e;"><?php esc_html_e('not found or not readable — upload raw_data.csv into the plugin folder or set a full path on Import.', 'emergencydentalpros'); ?></span>
+				<span style="color:#b32d2e;"><?php esc_html_e('not found — use Import and choose your CSV file, or add raw_data.csv on the server.', 'emergencydentalpros'); ?></span>
 			<?php endif; ?>
 		</p>
 		<?php if (!empty($import_log['at'])) : ?>
