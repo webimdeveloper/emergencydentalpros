@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.DS_Store
+
+# Keep built plugin assets committed for simple server deploys.
+# If you later switch to building only in CI, remove this ignore exception.
+!assets/
