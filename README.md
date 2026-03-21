@@ -1,66 +1,50 @@
-# Emergency Dental Pros Plugin
+# Local SEO Dental Service Areas (WordPress plugin)
 
-## Branch flow
+Virtual location SEO: thousands of state/city pages from a custom DB table (not `wp_posts`), plugin-owned templates, CSV import, and JSON-LD.
 
-- `dev`: daily development.
-- `main`: production deploy branch.
-- Deployment runs automatically on every push to `main`.
+## URLs (after permalinks / activation)
 
-## Local development with Local App
+- States index: `/locations/`
+- Cities in a state: `/locations/{state_slug}/`
+- City landing: `/locations/{state_slug}/{city_slug}/`
 
-1. Create a site in Local App.
-2. Find its plugin directory:
-   - `.../app/public/wp-content/plugins/`
-3. Symlink this repo into that plugins directory.
+Flush permalinks: **Settings → Permalinks → Save** if routes 404 after deploy.
 
-Example:
+## Admin
+
+- **Local SEO → Templates** — Global templates for `states_index`, `state_cities`, `city_landing` (meta title/description, H1, WYSIWYG). Variables documented on screen.
+- **Local SEO → Import** — Imports `raw_data.csv` from the plugin directory (or a custom absolute path). USA **50 states + DC** only; rows grouped by state + city; ZIPs merged.
+- **Local SEO → Locations** — Map a row to an existing Page/Post ID, create a hidden CPT override, or clear overrides.
+
+## WP-CLI
 
 ```bash
-ln -s "/Users/webim/Documents/Projects/emergencydentalpros" "/path/to/local-site/app/public/wp-content/plugins/emergencydentalpros"
+wp edp-seo import
+wp edp-seo import /absolute/path/to/raw_data.csv
 ```
 
-4. In WordPress admin, activate `Emergency Dental Pros`.
+## Branch flow & deploy
 
-## Frontend assets
+- `dev`: daily development.
+- `main`: production deploy branch (GitHub Actions rsync on push).
+- Merge `dev` → `main` and push when ready.
 
-Install dependencies:
+## Local development (Local App)
+
+Symlink this repo into `wp-content/plugins/emergencydentalpros`, activate **Local SEO Dental Service Areas**, import CSV, then visit `/locations/`.
+
+## Frontend build (optional Tailwind/Vite)
 
 ```bash
 npm install
-```
-
-Build once:
-
-```bash
-npm run build
-```
-
-Watch and rebuild on file changes:
-
-```bash
+npm run build   # outputs to assets/
 npm run dev
 ```
 
-## Deploy setup (GitHub Secrets)
+Vite CSS/JS loads only on virtual SEO routes (`/locations/...`).
 
-Add repository secrets:
+## GitHub Actions secrets
 
-- `SSH_HOST`
-- `SSH_PORT`
-- `SSH_USER`
-- `SSH_PRIVATE_KEY`
-- `KNOWN_HOSTS` (recommended)
+`SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY`, `KNOWN_HOSTS` (recommended).
 
-Remote deploy path:
-
-`/var/www/widev.pro/public_html/wp-content/plugins/emergencydentalpros/`
-
-## Deploy command flow (no PR)
-
-```bash
-git checkout dev
-# work + commits
-git checkout main
-git merge dev
-git push origin main
-```
+Remote path: `/var/www/widev.pro/public_html/wp-content/plugins/emergencydentalpros/`

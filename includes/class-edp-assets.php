@@ -14,6 +14,12 @@ final class EDP_Assets
 
     public static function enqueue_frontend(): void
     {
+        $view = (string) get_query_var(EDP_Rewrite::Q_VIEW);
+
+        if ($view === '') {
+            return;
+        }
+
         $asset_rel_path = 'assets/main.css';
         $asset_abs_path = EDP_PLUGIN_DIR . $asset_rel_path;
         $asset_url = EDP_PLUGIN_URL . $asset_rel_path;
