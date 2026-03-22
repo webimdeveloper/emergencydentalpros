@@ -27,6 +27,9 @@ final class EDP_Locations_List_Table extends WP_List_Table
     /** @var int Total rows in table (COUNT). */
     public $debug_total_count = 0;
 
+    /** @var array<int, bool> location id => has Yelp rows */
+    public $yelp_status_map = [];
+
     /**
      * @param string $screen_hook Return value of add_submenu_page for this screen (required so
      *                            get_column_headers() and manage_{$screen->id}_columns work).
@@ -54,9 +57,11 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function get_columns(): array
     {
         return [
+            'cb' => '<input type="checkbox" />',
             'id' => __('ID', 'emergencydentalpros'),
             'state' => __('State', 'emergencydentalpros'),
             'city' => __('City', 'emergencydentalpros'),
+            'yelp' => __('Yelp', 'emergencydentalpros'),
             'zips' => __('ZIPs', 'emergencydentalpros'),
             'override' => __('Override', 'emergencydentalpros'),
             'edp_actions' => __('Actions', 'emergencydentalpros'),
@@ -103,7 +108,21 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     public function get_bulk_actions(): array
     {
-        return [];
+        return [
+            'fetch_yelp' => __('Fetch Yelp', 'emergencydentalpros'),
+        ];
+    }
+
+    /**
+     * GET bulk actions must keep ?page= so WordPress loads this screen (hidden field in list form).
+     *
+     * @param string $which top|bottom
+     */
+    protected function extra_tablenav($which): void
+    {
+        if ($which === 'top') {
+            echo '<input type="hidden" name="page" value="edp-seo-locations" />';
+        }
     }
 
     public function prepare_items(): void
@@ -142,6 +161,16 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
         $this->items = is_array($rows) ? $rows : [];
         $this->debug_rows_returned = count($this->items);
+
+        $ids = [];
+
+        foreach ($this->items as $it) {
+            if (is_array($it) && isset($it['id'])) {
+                $ids[] = (int) $it['id'];
+            }
+        }
+
+        $this->yelp_status_map = EDP_Database::get_yelp_status_for_locations($ids);
 
         $this->set_pagination_args(
             [
@@ -188,9 +217,51 @@ final class EDP_Locations_List_Table extends WP_List_Table
         return '';
     }
 
+    public function column_cb($item): string
+    {
+        $id = isset($item['id']) ? (int) $item['id'] : 0;
+
+        if ($id <= 0) {
+            return '';
+        }
+
+        return sprintf(
+            '<input type="checkbox" name="location[]" id="cb-select-%1$d" value="%1$d" />',
+            $id
+        );
+    }
+
     public function column_id($item): string
     {
         return esc_html((string) ($item['id'] ?? ''));
+    }
+
+    public function column_yelp($item): string
+    {
+        $id = isset($item['id']) ? (int) $item['id'] : 0;
+
+        if ($id <= 0) {
+            return '';
+        }
+
+        $has = !empty($this->yelp_status_map[$id]);
+
+        if ($has) {
+            return '<span class="edp-yelp-status edp-yelp-status--ok" title="' . esc_attr__('Yelp data saved', 'emergencydentalpros') . '" aria-label="' . esc_attr__('Yelp data saved', 'emergencydentalpros') . '">'
+                . '<span class="edp-yelp-dot"></span></span>';
+        }
+
+        ob_start();
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="edp-yelp-fetch-one">
+            <?php wp_nonce_field('edp_seo_yelp_single', 'edp_seo_yelp_single_nonce'); ?>
+            <input type="hidden" name="action" value="edp_seo_yelp_fetch_single" />
+            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
+            <button type="submit" class="button button-small"><?php esc_html_e('Fetch Yelp', 'emergencydentalpros'); ?></button>
+        </form>
+        <?php
+
+        return (string) ob_get_clean();
     }
 
     public function column_state($item): string

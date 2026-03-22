@@ -6,3 +6,44 @@
 .edp-card {
   @apply rounded-lg border border-slate-200 bg-white p-4 shadow-sm;
 }
+
+.edp-muted {
+  @apply text-sm text-slate-600;
+}
+
+.edp-dentist-grid {
+  @apply mt-4 grid list-none gap-4 p-0 sm:grid-cols-2;
+}
+
+.edp-dentist-card {
+  @apply flex gap-4;
+}
+
+.edp-dentist-thumb {
+  @apply shrink-0 overflow-hidden rounded-md bg-slate-100;
+}
+
+.edp-dentist-thumb img {
+  @apply h-[120px] w-[120px] object-cover;
+}
+
+.edp-dentist-body {
+  @apply min-w-0 flex-1;
+}
+
+.edp-dentist-name {
+  @apply mt-0 text-lg font-semibold leading-snug;
+}
+
+.edp-dentist-rating,
+.edp-dentist-phone {
+  @apply my-1 text-sm text-slate-700;
+}
+
+.edp-dentist-hours {
+  @apply mt-2 whitespace-pre-wrap rounded border border-slate-100 bg-slate-50 p-2 font-sans text-xs text-slate-800;
+}
+
+.edp-seo-yelp-attribution {
+  @apply mt-4 text-sm text-slate-600;
+}

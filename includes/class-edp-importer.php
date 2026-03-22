@@ -25,6 +25,8 @@ final class EDP_Importer
             ]);
         }
 
+        EDP_Database::ensure_schema();
+
         $handle = fopen($absolute_path, 'rb');
 
         if ($handle === false) {
@@ -114,8 +116,6 @@ final class EDP_Importer
 
         fclose($handle);
 
-        $inserted = 0;
-
         foreach ($groups as $group) {
             $state_id = (string) $group['state_id'];
             $state_name = (string) $group['state_name'];
@@ -128,7 +128,7 @@ final class EDP_Importer
             $zips = array_keys($group['zips']);
             sort($zips);
 
-            self::upsert_row(
+            $ok = self::upsert_row(
                 [
                     'state_slug' => $state_slug,
                     'state_name' => $state_name,
@@ -142,6 +142,19 @@ final class EDP_Importer
                     'county_fips_all' => (string) $group['county_fips_all'],
                 ]
             );
+
+            if (!$ok) {
+                global $wpdb;
+
+                return array_merge($empty, [
+                    'error' => 'db_write_failed',
+                    'db_error' => (string) $wpdb->last_error,
+                    'rows' => $rows,
+                    'skipped' => $skipped,
+                    'groups' => count($groups),
+                    'path' => $absolute_path,
+                ]);
+            }
         }
 
         return [
@@ -155,7 +168,7 @@ final class EDP_Importer
     /**
      * @param array<string, string> $row
      */
-    private static function upsert_row(array $row): void
+    private static function upsert_row(array $row): bool
     {
         global $wpdb;
 
@@ -198,6 +211,8 @@ final class EDP_Importer
 
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $wpdb->query($sql);
+
+        return $wpdb->last_error === '';
     }
 
     private static function normalize_zip(string $zip): ?string

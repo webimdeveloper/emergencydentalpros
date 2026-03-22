@@ -11,18 +11,85 @@
  * @var array<string, mixed>     $import_log
  * @var bool                       $edp_seo_debug
  * @var array<string, mixed>       $edp_debug_data
+ * @var array<string, mixed>|null  $edp_yelp_notice
  */
 
 if (!defined('ABSPATH')) {
-    exit;
+	exit;
 }
 
 $edp_seo_debug = $edp_seo_debug ?? false;
 $edp_debug_data = $edp_debug_data ?? [];
+$edp_yelp_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $edp_yelp_notice : null;
 
 ?>
+<style>
+	.edp-yelp-status--ok { display: inline-flex; align-items: center; vertical-align: middle; }
+	.edp-yelp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; background: #16a34a; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+	.edp-yelp-fetch-one { display: inline-block; margin: 0; }
+</style>
 <div class="wrap">
 	<h1><?php esc_html_e('Local SEO — Locations', 'emergencydentalpros'); ?></h1>
+
+	<?php if (isset($_GET['yelp_none'])) : ?>
+		<div class="notice notice-warning is-dismissible"><p><?php esc_html_e('No locations were selected for Yelp.', 'emergencydentalpros'); ?></p></div>
+	<?php endif; ?>
+
+	<?php if ($edp_yelp_notice !== null) : ?>
+		<?php
+		$proc = (int) ($edp_yelp_notice['processed'] ?? 0);
+		$calls = (int) ($edp_yelp_notice['api_calls'] ?? 0);
+		$msgs = isset($edp_yelp_notice['messages']) && is_array($edp_yelp_notice['messages']) ? $edp_yelp_notice['messages'] : [];
+		$yelp_ok = !empty($edp_yelp_notice['ok']);
+		$yelp_err = isset($edp_yelp_notice['error']) ? (string) $edp_yelp_notice['error'] : '';
+		$has403 = false;
+
+		foreach ($msgs as $m) {
+			if (is_string($m) && str_contains($m, '(403)')) {
+				$has403 = true;
+				break;
+			}
+		}
+
+		$notice_class = 'info';
+
+		if (!$yelp_ok && $yelp_err === 'missing_api_key') {
+			$notice_class = 'error';
+		} elseif ($msgs === [] && $yelp_ok) {
+			$notice_class = 'success';
+		} elseif ($msgs !== [] || !$yelp_ok) {
+			$notice_class = 'warning';
+		}
+		?>
+		<div class="notice notice-<?php echo esc_attr($notice_class); ?> is-dismissible">
+			<?php if (!$yelp_ok && $yelp_err === 'missing_api_key') : ?>
+				<p><?php esc_html_e('Yelp API key is missing. Add it under Local SEO → Import (Yelp section) or define EDP_YELP_API_KEY in wp-config.php.', 'emergencydentalpros'); ?></p>
+			<?php else : ?>
+			<p>
+				<?php
+				printf(
+					/* translators: 1: locations processed, 2: API calls */
+					esc_html__('Yelp fetch finished — locations processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
+					$proc,
+					$calls
+				);
+				?>
+			</p>
+			<?php endif; ?>
+			<?php if ($has403) : ?>
+				<p>
+					<?php esc_html_e('HTTP 403 from Yelp usually means the API key is invalid, the app is restricted, or the Fusion API is not enabled for this key. Regenerate the key in the Yelp developer dashboard and save it under Import → Yelp.', 'emergencydentalpros'); ?>
+				</p>
+			<?php endif; ?>
+			<?php if ($msgs !== []) : ?>
+				<ul style="list-style:disc;margin-left:1.25em;">
+					<?php foreach (array_slice($msgs, 0, 15) as $m) : ?>
+						<li><code><?php echo esc_html((string) $m); ?></code></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+		</div>
+	<?php endif; ?>
 	<p><?php esc_html_e('Map a location to an existing post/page ID, create a CPT override from global templates, or clear overrides.', 'emergencydentalpros'); ?></p>
 	<p class="description">
 		<?php esc_html_e('Front-end URLs (not listed in Pages): /locations/ — state list; /locations/{state}/ — cities; /locations/{state}/{city}/ — city landing. Flush permalinks if you get 404s.', 'emergencydentalpros'); ?>

@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 
 final class EDP_Activator
 {
-    public const DB_VERSION = '1.0.0';
+    public const DB_VERSION = '1.1.0';
     public const OPTION_DB_VERSION = 'edp_seo_db_version';
 
     public static function activate(): void
@@ -54,6 +54,39 @@ final class EDP_Activator
             UNIQUE KEY state_city (state_id, city_slug),
             KEY state_slug (state_slug),
             KEY state_city_lookup (state_slug, city_slug)
+        ) {$charset_collate};";
+
+        dbDelta($sql);
+
+        self::create_nearby_table();
+    }
+
+    public static function create_nearby_table(): void
+    {
+        global $wpdb;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $table = $wpdb->prefix . 'seo_nearby_businesses';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE {$table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            location_id bigint(20) unsigned NOT NULL,
+            provider varchar(20) NOT NULL DEFAULT 'yelp',
+            external_id varchar(100) NOT NULL,
+            sort_order tinyint(3) unsigned NOT NULL DEFAULT 0,
+            name varchar(255) NOT NULL,
+            rating decimal(3,2) DEFAULT NULL,
+            review_count int(10) unsigned DEFAULT NULL,
+            phone varchar(64) DEFAULT NULL,
+            image_url text,
+            hours_text text,
+            business_url text,
+            fetched_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY loc_provider_ext (location_id, provider, external_id),
+            KEY location_id (location_id)
         ) {$charset_collate};";
 
         dbDelta($sql);

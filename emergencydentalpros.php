@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Local SEO Dental Service Areas
  * Description: Virtual location SEO pages, CSV-backed location database, templates, and schema — without bloating wp_posts.
- * Version: 0.2.1
+ * Version: 0.3.4
  * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: Emergency Dental Pros
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('EDP_PLUGIN_VERSION', '0.2.1');
+define('EDP_PLUGIN_VERSION', '0.3.4');
 define('EDP_PLUGIN_FILE', __FILE__);
 define('EDP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EDP_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -27,6 +27,9 @@ require_once EDP_PLUGIN_DIR . 'includes/class-edp-schema.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-cpt.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-content-resolver.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-importer.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-yelp-config.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-yelp-client.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-yelp-importer.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-view-controller.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-assets.php';
 require_once EDP_PLUGIN_DIR . 'admin/class-edp-admin.php';
@@ -49,6 +52,8 @@ add_action(
     'plugins_loaded',
     static function (): void {
         load_plugin_textdomain('emergencydentalpros', false, dirname(plugin_basename(EDP_PLUGIN_FILE)) . '/languages');
+
+        EDP_Database::ensure_schema();
 
         EDP_Rewrite::register();
         add_action('init', [EDP_CPT::class, 'register'], 5);

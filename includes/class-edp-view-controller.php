@@ -284,7 +284,7 @@ final class EDP_View_Controller
             $row = self::$ctx['row'] ?? null;
 
             if (!is_array($row)) {
-                return ['h1' => '', 'body' => '', 'zips' => []];
+                return ['h1' => '', 'body' => '', 'zips' => [], 'nearby_businesses' => []];
             }
 
             $resolved = EDP_Content_Resolver::resolve_city($row);
@@ -301,12 +301,18 @@ final class EDP_View_Controller
 
             sort($zips);
 
+            $location_id = (int) ($row['id'] ?? 0);
+            $nearby = $location_id > 0
+                ? EDP_Database::get_nearby_for_location($location_id, 'yelp')
+                : [];
+
             return [
                 'h1' => $resolved['h1'],
                 'body' => $resolved['html'],
                 'zips' => $zips,
                 'row' => $row,
                 'source' => $resolved['source'],
+                'nearby_businesses' => $nearby,
             ];
         }
 

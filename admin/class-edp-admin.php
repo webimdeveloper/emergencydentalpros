@@ -25,6 +25,11 @@ final class EDP_Admin
         add_action('admin_menu', [self::class, 'menus']);
         add_action('admin_post_edp_seo_save_settings', [self::class, 'handle_save_settings']);
         add_action('admin_post_edp_seo_import', [self::class, 'handle_import']);
+        add_action('admin_post_edp_seo_save_yelp', [self::class, 'handle_save_yelp']);
+        add_action('admin_post_edp_seo_yelp_import', [self::class, 'handle_yelp_import']);
+        add_action('admin_post_edp_seo_yelp_test', [self::class, 'handle_yelp_test']);
+        add_action('admin_post_edp_seo_yelp_fetch_single', [self::class, 'handle_yelp_fetch_single']);
+        add_action('admin_init', [self::class, 'maybe_bulk_fetch_yelp'], 20);
         add_action('admin_post_edp_seo_location_action', [self::class, 'handle_location_action']);
     }
 
@@ -287,6 +292,15 @@ final class EDP_Admin
 
         global $wpdb;
 
+        $uid = get_current_user_id();
+        $edp_yelp_notice = get_transient('edp_seo_yelp_locations_notice_' . $uid);
+
+        if (is_array($edp_yelp_notice)) {
+            delete_transient('edp_seo_yelp_locations_notice_' . $uid);
+        } else {
+            $edp_yelp_notice = null;
+        }
+
         $screen_hook = self::$locations_screen_hook;
 
         if ($screen_hook === '' && function_exists('get_current_screen')) {
@@ -346,6 +360,80 @@ final class EDP_Admin
         }
 
         require EDP_PLUGIN_DIR . 'admin/views/locations.php';
+    }
+
+    /**
+     * Bulk action: Fetch Yelp (GET request from WP_List_Table).
+     */
+    public static function maybe_bulk_fetch_yelp(): void
+    {
+        if (!is_admin() || !current_user_can('manage_options')) {
+            return;
+        }
+
+        $page = isset($_REQUEST['page']) ? sanitize_key((string) wp_unslash($_REQUEST['page'])) : '';
+
+        if ($page !== 'edp-seo-locations') {
+            return;
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+        require_once EDP_PLUGIN_DIR . 'admin/class-edp-locations-list-table.php';
+
+        $table = new EDP_Locations_List_Table('');
+        $action = $table->current_action();
+
+        if ($action !== 'fetch_yelp') {
+            return;
+        }
+
+        check_admin_referer('bulk-locations');
+
+        $ids = isset($_REQUEST['location']) ? array_map('intval', (array) wp_unslash($_REQUEST['location'])) : [];
+        $ids = array_values(array_filter($ids));
+
+        if ($ids === []) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&yelp_none=1'));
+            exit;
+        }
+
+        $result = EDP_Yelp_Importer::import_for_location_ids($ids, null);
+
+        set_transient(
+            'edp_seo_yelp_locations_notice_' . get_current_user_id(),
+            $result,
+            120
+        );
+
+        wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&yelp_bulk=1'));
+        exit;
+    }
+
+    public static function handle_yelp_fetch_single(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_seo_yelp_single', 'edp_seo_yelp_single_nonce');
+
+        $id = isset($_POST['location_id']) ? (int) $_POST['location_id'] : 0;
+
+        if ($id <= 0) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&yelp_none=1'));
+            exit;
+        }
+
+        $result = EDP_Yelp_Importer::import_for_location_ids([$id], null);
+
+        set_transient(
+            'edp_seo_yelp_locations_notice_' . get_current_user_id(),
+            $result,
+            120
+        );
+
+        wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&yelp_single=1'));
+        exit;
     }
 
     public static function handle_location_action(): void
@@ -432,6 +520,85 @@ final class EDP_Admin
         }
 
         wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations'));
+        exit;
+    }
+
+    public static function handle_save_yelp(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_seo_save_yelp', 'edp_seo_yelp_save_nonce');
+
+        $raw = isset($_POST['edp_yelp']) && is_array($_POST['edp_yelp']) ? wp_unslash($_POST['edp_yelp']) : [];
+
+        EDP_Yelp_Config::save(
+            [
+                'api_key' => isset($raw['api_key']) ? (string) $raw['api_key'] : '',
+                'client_id' => isset($raw['client_id']) ? (string) $raw['client_id'] : '',
+                'term' => isset($raw['term']) ? (string) $raw['term'] : 'Dentists',
+                'limit' => isset($raw['limit']) ? (int) $raw['limit'] : 10,
+                'fetch_details' => isset($raw['fetch_details']) && (string) $raw['fetch_details'] === '1',
+            ]
+        );
+
+        wp_safe_redirect(
+            add_query_arg('yelp_saved', '1', admin_url('admin.php?page=edp-seo-import'))
+        );
+        exit;
+    }
+
+    public static function handle_yelp_import(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_seo_yelp_import', 'edp_seo_yelp_import_nonce');
+
+        $offset = isset($_POST['yelp_offset']) ? (int) $_POST['yelp_offset'] : 0;
+        $limit = isset($_POST['yelp_limit']) ? (int) $_POST['yelp_limit'] : 25;
+        $offset = max(0, $offset);
+        $limit = max(1, min(500, $limit));
+
+        $fetch_details = isset($_POST['yelp_fetch_details']) && (string) $_POST['yelp_fetch_details'] === '1';
+
+        $result = EDP_Yelp_Importer::import_batch($offset, $limit, $fetch_details);
+
+        set_transient(
+            'edp_seo_last_yelp_import',
+            $result,
+            MINUTE_IN_SECONDS * 30
+        );
+
+        $args = ['page' => 'edp-seo-import', 'yelp_imported' => '1'];
+
+        if (empty($result['ok'])) {
+            $args['yelp_error'] = '1';
+        }
+
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
+        exit;
+    }
+
+    public static function handle_yelp_test(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_seo_yelp_test', 'edp_seo_yelp_test_nonce');
+
+        $result = EDP_Yelp_Importer::test_api_connection();
+
+        set_transient(
+            'edp_seo_yelp_test_' . get_current_user_id(),
+            $result,
+            120
+        );
+
+        wp_safe_redirect(admin_url('admin.php?page=edp-seo-import'));
         exit;
     }
 }

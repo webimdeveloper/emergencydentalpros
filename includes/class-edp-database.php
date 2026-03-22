@@ -11,11 +11,256 @@ if (!defined('ABSPATH')) {
 
 final class EDP_Database
 {
+    /**
+     * Create or upgrade the locations table if missing or DB version changed.
+     * Rsync/deploy does not run register_activation_hook — this keeps production in sync.
+     */
+    public static function ensure_schema(): void
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+        $found = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+        $version_ok = (string) get_option(EDP_Activator::OPTION_DB_VERSION, '') === EDP_Activator::DB_VERSION;
+
+        if ($found !== $table || !$version_ok) {
+            EDP_Activator::create_tables();
+            update_option(EDP_Activator::OPTION_DB_VERSION, EDP_Activator::DB_VERSION, false);
+        }
+    }
+
     public static function table_name(): string
     {
         global $wpdb;
 
         return $wpdb->prefix . 'seo_locations';
+    }
+
+    public static function nearby_table_name(): string
+    {
+        global $wpdb;
+
+        return $wpdb->prefix . 'seo_nearby_businesses';
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return list<array{id:int, city_name:string, state_id:string}>
+     */
+    public static function get_locations_by_ids(array $ids): array
+    {
+        global $wpdb;
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $table = self::table_name();
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+        $sql = $wpdb->prepare(
+            "SELECT id, city_name, state_id FROM {$table} WHERE id IN ({$placeholders}) ORDER BY id ASC",
+            ...$ids
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+
+            $out[] = [
+                'id' => (int) ($r['id'] ?? 0),
+                'city_name' => (string) ($r['city_name'] ?? ''),
+                'state_id' => (string) ($r['state_id'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param list<int> $ids Location row ids
+     * @return array<int, bool> id => has at least one Yelp listing stored
+     */
+    public static function get_yelp_status_for_locations(array $ids): array
+    {
+        global $wpdb;
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        $map = [];
+
+        foreach ($ids as $id) {
+            $map[$id] = false;
+        }
+
+        if ($ids === []) {
+            return $map;
+        }
+
+        $near = self::nearby_table_name();
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $sql = $wpdb->prepare(
+            "SELECT DISTINCT location_id FROM {$near} WHERE provider = %s AND location_id IN ({$placeholders})",
+            'yelp',
+            ...$ids
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $found = $wpdb->get_col($sql);
+
+        if (is_array($found)) {
+            foreach ($found as $fid) {
+                $map[(int) $fid] = true;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return list<array{id:int, city_name:string, state_id:string}>
+     */
+    public static function get_locations_batch(int $offset, int $limit): array
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+        $offset = max(0, $offset);
+        $limit = max(1, min(500, $limit));
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+        $sql = $wpdb->prepare(
+            "SELECT id, city_name, state_id FROM {$table} ORDER BY id ASC LIMIT %d OFFSET %d",
+            $limit,
+            $offset
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+
+            $out[] = [
+                'id' => (int) ($r['id'] ?? 0),
+                'city_name' => (string) ($r['city_name'] ?? ''),
+                'state_id' => (string) ($r['state_id'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    public static function delete_nearby_for_location(int $location_id, string $provider = 'yelp'): void
+    {
+        global $wpdb;
+
+        $table = self::nearby_table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->delete(
+            $table,
+            [
+                'location_id' => $location_id,
+                'provider' => $provider,
+            ],
+            ['%d', '%s']
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    public static function insert_nearby_row(array $row): void
+    {
+        global $wpdb;
+
+        $table = self::nearby_table_name();
+
+        $data = [
+            'location_id' => (int) ($row['location_id'] ?? 0),
+            'provider' => (string) ($row['provider'] ?? 'yelp'),
+            'external_id' => (string) ($row['external_id'] ?? ''),
+            'sort_order' => (int) ($row['sort_order'] ?? 0),
+            'name' => (string) ($row['name'] ?? ''),
+            'fetched_at' => isset($row['fetched_at']) ? (string) $row['fetched_at'] : current_time('mysql'),
+        ];
+
+        $format = ['%d', '%s', '%s', '%d', '%s', '%s'];
+
+        if (array_key_exists('rating', $row) && is_numeric($row['rating'])) {
+            $data['rating'] = round((float) $row['rating'], 2);
+            $format[] = '%f';
+        }
+
+        if (isset($row['review_count']) && $row['review_count'] !== '') {
+            $data['review_count'] = (int) $row['review_count'];
+            $format[] = '%d';
+        }
+
+        if (!empty($row['phone'])) {
+            $data['phone'] = (string) $row['phone'];
+            $format[] = '%s';
+        }
+
+        if (!empty($row['image_url'])) {
+            $data['image_url'] = (string) $row['image_url'];
+            $format[] = '%s';
+        }
+
+        if (isset($row['hours_text']) && (string) $row['hours_text'] !== '') {
+            $data['hours_text'] = (string) $row['hours_text'];
+            $format[] = '%s';
+        }
+
+        if (!empty($row['business_url'])) {
+            $data['business_url'] = (string) $row['business_url'];
+            $format[] = '%s';
+        }
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->insert($table, $data, $format);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public static function get_nearby_for_location(int $location_id, string $provider = 'yelp'): array
+    {
+        global $wpdb;
+
+        $table = self::nearby_table_name();
+
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE location_id = %d AND provider = %s ORDER BY sort_order ASC, id ASC",
+            $location_id,
+            $provider
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        return is_array($rows) ? $rows : [];
     }
 
     public static function count_rows(): int
