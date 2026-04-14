@@ -41,7 +41,7 @@ final class EDP_Admin
             'manage_options',
             'edp-seo',
             [self::class, 'render_settings'],
-            'dashicons-location-alt',
+            'dashicons-medical',
             58
         );
 
