@@ -45,7 +45,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          REMOTE_PLUGIN_PATH: /var/www/widev.pro/public_html/wp-content/plugins/emergencydentalpros/
+          REMOTE_PLUGIN_PATH: /var/www/dev.widev.pro/public_html/wp-content/plugins/emergencydentalpros/
         run: |
           rsync -avz --delete \
             --exclude ".git/" \
