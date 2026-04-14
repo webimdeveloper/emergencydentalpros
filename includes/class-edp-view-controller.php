@@ -37,7 +37,7 @@ final class EDP_View_Controller
         switch ($view) {
             case EDP_Rewrite::VIEW_STATES:
                 self::$ctx = [
-                    'view' => 'states_index',
+                    'view' => 'state-list',
                 ];
                 break;
 
@@ -51,7 +51,7 @@ final class EDP_View_Controller
                 }
 
                 self::$ctx = [
-                    'view' => 'state_cities',
+                    'view' => 'state',
                     'state_slug' => $state_slug,
                 ];
                 break;
@@ -75,7 +75,7 @@ final class EDP_View_Controller
                 }
 
                 self::$ctx = [
-                    'view' => 'city_landing',
+                    'view' => 'city',
                     'state_slug' => $state_slug,
                     'city_slug' => $city_slug,
                     'row' => $row,
@@ -97,7 +97,7 @@ final class EDP_View_Controller
         add_filter('pre_get_document_title', [self::class, 'filter_document_title'], 20);
         add_action('wp_head', [self::class, 'output_meta_description'], 1);
 
-        if ((self::$ctx['view'] ?? '') === 'city_landing') {
+        if ((self::$ctx['view'] ?? '') === 'city') {
             add_action('wp_head', [self::class, 'output_city_schema'], 99);
         }
     }
@@ -122,13 +122,13 @@ final class EDP_View_Controller
 
         $view = (string) (self::$ctx['view'] ?? '');
 
-        if ($view === 'states_index') {
+        if ($view === 'state-list') {
             $t = $templates['states_index']['meta_title'] ?? '';
 
             return EDP_Template_Engine::replace((string) $t, $base);
         }
 
-        if ($view === 'state_cities') {
+        if ($view === 'state') {
             $slug = (string) (self::$ctx['state_slug'] ?? '');
             $state_row = self::get_state_row_by_slug($slug);
 
@@ -142,7 +142,7 @@ final class EDP_View_Controller
             return EDP_Template_Engine::replace((string) $t, $vars);
         }
 
-        if ($view === 'city_landing') {
+        if ($view === 'city') {
             $row = self::$ctx['row'] ?? null;
 
             if (!is_array($row)) {
@@ -170,9 +170,9 @@ final class EDP_View_Controller
 
         $desc = '';
 
-        if ($view === 'states_index') {
+        if ($view === 'state-list') {
             $desc = EDP_Template_Engine::replace((string) ($templates['states_index']['meta_description'] ?? ''), $base);
-        } elseif ($view === 'state_cities') {
+        } elseif ($view === 'state') {
             $slug = (string) (self::$ctx['state_slug'] ?? '');
             $state_row = self::get_state_row_by_slug($slug);
 
@@ -180,7 +180,7 @@ final class EDP_View_Controller
                 $vars = EDP_Template_Engine::context_from_state($base, $state_row);
                 $desc = EDP_Template_Engine::replace((string) ($templates['state_cities']['meta_description'] ?? ''), $vars);
             }
-        } elseif ($view === 'city_landing') {
+        } elseif ($view === 'city') {
             $row = self::$ctx['row'] ?? null;
 
             if (is_array($row)) {
@@ -238,6 +238,23 @@ final class EDP_View_Controller
     }
 
     /**
+     * Resolve a view template — theme override takes priority over plugin default.
+     * Filterable via 'edp_template' for advanced overrides.
+     */
+    public static function resolve_template(string $view_name): string
+    {
+        $theme_tpl = get_stylesheet_directory()
+            . '/emergencydentalpros/views/'
+            . $view_name . '.php';
+
+        $plugin_tpl = EDP_PLUGIN_DIR . 'templates/views/' . $view_name . '.php';
+
+        $resolved = file_exists($theme_tpl) ? $theme_tpl : $plugin_tpl;
+
+        return (string) apply_filters('edp_template', $resolved, $view_name);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private static function build_view_data(): array
@@ -247,19 +264,24 @@ final class EDP_View_Controller
         $base = EDP_Template_Engine::base_vars();
         $view = (string) (self::$ctx['view'] ?? '');
 
-        if ($view === 'states_index') {
+        if ($view === 'state-list') {
             $t = $templates['states_index'] ?? [];
             $h1 = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $base);
             $body = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $base);
 
+            $cities_by_state = EDP_Database::get_all_cities_grouped_by_state();
+            $total_cities = array_sum(array_map('count', $cities_by_state));
+
             return [
-                'h1' => $h1,
-                'body' => $body,
-                'states' => EDP_Database::get_distinct_states(),
+                'h1'             => $h1,
+                'body'           => $body,
+                'states'         => EDP_Database::get_distinct_states(),
+                'cities_by_state'=> $cities_by_state,
+                'total_cities'   => $total_cities,
             ];
         }
 
-        if ($view === 'state_cities') {
+        if ($view === 'state') {
             $slug = (string) (self::$ctx['state_slug'] ?? '');
             $state_row = self::get_state_row_by_slug($slug);
 
@@ -280,7 +302,7 @@ final class EDP_View_Controller
             ];
         }
 
-        if ($view === 'city_landing') {
+        if ($view === 'city') {
             $row = self::$ctx['row'] ?? null;
 
             if (!is_array($row)) {

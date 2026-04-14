@@ -1,6 +1,7 @@
 <?php
 /**
- * States index template.
+ * State list template — plugin default.
+ * Override in theme: emergencydentalpros/views/state-list.php
  *
  * @package EmergencyDentalPros
  *

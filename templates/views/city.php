@@ -1,6 +1,7 @@
 <?php
 /**
- * City landing template (MVP blocks: H1, body, zips).
+ * City template — plugin default.
+ * Override in theme: emergencydentalpros/views/city.php
  *
  * @package EmergencyDentalPros
  *
