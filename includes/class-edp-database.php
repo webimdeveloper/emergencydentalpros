@@ -336,6 +336,49 @@ final class EDP_Database
     }
 
     /**
+     * All cities grouped by state_slug — one query, used by the state-list page accordion.
+     *
+     * @return array<string, list<array{city_name: string, city_slug: string}>>
+     */
+    public static function get_all_cities_grouped_by_state(): array
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $sql = "SELECT state_slug, city_name, city_slug FROM {$table} ORDER BY state_slug ASC, city_name ASC";
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $grouped = [];
+
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+
+            $slug = (string) ($r['state_slug'] ?? '');
+
+            if ($slug === '') {
+                continue;
+            }
+
+            $grouped[$slug][] = [
+                'city_name' => (string) ($r['city_name'] ?? ''),
+                'city_slug' => (string) ($r['city_slug'] ?? ''),
+            ];
+        }
+
+        return $grouped;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public static function get_city_row(string $state_slug, string $city_slug): ?array

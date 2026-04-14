@@ -1,6 +1,7 @@
 <?php
 /**
- * State cities list template.
+ * State template — plugin default.
+ * Override in theme: emergencydentalpros/views/state.php
  *
  * @package EmergencyDentalPros
  *

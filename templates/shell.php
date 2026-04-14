@@ -1,10 +1,12 @@
 <?php
 /**
- * Plugin-only document shell for virtual SEO routes (not theme templates).
+ * Document shell for virtual SEO routes.
+ * Loads theme header/footer so the theme stylesheet applies.
+ * The view template is resolved from theme override or plugin default.
  *
  * @package EmergencyDentalPros
  *
- * @var string $edp_view states_index|state_cities|city_landing
+ * @var string $edp_view  state-list|state|city
  * @var array<string, mixed> $edp_data
  */
 
@@ -12,23 +14,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-?><!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-	<meta charset="<?php bloginfo('charset'); ?>">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<?php wp_head(); ?>
-</head>
-<body <?php body_class('edp-seo-virtual'); ?>>
-<?php
-if ($edp_view === 'states_index') {
-    include EDP_PLUGIN_DIR . 'templates/views/states-index.php';
-} elseif ($edp_view === 'state_cities') {
-    include EDP_PLUGIN_DIR . 'templates/views/state-cities.php';
-} elseif ($edp_view === 'city_landing') {
-    include EDP_PLUGIN_DIR . 'templates/views/city-landing.php';
+get_header();
+
+$tpl = EDP_View_Controller::resolve_template($edp_view);
+
+if (is_readable($tpl)) {
+    include $tpl;
 }
-wp_footer();
-?>
-</body>
-</html>
+
+get_footer();
