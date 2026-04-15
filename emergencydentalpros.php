@@ -27,6 +27,7 @@ require_once EDP_PLUGIN_DIR . 'includes/class-edp-schema.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-cpt.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-content-resolver.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-importer.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-sheet-fetcher.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-config.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-client.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-importer.php';

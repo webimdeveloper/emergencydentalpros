@@ -1,12 +1,12 @@
 <?php
 /**
- * CSV import screen.
+ * CSV / Google Sheets import screen.
  *
  * @package EmergencyDentalPros
  */
 
 if (!defined('ABSPATH')) {
-    exit;
+	exit;
 }
 
 $last = get_transient('edp_seo_last_import');
@@ -16,6 +16,8 @@ $persisted = get_option(EDP_Admin::OPTION_IMPORT_LOG, []);
 if (!is_array($persisted)) {
 	$persisted = [];
 }
+
+$saved_sheet_url = (string) get_option(EDP_Admin::OPTION_SHEET_URL, '');
 
 $google = EDP_Google_Places_Config::get_all();
 $google_key_set = EDP_Google_Places_Config::get_api_key() !== '';
@@ -52,6 +54,10 @@ if (is_array($google_test_result)) {
 	<?php endif; ?>
 
 	<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended -- $_GET params are post-redirect-get flags set by our own handlers. ?>
+	<?php if ( isset( $_GET['sheet_saved'] ) ) : ?>
+		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Google Sheets URL saved.', 'emergencydentalpros' ); ?></p></div>
+	<?php endif; ?>
+
 	<?php if ( isset( $_GET['google_saved'] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Google Places settings saved.', 'emergencydentalpros' ); ?></p></div>
 	<?php endif; ?>
@@ -147,8 +153,146 @@ if (is_array($google_test_result)) {
 	<?php endif; ?>
 
 	<p><?php esc_html_e('Imports USA 50 states + DC only. Rows are grouped by state and city; ZIP codes are merged.', 'emergencydentalpros'); ?></p>
+
+	<?php /* ------------------------------------------------------------------ */ ?>
+	<?php /* Google Sheets sync                                                  */ ?>
+	<?php /* ------------------------------------------------------------------ */ ?>
+
+	<h2><?php esc_html_e('Google Sheets — Location data', 'emergencydentalpros'); ?></h2>
 	<p class="description">
-		<?php esc_html_e('Tip: After a successful import, open your site at /locations/ to browse virtual pages. If the request times out, use WP-CLI: wp edp-seo import', 'emergencydentalpros'); ?>
+		<?php esc_html_e('Keep your locations in a Google Sheet (same columns as raw_data.csv) and sync with one click. The sheet must be shared as "Anyone with the link can view" — no API key needed.', 'emergencydentalpros'); ?>
+	</p>
+
+	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+		<?php wp_nonce_field('edp_sheet_save_url', 'edp_sheet_nonce'); ?>
+		<input type="hidden" name="action" value="edp_sheet_save_url" />
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="edp_sheet_url"><?php esc_html_e('Google Sheets URL', 'emergencydentalpros'); ?></label></th>
+				<td>
+					<input
+						name="edp_sheet_url"
+						type="url"
+						id="edp_sheet_url"
+						class="large-text code"
+						value="<?php echo esc_attr($saved_sheet_url); ?>"
+						placeholder="https://docs.google.com/spreadsheets/d/…"
+					/>
+					<p class="description">
+						<?php esc_html_e('Paste the URL from your browser\'s address bar. Any tab is fine — the sync always uses the first sheet (gid=0) unless you paste a URL with a specific tab selected.', 'emergencydentalpros'); ?>
+					</p>
+				</td>
+			</tr>
+		</table>
+		<?php submit_button(__('Save URL', 'emergencydentalpros'), 'secondary', 'submit', false); ?>
+	</form>
+
+	<?php if ($saved_sheet_url !== '') : ?>
+		<p style="margin-top:4px;">
+			<span class="dashicons dashicons-yes" style="color:#0a7040;vertical-align:middle;"></span>
+			<strong><?php esc_html_e('Saved URL:', 'emergencydentalpros'); ?></strong>
+			<code><?php echo esc_html($saved_sheet_url); ?></code>
+		</p>
+	<?php endif; ?>
+
+	<div id="edp-sheet-sync-wrap" style="margin-top:16px;">
+		<button
+			id="edp-sheet-sync-btn"
+			class="button button-primary"
+			<?php echo $saved_sheet_url === '' ? 'disabled' : ''; ?>
+		>
+			<?php esc_html_e('Sync from Google Sheets', 'emergencydentalpros'); ?>
+		</button>
+		<?php if ($saved_sheet_url === '') : ?>
+			<span class="description" style="margin-left:8px;"><?php esc_html_e('Save a URL above first.', 'emergencydentalpros'); ?></span>
+		<?php endif; ?>
+	</div>
+
+	<div id="edp-sheet-progress" style="display:none; margin-top:16px; max-width:600px;">
+		<p id="edp-sheet-status" style="margin:4px 0; font-style:italic;"></p>
+		<div id="edp-sheet-result" style="display:none; margin-top:8px; padding:10px 14px; background:#f0f6fc; border-left:4px solid #2271b1;">
+			<strong><?php esc_html_e('Sync complete', 'emergencydentalpros'); ?></strong>
+			<ul id="edp-sheet-result-list" style="margin:6px 0 0; padding-left:1.25em; list-style:disc;"></ul>
+		</div>
+		<div id="edp-sheet-error" style="display:none; margin-top:8px; padding:10px 14px; background:#fff3cd; border-left:4px solid #f0b429;">
+			<strong><?php esc_html_e('Error', 'emergencydentalpros'); ?></strong>
+			<p id="edp-sheet-error-msg" style="margin:4px 0 0;"></p>
+		</div>
+	</div>
+
+	<script>
+	(function () {
+		var btn      = document.getElementById('edp-sheet-sync-btn');
+		var wrap     = document.getElementById('edp-sheet-progress');
+		var status   = document.getElementById('edp-sheet-status');
+		var result   = document.getElementById('edp-sheet-result');
+		var resList  = document.getElementById('edp-sheet-result-list');
+		var errBox   = document.getElementById('edp-sheet-error');
+		var errMsg   = document.getElementById('edp-sheet-error-msg');
+
+		if (!btn) { return; }
+
+		var nonce   = <?php echo wp_json_encode(wp_create_nonce('edp_sheet_sync')); ?>;
+		var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
+
+		function esc(str) {
+			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
+
+		btn.addEventListener('click', function () {
+			btn.disabled = true;
+			wrap.style.display  = 'block';
+			result.style.display = 'none';
+			errBox.style.display = 'none';
+			resList.innerHTML    = '';
+			status.textContent   = <?php echo wp_json_encode(__('Fetching sheet and syncing…', 'emergencydentalpros')); ?>;
+
+			var body = new URLSearchParams({ action: 'edp_sheet_sync', nonce: nonce });
+
+			fetch(ajaxUrl, { method: 'POST', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					btn.disabled = false;
+					status.textContent = '';
+
+					if (!json.success) {
+						errMsg.textContent   = (json.data && json.data.message) || <?php echo wp_json_encode(__('Unknown error.', 'emergencydentalpros')); ?>;
+						errBox.style.display = 'block';
+						return;
+					}
+
+					var d = json.data;
+					var rows = [
+						<?php echo wp_json_encode(__('Rows read from sheet:', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.rows) + '</strong>',
+						<?php echo wp_json_encode(__('Skipped (non-US / invalid):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.skipped) + '</strong>',
+						<?php echo wp_json_encode(__('City groups found:', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.groups) + '</strong>',
+						<?php echo wp_json_encode(__('Written to DB (added + updated):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.upserted) + '</strong>',
+						<?php echo wp_json_encode(__('Protected updates (city name locked — has custom page):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.safe_updated) + '</strong>',
+						<?php echo wp_json_encode(__('Removed (no longer in sheet):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.removed) + '</strong>',
+						<?php echo wp_json_encode(__('Kept despite removal (have custom pages):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.kept_protected) + '</strong>',
+					];
+					resList.innerHTML    = rows.map(function (r) { return '<li>' + r + '</li>'; }).join('');
+					result.style.display = 'block';
+				})
+				.catch(function (err) {
+					btn.disabled = false;
+					status.textContent = '';
+					errMsg.textContent   = 'Network error: ' + esc(err.message || err);
+					errBox.style.display = 'block';
+				});
+		});
+	})();
+	</script>
+
+	<hr />
+
+	<?php /* ------------------------------------------------------------------ */ ?>
+	<?php /* Manual CSV import (fallback)                                        */ ?>
+	<?php /* ------------------------------------------------------------------ */ ?>
+
+	<h2><?php esc_html_e('Manual import — CSV file (fallback)', 'emergencydentalpros'); ?></h2>
+	<p class="description">
+		<?php esc_html_e('Use this if you prefer uploading a local file or working offline. Note: manual import is upsert-only — it does not remove cities that are missing from the file.', 'emergencydentalpros'); ?>
 	</p>
 
 	<p>
@@ -191,7 +335,7 @@ if (is_array($google_test_result)) {
 		<?php
 		submit_button(
 			__('Run import', 'emergencydentalpros'),
-			'primary',
+			'secondary',
 			'submit',
 			true,
 			[
@@ -203,10 +347,8 @@ if (is_array($google_test_result)) {
 	<script>
 	(function () {
 		var form = document.getElementById('edp-seo-import-form');
-		var btn = document.getElementById('edp-seo-import-submit');
-		if (!form || !btn) {
-			return;
-		}
+		var btn  = document.getElementById('edp-seo-import-submit');
+		if (!form || !btn) { return; }
 		form.addEventListener('submit', function () {
 			btn.disabled = true;
 			btn.classList.add('disabled');
@@ -365,17 +507,17 @@ if (is_array($google_test_result)) {
 
 	<script>
 	(function () {
-		var form   = document.getElementById('edp-google-import-form');
-		var btn    = document.getElementById('edp-google-import-submit');
-		var wrap   = document.getElementById('edp-google-progress');
-		var bar    = document.getElementById('edp-google-bar');
-		var status = document.getElementById('edp-google-status');
+		var form    = document.getElementById('edp-google-import-form');
+		var btn     = document.getElementById('edp-google-import-submit');
+		var wrap    = document.getElementById('edp-google-progress');
+		var bar     = document.getElementById('edp-google-bar');
+		var status  = document.getElementById('edp-google-status');
 		var errWrap = document.getElementById('edp-google-error-wrap');
 		var errList = document.getElementById('edp-google-errors');
 
 		if (!form || !btn) { return; }
 
-		var nonce = <?php echo wp_json_encode(wp_create_nonce('edp_google_import_step')); ?>;
+		var nonce   = <?php echo wp_json_encode(wp_create_nonce('edp_google_import_step')); ?>;
 		var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
 
 		function esc(str) {
@@ -401,9 +543,9 @@ if (is_array($google_test_result)) {
 			errList.innerHTML = '';
 			setBar(0);
 
-			var step = 0;
+			var step         = 0;
 			var totalApiCalls = 0;
-			var allMessages = [];
+			var allMessages  = [];
 
 			function processNext() {
 				if (step >= total) {

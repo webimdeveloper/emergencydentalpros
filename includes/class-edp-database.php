@@ -420,6 +420,45 @@ final class EDP_Database
     }
 
     /**
+     * Load the minimal row data needed by the sheet sync to determine which
+     * rows are protected (have a custom override) and to compute deletions.
+     *
+     * @return list<array{id: int, city_slug: string, custom_post_id: int}>
+     */
+    public static function get_all_rows_for_sync(): array
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $rows = $wpdb->get_results(
+            "SELECT id, city_slug, custom_post_id FROM {$table}",
+            ARRAY_A
+        );
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+
+            $out[] = [
+                'id'             => (int) ($r['id'] ?? 0),
+                'city_slug'      => (string) ($r['city_slug'] ?? ''),
+                'custom_post_id' => (int) ($r['custom_post_id'] ?? 0),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Find the location row that has been mapped to a given post ID.
      * Only rows with override_type = 'mapped' are considered (map_post action).
      *

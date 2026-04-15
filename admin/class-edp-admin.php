@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 final class EDP_Admin
 {
     public const OPTION_IMPORT_LOG = 'edp_seo_import_log';
+    public const OPTION_SHEET_URL  = 'edp_sheet_url';
 
     /**
      * Return value of add_submenu_page for Locations — required for WP_List_Table screen.
@@ -34,6 +35,8 @@ final class EDP_Admin
         add_action('wp_ajax_edp_google_import_step', [self::class, 'ajax_google_import_step']);
         add_action('wp_ajax_edp_google_fetch_location', [self::class, 'ajax_google_fetch_location']);
         add_action('wp_ajax_edp_google_delete_location', [self::class, 'ajax_google_delete_location']);
+        add_action('admin_post_edp_sheet_save_url', [self::class, 'handle_sheet_save_url']);
+        add_action('wp_ajax_edp_sheet_sync', [self::class, 'ajax_sheet_sync']);
     }
 
     public static function menus(): void
@@ -137,6 +140,71 @@ final class EDP_Admin
         }
 
         require EDP_PLUGIN_DIR . 'admin/views/import.php';
+    }
+
+    /**
+     * Save the Google Sheets URL entered on the Import screen.
+     */
+    public static function handle_sheet_save_url(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_sheet_save_url', 'edp_sheet_nonce');
+
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below via esc_url_raw.
+        $raw = isset($_POST['edp_sheet_url']) ? wp_unslash((string) $_POST['edp_sheet_url']) : '';
+        $url = esc_url_raw(trim($raw));
+
+        update_option(self::OPTION_SHEET_URL, $url, false);
+
+        wp_safe_redirect(
+            add_query_arg('sheet_saved', '1', admin_url('admin.php?page=edp-seo-import'))
+        );
+        exit;
+    }
+
+    /**
+     * AJAX: run a full Google Sheets sync in one call.
+     * Fetches the saved Sheet URL, downloads CSV, upserts + smart-deletes cities.
+     */
+    public static function ajax_sheet_sync(): void
+    {
+        check_ajax_referer('edp_sheet_sync', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        $url = (string) get_option(self::OPTION_SHEET_URL, '');
+
+        if ($url === '') {
+            wp_send_json_error(['message' => esc_html__('No Google Sheets URL saved. Enter and save a URL first.', 'emergencydentalpros')]);
+        }
+
+        // Allow more time — large sheets can take a few seconds to download + parse.
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        @set_time_limit(120);
+
+        $result = EDP_Importer::sync_from_sheet($url);
+
+        // Persist log so the Locations screen can show it.
+        $log = array_merge(
+            $result,
+            [
+                'at'   => time(),
+                'ok'   => empty($result['error']),
+                'rows' => (int) ($result['rows'] ?? 0),
+            ]
+        );
+        update_option(self::OPTION_IMPORT_LOG, $log, false);
+
+        if (!empty($result['error'])) {
+            wp_send_json_error(['message' => (string) $result['error'], 'result' => $result]);
+        }
+
+        wp_send_json_success($result);
     }
 
     public static function handle_import(): void
