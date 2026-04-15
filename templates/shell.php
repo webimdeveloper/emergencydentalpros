@@ -10,16 +10,16 @@
  * @var array<string, mixed> $edp_data
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
 get_header();
 
-$tpl = EDP_View_Controller::resolve_template($edp_view);
+$tpl = EDP_View_Controller::resolve_template( $edp_view );
 
-if (is_readable($tpl)) {
-    include $tpl;
+if ( is_readable( $tpl ) ) {
+	include $tpl;
 }
 
 get_footer();

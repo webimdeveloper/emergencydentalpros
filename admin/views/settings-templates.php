@@ -16,7 +16,8 @@ if (!defined('ABSPATH')) {
 <div class="wrap">
 	<h1><?php esc_html_e('Local SEO — Templates', 'emergencydentalpros'); ?></h1>
 
-	<?php if (isset($_GET['updated'])) : ?>
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- post-redirect-get success flag. ?>
+	<?php if ( isset( $_GET['updated'] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Settings saved.', 'emergencydentalpros'); ?></p></div>
 	<?php endif; ?>
 

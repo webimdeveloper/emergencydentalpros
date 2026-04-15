@@ -5,37 +5,35 @@
  * @package EmergencyDentalPros
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-final class EDP_Activator
-{
-    public const DB_VERSION = '1.1.0';
-    public const OPTION_DB_VERSION = 'edp_seo_db_version';
+final class EDP_Activator {
 
-    public static function activate(): void
-    {
-        self::create_tables();
-        update_option(self::OPTION_DB_VERSION, self::DB_VERSION);
-        flush_rewrite_rules(false);
-        update_option(
-            EDP_Rewrite::OPTION_REWRITE_VERSION,
-            defined('EDP_PLUGIN_VERSION') ? (string) EDP_PLUGIN_VERSION : '0',
-            false
-        );
-    }
+	public const DB_VERSION        = '1.1.0';
+	public const OPTION_DB_VERSION = 'edp_seo_db_version';
 
-    public static function create_tables(): void
-    {
-        global $wpdb;
+	public static function activate(): void {
+		self::create_tables();
+		update_option( self::OPTION_DB_VERSION, self::DB_VERSION );
+		flush_rewrite_rules( false );
+		update_option(
+			EDP_Rewrite::OPTION_REWRITE_VERSION,
+			defined( 'EDP_PLUGIN_VERSION' ) ? (string) EDP_PLUGIN_VERSION : '0',
+			false
+		);
+	}
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	public static function create_tables(): void {
+		global $wpdb;
 
-        $table = EDP_Database::table_name();
-        $charset_collate = $wpdb->get_charset_collate();
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        $sql = "CREATE TABLE {$table} (
+		$table           = EDP_Database::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             state_slug varchar(191) NOT NULL,
             state_name varchar(191) NOT NULL,
@@ -56,24 +54,23 @@ final class EDP_Activator
             KEY state_city_lookup (state_slug, city_slug)
         ) {$charset_collate};";
 
-        dbDelta($sql);
+		dbDelta( $sql );
 
-        self::create_nearby_table();
-    }
+		self::create_nearby_table();
+	}
 
-    public static function create_nearby_table(): void
-    {
-        global $wpdb;
+	public static function create_nearby_table(): void {
+		global $wpdb;
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        $table = $wpdb->prefix . 'seo_nearby_businesses';
-        $charset_collate = $wpdb->get_charset_collate();
+		$table           = $wpdb->prefix . 'seo_nearby_businesses';
+		$charset_collate = $wpdb->get_charset_collate();
 
-        $sql = "CREATE TABLE {$table} (
+		$sql = "CREATE TABLE {$table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             location_id bigint(20) unsigned NOT NULL,
-            provider varchar(20) NOT NULL DEFAULT 'yelp',
+            provider varchar(20) NOT NULL DEFAULT 'google',
             external_id varchar(100) NOT NULL,
             sort_order tinyint(3) unsigned NOT NULL DEFAULT 0,
             name varchar(255) NOT NULL,
@@ -89,6 +86,6 @@ final class EDP_Activator
             KEY location_id (location_id)
         ) {$charset_collate};";
 
-        dbDelta($sql);
-    }
+		dbDelta( $sql );
+	}
 }

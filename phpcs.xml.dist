@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<ruleset name="EmergencyDentalPros">
+    <description>WordPress Coding Standards for the EDP plugin.</description>
+
+    <!-- What to scan -->
+    <file>.</file>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/assets/*</exclude-pattern>
+    <exclude-pattern>*.js</exclude-pattern>
+    <exclude-pattern>*.css</exclude-pattern>
+
+    <!-- WordPress standards -->
+    <rule ref="WordPress"/>
+    <rule ref="WordPress-Extra"/>
+    <rule ref="WordPress-Docs"/>
+
+    <!-- Minimum WP / PHP versions -->
+    <config name="minimum_supported_wp_version" value="6.5"/>
+    <config name="testVersion" value="8.0-"/>
+
+    <!-- Enforce single text domain -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="emergencydentalpros"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Allow short-form array syntax -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+
+    <!-- Relax line length for complex SQL/HTML strings -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="200"/>
+        </properties>
+    </rule>
+</ruleset>

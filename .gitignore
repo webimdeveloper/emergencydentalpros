@@ -1,7 +1,15 @@
+# Dependencies — never commit, always reinstall
 node_modules/
+vendor/
+
+# Logs and OS files
 *.log
 .DS_Store
 
-# Keep built plugin assets committed for simple server deploys.
-# If you later switch to building only in CI, remove this ignore exception.
+# PHP dev tools output
+.phpcs-cache
+.php-cs-fixer.cache
+
+# Keep compiled plugin assets committed (simple server deploys without CI build step).
+# Remove the !assets/ exception if you switch to building only in CI.
 !assets/

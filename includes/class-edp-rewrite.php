@@ -88,7 +88,7 @@ final class EDP_Rewrite
             return null;
         }
 
-        $raw = (string) wp_unslash($_SERVER['REQUEST_URI']);
+        $raw = sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) );
         $path = parse_url($raw, PHP_URL_PATH);
 
         if (!is_string($path)) {

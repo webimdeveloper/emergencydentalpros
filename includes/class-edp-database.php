@@ -172,7 +172,7 @@ final class EDP_Database
         return $out;
     }
 
-    public static function delete_nearby_for_location(int $location_id, string $provider = 'yelp'): void
+    public static function delete_nearby_for_location(int $location_id, string $provider = 'google'): void
     {
         global $wpdb;
 
@@ -200,7 +200,7 @@ final class EDP_Database
 
         $data = [
             'location_id' => (int) ($row['location_id'] ?? 0),
-            'provider' => (string) ($row['provider'] ?? 'yelp'),
+            'provider' => (string) ($row['provider'] ?? 'google'),
             'external_id' => (string) ($row['external_id'] ?? ''),
             'sort_order' => (int) ($row['sort_order'] ?? 0),
             'name' => (string) ($row['name'] ?? ''),
@@ -246,7 +246,7 @@ final class EDP_Database
     /**
      * @return list<array<string, mixed>>
      */
-    public static function get_nearby_for_location(int $location_id, string $provider = 'yelp'): array
+    public static function get_nearby_for_location(int $location_id, string $provider = 'google'): array
     {
         global $wpdb;
 

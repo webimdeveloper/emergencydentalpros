@@ -131,7 +131,8 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
         $table = EDP_Database::table_name();
         $per_page = 20;
-        $paged = max(1, (int) ($_GET['paged'] ?? 1));
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- standard WP_List_Table pagination param.
+        $paged = max( 1, absint( wp_unslash( $_GET['paged'] ?? 1 ) ) );
         $offset = ($paged - 1) * $per_page;
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

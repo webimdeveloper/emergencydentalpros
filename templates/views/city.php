@@ -35,7 +35,7 @@ $nearby = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_bu
 		<section class="edp-seo-nearby edp-block-order-nearby" aria-label="<?php esc_attr_e('Related dentists', 'emergencydentalpros'); ?>">
 			<h2 class="edp-seo-h2"><?php esc_html_e('Dentists in this area', 'emergencydentalpros'); ?></h2>
 			<p class="edp-seo-nearby-note edp-muted">
-				<?php esc_html_e('Information from Yelp is shown for convenience. Listings are not endorsements.', 'emergencydentalpros'); ?>
+				<?php esc_html_e('Business listings are shown for convenience and are not endorsements.', 'emergencydentalpros'); ?>
 			</p>
 			<ul class="edp-dentist-grid">
 				<?php foreach ($nearby as $biz) : ?>
@@ -94,9 +94,6 @@ $nearby = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_bu
 					</li>
 				<?php endforeach; ?>
 			</ul>
-			<p class="edp-seo-yelp-attribution">
-				<a href="https://www.yelp.com" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Powered by Yelp', 'emergencydentalpros'); ?></a>
-			</p>
 		</section>
 	<?php endif; ?>
 </main>

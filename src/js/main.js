@@ -1,3 +1,3 @@
-import "../css/main.css";
+import '../css/main.css';
 
-document.documentElement.classList.add("edp-ready");
+document.documentElement.classList.add('edp-ready');

@@ -51,32 +51,33 @@ if (is_array($google_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['google_saved'])) : ?>
-		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Google Places settings saved.', 'emergencydentalpros'); ?></p></div>
+	<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended -- $_GET params are post-redirect-get flags set by our own handlers. ?>
+	<?php if ( isset( $_GET['google_saved'] ) ) : ?>
+		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Google Places settings saved.', 'emergencydentalpros' ); ?></p></div>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['google_imported'])) : ?>
-		<?php if (isset($_GET['google_error'])) : ?>
-			<div class="notice notice-error is-dismissible"><p><?php esc_html_e('Google Places import could not complete. See details below.', 'emergencydentalpros'); ?></p></div>
+	<?php if ( isset( $_GET['google_imported'] ) ) : ?>
+		<?php if ( isset( $_GET['google_error'] ) ) : ?>
+			<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Google Places import could not complete. See details below.', 'emergencydentalpros' ); ?></p></div>
 		<?php else : ?>
-			<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Google Places batch finished.', 'emergencydentalpros'); ?></p></div>
+			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Google Places batch finished.', 'emergencydentalpros' ); ?></p></div>
 		<?php endif; ?>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['imported'])) : ?>
-		<?php if (isset($_GET['import_error'])) : ?>
+	<?php if ( isset( $_GET['imported'] ) ) : ?>
+		<?php if ( isset( $_GET['import_error'] ) ) : ?>
 			<div class="notice notice-error is-dismissible">
-				<p><?php esc_html_e('Import finished with errors. See details below.', 'emergencydentalpros'); ?></p>
+				<p><?php esc_html_e( 'Import finished with errors. See details below.', 'emergencydentalpros' ); ?></p>
 			</div>
 		<?php else : ?>
-			<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Import finished.', 'emergencydentalpros'); ?></p></div>
+			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Import finished.', 'emergencydentalpros' ); ?></p></div>
 		<?php endif; ?>
 	<?php endif; ?>
 
 	<?php
-	$upload_reason = isset($_GET['reason']) ? sanitize_key((string) wp_unslash($_GET['reason'])) : '';
+	$upload_reason = isset( $_GET['reason'] ) ? sanitize_key( (string) wp_unslash( $_GET['reason'] ) ) : '';
 	?>
-	<?php if (isset($_GET['import_error']) && $_GET['import_error'] === 'upload') : ?>
+	<?php if ( isset( $_GET['import_error'] ) && 'upload' === $_GET['import_error'] ) : ?>
 		<div class="notice notice-error is-dismissible">
 			<p>
 				<?php
@@ -103,11 +104,12 @@ if (is_array($google_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['import_error']) && $_GET['import_error'] === 'upload_wp') : ?>
+	<?php if ( isset( $_GET['import_error'] ) && 'upload_wp' === $_GET['import_error'] ) : ?>
 		<div class="notice notice-error is-dismissible">
-			<p><?php esc_html_e('WordPress rejected the uploaded file (type or security checks). Use a .csv file, or import via WP-CLI with a path on the server.', 'emergencydentalpros'); ?></p>
+			<p><?php esc_html_e( 'WordPress rejected the uploaded file (type or security checks). Use a .csv file, or import via WP-CLI with a path on the server.', 'emergencydentalpros' ); ?></p>
 		</div>
 	<?php endif; ?>
+	<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
 	<?php if (is_array($last)) : ?>
 		<div class="notice notice-info">

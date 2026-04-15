@@ -96,7 +96,8 @@ final class EDP_Admin
 
         check_admin_referer('edp_seo_save_settings', 'edp_seo_nonce');
 
-        $raw = wp_unslash($_POST['edp_seo'] ?? []);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- array values sanitized individually below.
+        $raw = wp_unslash( $_POST['edp_seo'] ?? [] );
 
         if (!is_array($raw)) {
             $raw = [];
@@ -151,7 +152,8 @@ final class EDP_Admin
         $cleanup_temp = null;
         $upload_label = '';
 
-        $file = isset($_FILES['edp_csv_file']) && is_array($_FILES['edp_csv_file']) ? $_FILES['edp_csv_file'] : null;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES not unslashed; validated via is_uploaded_file() below.
+        $file = isset( $_FILES['edp_csv_file'] ) && is_array( $_FILES['edp_csv_file'] ) ? $_FILES['edp_csv_file'] : null;
 
         if ($file !== null && !empty($file['name'])) {
             $err = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
@@ -269,7 +271,8 @@ final class EDP_Admin
             return false;
         }
 
-        if (isset($_GET['edp_seo_debug']) && (string) $_GET['edp_seo_debug'] === '1') {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- read-only debug flag, admin-only.
+        if ( isset( $_GET['edp_seo_debug'] ) && '1' === sanitize_key( wp_unslash( $_GET['edp_seo_debug'] ) ) ) {
             return true;
         }
 
@@ -296,12 +299,12 @@ final class EDP_Admin
         global $wpdb;
 
         $uid = get_current_user_id();
-        $edp_yelp_notice = get_transient('edp_seo_google_locations_notice_' . $uid);
+        $edp_google_notice = get_transient('edp_seo_google_locations_notice_' . $uid);
 
-        if (is_array($edp_yelp_notice)) {
+        if (is_array($edp_google_notice)) {
             delete_transient('edp_seo_google_locations_notice_' . $uid);
         } else {
-            $edp_yelp_notice = null;
+            $edp_google_notice = null;
         }
 
         $screen_hook = self::$locations_screen_hook;
@@ -357,7 +360,8 @@ final class EDP_Admin
                     ? array_keys($table->items[0])
                     : [],
                 'pagination' => [
-                    'paged' => isset($_GET['paged']) ? (int) $_GET['paged'] : 1,
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- diagnostics read-only param.
+                    'paged' => isset( $_GET['paged'] ) ? absint( wp_unslash( $_GET['paged'] ) ) : 1,
                 ],
             ];
         }
@@ -534,7 +538,8 @@ final class EDP_Admin
 
         check_admin_referer('edp_seo_save_google', 'edp_seo_google_save_nonce');
 
-        $raw = isset($_POST['edp_google']) && is_array($_POST['edp_google']) ? wp_unslash($_POST['edp_google']) : [];
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- array values sanitized individually below.
+        $raw = isset( $_POST['edp_google'] ) && is_array( $_POST['edp_google'] ) ? wp_unslash( $_POST['edp_google'] ) : [];
 
         EDP_Google_Places_Config::save(
             [
@@ -669,7 +674,7 @@ final class EDP_Admin
 
         check_ajax_referer('edp_google_location_actions', 'nonce');
 
-        $id = max(0, (int) ($_POST['location_id'] ?? 0));
+        $id = max(0, absint( wp_unslash( $_POST['location_id'] ?? 0 ) ) );
 
         if ($id <= 0) {
             wp_send_json_error(['message' => 'Invalid location ID']);
@@ -698,7 +703,7 @@ final class EDP_Admin
 
         check_ajax_referer('edp_google_location_actions', 'nonce');
 
-        $id = max(0, (int) ($_POST['location_id'] ?? 0));
+        $id = max(0, absint( wp_unslash( $_POST['location_id'] ?? 0 ) ) );
 
         if ($id <= 0) {
             wp_send_json_error(['message' => 'Invalid location ID']);
@@ -724,10 +729,10 @@ final class EDP_Admin
 
         check_ajax_referer('edp_google_import_step', 'nonce');
 
-        $offset        = max(0, (int) ($_POST['offset'] ?? 0));
-        $step          = max(0, (int) ($_POST['step'] ?? 0));
-        $total         = max(1, min(300, (int) ($_POST['total'] ?? 1)));
-        $fetch_details = !empty($_POST['fetch_details']);
+        $offset        = max(0, absint( wp_unslash( $_POST['offset'] ?? 0 ) ) );
+        $step          = max(0, absint( wp_unslash( $_POST['step'] ?? 0 ) ) );
+        $total         = max(1, min(300, absint( wp_unslash( $_POST['total'] ?? 1 ) ) ) );
+        $fetch_details = ! empty( $_POST['fetch_details'] );
 
         $result = EDP_Google_Places_Importer::import_batch($offset + $step, 1, $fetch_details);
 

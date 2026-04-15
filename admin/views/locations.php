@@ -11,16 +11,16 @@
  * @var array<string, mixed>     $import_log
  * @var bool                       $edp_seo_debug
  * @var array<string, mixed>       $edp_debug_data
- * @var array<string, mixed>|null  $edp_yelp_notice
+ * @var array<string, mixed>|null  $edp_google_notice
  */
 
 if (!defined('ABSPATH')) {
 	exit;
 }
 
-$edp_seo_debug = $edp_seo_debug ?? false;
-$edp_debug_data = $edp_debug_data ?? [];
-$edp_google_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $edp_yelp_notice : null;
+$edp_seo_debug    = $edp_seo_debug ?? false;
+$edp_debug_data   = $edp_debug_data ?? [];
+$edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ? $edp_google_notice : null;
 
 ?>
 <style>
@@ -40,8 +40,9 @@ $edp_google_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $ed
 <div class="wrap">
 	<h1><?php esc_html_e('Local SEO — Locations', 'emergencydentalpros'); ?></h1>
 
-	<?php if (isset($_GET['google_none'])) : ?>
-		<div class="notice notice-warning is-dismissible"><p><?php esc_html_e('No locations were selected.', 'emergencydentalpros'); ?></p></div>
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only post-redirect-get flag. ?>
+	<?php if ( isset( $_GET['google_none'] ) ) : ?>
+		<div class="notice notice-warning is-dismissible"><p><?php esc_html_e( 'No locations were selected.', 'emergencydentalpros' ); ?></p></div>
 	<?php endif; ?>
 
 	<?php if ($edp_google_notice !== null) : ?>
@@ -70,8 +71,8 @@ $edp_google_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $ed
 					printf(
 						/* translators: 1: locations processed, 2: API calls */
 						esc_html__('Google fetch finished — locations processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
-						$proc,
-						$calls
+						(int) $proc,
+						(int) $calls
 					);
 					?>
 				</p>
