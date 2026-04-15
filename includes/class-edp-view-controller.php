@@ -266,18 +266,20 @@ final class EDP_View_Controller
 
         if ($view === 'state-list') {
             $t = $templates['states_index'] ?? [];
-            $h1 = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $base);
-            $body = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $base);
+            $h1       = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $base);
+            $subtitle = EDP_Template_Engine::replace((string) ($t['subtitle'] ?? ''), $base);
+            $body     = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $base);
 
             $cities_by_state = EDP_Database::get_all_cities_grouped_by_state();
             $total_cities = array_sum(array_map('count', $cities_by_state));
 
             return [
-                'h1'             => $h1,
-                'body'           => $body,
-                'states'         => EDP_Database::get_distinct_states(),
-                'cities_by_state'=> $cities_by_state,
-                'total_cities'   => $total_cities,
+                'h1'              => $h1,
+                'subtitle'        => $subtitle,
+                'body'            => $body,
+                'states'          => EDP_Database::get_distinct_states(),
+                'cities_by_state' => $cities_by_state,
+                'total_cities'    => $total_cities,
             ];
         }
 
