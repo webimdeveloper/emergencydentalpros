@@ -83,7 +83,7 @@ if (is_array($google_test_result)) {
 				switch ($upload_reason) {
 					case 'ini':
 					case 'form':
-						esc_html_e('The CSV file is too large for the server’s current PHP upload limits (upload_max_filesize / post_max_size). Increase those values, or run the import via WP-CLI on the server instead.', 'emergencydentalpros');
+						esc_html_e('The CSV file is too large for the server\'s current PHP upload limits (upload_max_filesize / post_max_size). Increase those values, or run the import via WP-CLI on the server instead.', 'emergencydentalpros');
 						break;
 					case 'partial':
 						esc_html_e('The file upload was interrupted. Try again with a stable connection.', 'emergencydentalpros');
@@ -220,78 +220,78 @@ if (is_array($google_test_result)) {
 
 	<hr />
 
-	<h2><?php esc_html_e(‘Google Places — dentists per city’, ‘emergencydentalpros’); ?></h2>
+	<h2><?php esc_html_e('Google Places — dentists per city', 'emergencydentalpros'); ?></h2>
 	<p class="description">
-		<?php esc_html_e(‘Fetches up to 5 dentist listings per city from the Google Places API and stores them for city landing pages. Requires a Google Cloud project with the Places API enabled. The $200/month free credit covers thousands of requests.’, ‘emergencydentalpros’); ?>
+		<?php esc_html_e('Fetches up to 5 dentist listings per city from the Google Places API and stores them for city landing pages. Requires a Google Cloud project with the Places API enabled. The $200/month free credit covers thousands of requests.', 'emergencydentalpros'); ?>
 	</p>
 	<p class="description">
-		<?php esc_html_e(‘Setup: Google Cloud Console → APIs & Services → Enable "Places API" → Credentials → Create API Key.’, ‘emergencydentalpros’); ?>
+		<?php esc_html_e('Setup: Google Cloud Console → APIs & Services → Enable "Places API" → Credentials → Create API Key.', 'emergencydentalpros'); ?>
 	</p>
 
-	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
-		<?php wp_nonce_field(‘edp_seo_save_google’, ‘edp_seo_google_save_nonce’); ?>
+	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+		<?php wp_nonce_field('edp_seo_save_google', 'edp_seo_google_save_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_save_google" />
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><label for="edp_google_api_key"><?php esc_html_e(‘Google Places API key’, ‘emergencydentalpros’); ?></label></th>
+				<th scope="row"><label for="edp_google_api_key"><?php esc_html_e('Google Places API key', 'emergencydentalpros'); ?></label></th>
 				<td>
 					<input name="edp_google[api_key]" type="password" id="edp_google_api_key" class="large-text code" autocomplete="off"
-						placeholder="<?php echo $google_key_set ? esc_attr__(‘Leave blank to keep the saved key’, ‘emergencydentalpros’) : esc_attr__(‘Paste API key from Google Cloud Console’, ‘emergencydentalpros’); ?>" />
+						placeholder="<?php echo $google_key_set ? esc_attr__('Leave blank to keep the saved key', 'emergencydentalpros') : esc_attr__('Paste API key from Google Cloud Console', 'emergencydentalpros'); ?>" />
 					<?php if ($google_key_set) : ?>
-						<p class="description"><?php esc_html_e(‘A key is already saved. Enter a new value only to replace it.’, ‘emergencydentalpros’); ?></p>
+						<p class="description"><?php esc_html_e('A key is already saved. Enter a new value only to replace it.', 'emergencydentalpros'); ?></p>
 					<?php endif; ?>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="edp_google_term"><?php esc_html_e(‘Search term’, ‘emergencydentalpros’); ?></label></th>
+				<th scope="row"><label for="edp_google_term"><?php esc_html_e('Search term', 'emergencydentalpros'); ?></label></th>
 				<td>
 					<input name="edp_google[term]" type="text" id="edp_google_term" class="regular-text"
-						value="<?php echo esc_attr((string) ($google[‘term’] ?? ‘emergency dentist’)); ?>" />
-					<p class="description"><?php esc_html_e(‘Combined with city + state, e.g. "emergency dentist Birmingham AL".’, ‘emergencydentalpros’); ?></p>
+						value="<?php echo esc_attr((string) ($google['term'] ?? 'emergency dentist')); ?>" />
+					<p class="description"><?php esc_html_e('Combined with city + state, e.g. "emergency dentist Birmingham AL".', 'emergencydentalpros'); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="edp_google_limit"><?php esc_html_e(‘Max businesses per city’, ‘emergencydentalpros’); ?></label></th>
+				<th scope="row"><label for="edp_google_limit"><?php esc_html_e('Max businesses per city', 'emergencydentalpros'); ?></label></th>
 				<td>
 					<input name="edp_google[limit]" type="number" id="edp_google_limit" min="1" max="5" step="1"
-						value="<?php echo esc_attr((string) (int) ($google[‘limit’] ?? 5)); ?>" />
-					<p class="description"><?php esc_html_e(‘Maximum 5.’, ‘emergencydentalpros’); ?></p>
+						value="<?php echo esc_attr((string) (int) ($google['limit'] ?? 5)); ?>" />
+					<p class="description"><?php esc_html_e('Maximum 5.', 'emergencydentalpros'); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e(‘Opening hours’, ‘emergencydentalpros’); ?></th>
+				<th scope="row"><?php esc_html_e('Opening hours', 'emergencydentalpros'); ?></th>
 				<td>
 					<label>
-						<input name="edp_google[fetch_details]" type="checkbox" value="1" <?php checked(!empty($google[‘fetch_details’])); ?> />
-						<?php esc_html_e(‘Fetch full hours + phone (one extra API call per business)’, ‘emergencydentalpros’); ?>
+						<input name="edp_google[fetch_details]" type="checkbox" value="1" <?php checked(!empty($google['fetch_details'])); ?> />
+						<?php esc_html_e('Fetch full hours + phone (one extra API call per business)', 'emergencydentalpros'); ?>
 					</label>
 				</td>
 			</tr>
 		</table>
-		<?php submit_button(__(‘Save Google Places settings’, ‘emergencydentalpros’)); ?>
+		<?php submit_button(__('Save Google Places settings', 'emergencydentalpros')); ?>
 	</form>
 
 	<p class="description">
-		<?php esc_html_e(‘To verify your key: save settings above, then run a test (one Text Search — does not import cities).’, ‘emergencydentalpros’); ?>
+		<?php esc_html_e('To verify your key: save settings above, then run a test (one Text Search — does not import cities).', 'emergencydentalpros'); ?>
 	</p>
-	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
-		<?php wp_nonce_field(‘edp_seo_google_test’, ‘edp_seo_google_test_nonce’); ?>
+	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+		<?php wp_nonce_field('edp_seo_google_test', 'edp_seo_google_test_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_google_test" />
 		<?php
 		submit_button(
-			__(‘Test Google Places API connection’, ‘emergencydentalpros’),
-			‘secondary’,
-			‘submit’,
+			__('Test Google Places API connection', 'emergencydentalpros'),
+			'secondary',
+			'submit',
 			false,
-			[‘id’ => ‘edp-seo-google-test-btn’]
+			['id' => 'edp-seo-google-test-btn']
 		);
 		?>
 	</form>
 
 	<?php
-	$google_last = get_transient(‘edp_seo_last_google_import’);
+	$google_last = get_transient('edp_seo_last_google_import');
 	if (is_array($google_last)) {
-		delete_transient(‘edp_seo_last_google_import’);
+		delete_transient('edp_seo_last_google_import');
 	}
 	?>
 	<?php if (is_array($google_last)) : ?>
@@ -300,18 +300,18 @@ if (is_array($google_test_result)) {
 				<?php
 				printf(
 					/* translators: 1: cities processed, 2: API calls */
-					esc_html__(‘Last Google batch — Cities processed: %1$d — API calls (approx.): %2$d’, ‘emergencydentalpros’),
-					(int) ($google_last[‘processed’] ?? 0),
-					(int) ($google_last[‘api_calls’] ?? 0)
+					esc_html__('Last Google batch — Cities processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
+					(int) ($google_last['processed'] ?? 0),
+					(int) ($google_last['api_calls'] ?? 0)
 				);
 				?>
 			</p>
-			<?php if (!empty($google_last[‘error’])) : ?>
-				<p><code><?php echo esc_html((string) $google_last[‘error’]); ?></code></p>
+			<?php if (!empty($google_last['error'])) : ?>
+				<p><code><?php echo esc_html((string) $google_last['error']); ?></code></p>
 			<?php endif; ?>
-			<?php if (!empty($google_last[‘messages’]) && is_array($google_last[‘messages’])) : ?>
+			<?php if (!empty($google_last['messages']) && is_array($google_last['messages'])) : ?>
 				<ul>
-					<?php foreach (array_slice($google_last[‘messages’], 0, 20) as $msg) : ?>
+					<?php foreach (array_slice($google_last['messages'], 0, 20) as $msg) : ?>
 						<li><code><?php echo esc_html((string) $msg); ?></code></li>
 					<?php endforeach; ?>
 				</ul>
@@ -319,34 +319,34 @@ if (is_array($google_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
-		<?php wp_nonce_field(‘edp_seo_google_import’, ‘edp_seo_google_import_nonce’); ?>
+	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+		<?php wp_nonce_field('edp_seo_google_import', 'edp_seo_google_import_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_google_import" />
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><label for="google_offset"><?php esc_html_e(‘City offset’, ‘emergencydentalpros’); ?></label></th>
+				<th scope="row"><label for="google_offset"><?php esc_html_e('City offset', 'emergencydentalpros'); ?></label></th>
 				<td>
 					<input name="google_offset" type="number" id="google_offset" min="0" step="1" value="0" />
-					<p class="description"><?php esc_html_e(‘Row offset in the locations table (order by id). Increase after each batch to continue where you left off.’, ‘emergencydentalpros’); ?></p>
+					<p class="description"><?php esc_html_e('Row offset in the locations table (order by id). Increase after each batch to continue where you left off.', 'emergencydentalpros'); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="google_limit"><?php esc_html_e(‘Cities in this batch’, ‘emergencydentalpros’); ?></label></th>
+				<th scope="row"><label for="google_limit"><?php esc_html_e('Cities in this batch', 'emergencydentalpros'); ?></label></th>
 				<td>
 					<input name="google_limit" type="number" id="google_limit" min="1" max="300" step="1" value="25" />
-					<p class="description"><?php esc_html_e(‘Max 300 per batch. Each city = 1 Text Search call + up to 5 Details calls if hours are enabled.’, ‘emergencydentalpros’); ?></p>
+					<p class="description"><?php esc_html_e('Max 300 per batch. Each city = 1 Text Search call + up to 5 Details calls if hours are enabled.', 'emergencydentalpros'); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e(‘Hours in this batch’, ‘emergencydentalpros’); ?></th>
+				<th scope="row"><?php esc_html_e('Hours in this batch', 'emergencydentalpros'); ?></th>
 				<td>
 					<label>
 						<input name="google_fetch_details" type="checkbox" value="1" <?php checked(EDP_Google_Places_Config::should_fetch_details()); ?> />
-						<?php esc_html_e(‘Fetch opening hours + phone (more API calls per city)’, ‘emergencydentalpros’); ?>
+						<?php esc_html_e('Fetch opening hours + phone (more API calls per city)', 'emergencydentalpros'); ?>
 					</label>
 				</td>
 			</tr>
 		</table>
-		<?php submit_button(__(‘Run Google Places batch import’, ‘emergencydentalpros’), ‘secondary’); ?>
+		<?php submit_button(__('Run Google Places batch import', 'emergencydentalpros'), 'secondary'); ?>
 	</form>
 </div>
