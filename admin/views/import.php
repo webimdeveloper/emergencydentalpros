@@ -319,7 +319,7 @@ if (is_array($google_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+	<form id="edp-google-import-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 		<?php wp_nonce_field('edp_seo_google_import', 'edp_seo_google_import_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_google_import" />
 		<table class="form-table" role="presentation">
@@ -347,6 +347,117 @@ if (is_array($google_test_result)) {
 				</td>
 			</tr>
 		</table>
-		<?php submit_button(__('Run Google Places batch import', 'emergencydentalpros'), 'secondary'); ?>
+		<?php submit_button(__('Run Google Places batch import', 'emergencydentalpros'), 'secondary', 'edp-google-import-submit'); ?>
 	</form>
+
+	<div id="edp-google-progress" style="display:none; margin-top:16px; max-width:600px;">
+		<div style="background:#ddd; border-radius:3px; height:18px; overflow:hidden; margin-bottom:8px;">
+			<div id="edp-google-bar" style="background:#2271b1; height:100%; width:0%; transition:width 0.25s;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+		</div>
+		<p id="edp-google-status" style="margin:4px 0; font-style:italic;"></p>
+		<div id="edp-google-error-wrap" style="display:none; margin-top:8px; background:#fff3cd; border-left:4px solid #f0b429; padding:8px 12px;">
+			<strong><?php esc_html_e('Warnings', 'emergencydentalpros'); ?></strong>
+			<ul id="edp-google-errors" style="margin:4px 0 0; padding-left:1.25em;"></ul>
+		</div>
+	</div>
+
+	<script>
+	(function () {
+		var form   = document.getElementById('edp-google-import-form');
+		var btn    = document.getElementById('edp-google-import-submit');
+		var wrap   = document.getElementById('edp-google-progress');
+		var bar    = document.getElementById('edp-google-bar');
+		var status = document.getElementById('edp-google-status');
+		var errWrap = document.getElementById('edp-google-error-wrap');
+		var errList = document.getElementById('edp-google-errors');
+
+		if (!form || !btn) { return; }
+
+		var nonce = <?php echo wp_json_encode(wp_create_nonce('edp_google_import_step')); ?>;
+		var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
+
+		function esc(str) {
+			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
+
+		function setBar(pct) {
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', pct);
+		}
+
+		form.addEventListener('submit', function (e) {
+			e.preventDefault();
+
+			var fd      = new FormData(form);
+			var offset  = parseInt(fd.get('google_offset'), 10) || 0;
+			var total   = Math.min(300, Math.max(1, parseInt(fd.get('google_limit'), 10) || 25));
+			var details = fd.has('google_fetch_details') ? '1' : '';
+
+			btn.disabled = true;
+			wrap.style.display = 'block';
+			errWrap.style.display = 'none';
+			errList.innerHTML = '';
+			setBar(0);
+
+			var step = 0;
+			var totalApiCalls = 0;
+			var allMessages = [];
+
+			function processNext() {
+				if (step >= total) {
+					finish();
+					return;
+				}
+
+				status.textContent = <?php echo wp_json_encode(__('City', 'emergencydentalpros')); ?> + ' ' + (step + 1) + ' / ' + total + '…';
+				setBar(Math.round((step / total) * 100));
+
+				var body = new URLSearchParams({
+					action:        'edp_google_import_step',
+					nonce:         nonce,
+					offset:        offset,
+					step:          step,
+					total:         total,
+					fetch_details: details,
+				});
+
+				fetch(ajaxUrl, { method: 'POST', body: body })
+					.then(function (r) { return r.json(); })
+					.then(function (json) {
+						if (!json.success) {
+							status.textContent = 'Error: ' + esc((json.data && json.data.message) ? json.data.message : 'Unknown');
+							btn.disabled = false;
+							return;
+						}
+						totalApiCalls += (json.data.api_calls || 0);
+						if (json.data.messages && json.data.messages.length) {
+							allMessages = allMessages.concat(json.data.messages);
+						}
+						step = json.data.step;
+						if (json.data.done) {
+							finish();
+						} else {
+							processNext();
+						}
+					})
+					.catch(function (err) {
+						status.textContent = 'Network error: ' + esc(err.message || err);
+						btn.disabled = false;
+					});
+			}
+
+			function finish() {
+				setBar(100);
+				status.textContent = <?php echo wp_json_encode(__('Done', 'emergencydentalpros')); ?> + ' — ' + step + ' <?php esc_html_e('cities processed', 'emergencydentalpros'); ?>, ~' + totalApiCalls + ' <?php esc_html_e('API calls', 'emergencydentalpros'); ?>';
+				btn.disabled = false;
+				if (allMessages.length) {
+					errList.innerHTML = allMessages.map(function (m) { return '<li><code>' + esc(m) + '</code></li>'; }).join('');
+					errWrap.style.display = 'block';
+				}
+			}
+
+			processNext();
+		});
+	})();
+	</script>
 </div>

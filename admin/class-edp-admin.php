@@ -31,6 +31,7 @@ final class EDP_Admin
         add_action('admin_post_edp_seo_google_fetch_single', [self::class, 'handle_google_fetch_single']);
         add_action('admin_init', [self::class, 'maybe_bulk_fetch_google'], 20);
         add_action('admin_post_edp_seo_location_action', [self::class, 'handle_location_action']);
+        add_action('wp_ajax_edp_google_import_step', [self::class, 'ajax_google_import_step']);
     }
 
     public static function menus(): void
@@ -599,5 +600,35 @@ final class EDP_Admin
 
         wp_safe_redirect(admin_url('admin.php?page=edp-seo-import'));
         exit;
+    }
+
+    /**
+     * AJAX: process one city from the Google Places batch.
+     * Called repeatedly by the JS progress loop — one request per city avoids gateway timeouts.
+     */
+    public static function ajax_google_import_step(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_google_import_step', 'nonce');
+
+        $offset        = max(0, (int) ($_POST['offset'] ?? 0));
+        $step          = max(0, (int) ($_POST['step'] ?? 0));
+        $total         = max(1, min(300, (int) ($_POST['total'] ?? 1)));
+        $fetch_details = !empty($_POST['fetch_details']);
+
+        $result = EDP_Google_Places_Importer::import_batch($offset + $step, 1, $fetch_details);
+
+        $next_step = $step + 1;
+        $done      = $next_step >= $total || (int) ($result['processed'] ?? 0) === 0;
+
+        wp_send_json_success([
+            'step'      => $next_step,
+            'done'      => $done,
+            'api_calls' => (int) ($result['api_calls'] ?? 0),
+            'messages'  => $result['messages'] ?? [],
+        ]);
     }
 }
