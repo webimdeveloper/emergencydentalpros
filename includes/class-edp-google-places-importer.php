@@ -132,8 +132,9 @@ final class EDP_Google_Places_Importer
                 continue;
             }
 
-            $businesses = isset($search['results']) && is_array($search['results'])
-                ? $search['results']
+            /* Places API (New) returns 'places' array */
+            $businesses = isset($search['places']) && is_array($search['places'])
+                ? $search['places']
                 : [];
 
             EDP_Database::delete_nearby_for_location($location_id, 'google');
@@ -145,7 +146,8 @@ final class EDP_Google_Places_Importer
                     continue;
                 }
 
-                $place_id = isset($biz['place_id']) ? (string) $biz['place_id'] : '';
+                /* New API: 'id' instead of 'place_id' */
+                $place_id = isset($biz['id']) ? (string) $biz['id'] : '';
 
                 if ($place_id === '') {
                     continue;
@@ -155,11 +157,11 @@ final class EDP_Google_Places_Importer
                 $hours_text = '';
                 $image_url  = '';
 
-                /* Photo from search result (photo_reference) */
+                /* Photo from search result — new API uses 'name' resource path */
                 $photo_ref = '';
 
-                if (!empty($biz['photos'][0]['photo_reference'])) {
-                    $photo_ref = (string) $biz['photos'][0]['photo_reference'];
+                if (!empty($biz['photos'][0]['name'])) {
+                    $photo_ref = (string) $biz['photos'][0]['name'];
                 }
 
                 if ($fetch_details) {
@@ -168,20 +170,21 @@ final class EDP_Google_Places_Importer
                     $details = $client->place_details($place_id);
                     ++$api_calls;
 
-                    if (!is_wp_error($details) && isset($details['result']) && is_array($details['result'])) {
-                        $det = $details['result'];
+                    /* New API: details are top-level (no 'result' wrapper) */
+                    if (!is_wp_error($details) && is_array($details)) {
+                        $det = $details;
 
-                        if (!empty($det['formatted_phone_number'])) {
-                            $phone = (string) $det['formatted_phone_number'];
+                        if (!empty($det['nationalPhoneNumber'])) {
+                            $phone = (string) $det['nationalPhoneNumber'];
                         }
 
-                        if (!empty($det['opening_hours']['weekday_text']) && is_array($det['opening_hours']['weekday_text'])) {
-                            $hours_text = self::format_hours($det['opening_hours']['weekday_text']);
+                        if (!empty($det['regularOpeningHours']['weekdayDescriptions']) && is_array($det['regularOpeningHours']['weekdayDescriptions'])) {
+                            $hours_text = self::format_hours($det['regularOpeningHours']['weekdayDescriptions']);
                         }
 
-                        /* Prefer photo_reference from details if available */
-                        if (!empty($det['photos'][0]['photo_reference'])) {
-                            $photo_ref = (string) $det['photos'][0]['photo_reference'];
+                        /* Prefer photo name from details if available */
+                        if (!empty($det['photos'][0]['name'])) {
+                            $photo_ref = (string) $det['photos'][0]['name'];
                         }
                     }
 
@@ -198,19 +201,20 @@ final class EDP_Google_Places_Importer
                     ++$api_calls;
                 }
 
+                /* New API: displayName.text instead of name, userRatingCount instead of user_ratings_total, googleMapsUri instead of url */
                 EDP_Database::insert_nearby_row(
                     [
                         'location_id'  => $location_id,
                         'provider'     => 'google',
                         'external_id'  => $place_id,
                         'sort_order'   => $sort,
-                        'name'         => isset($biz['name']) ? (string) $biz['name'] : '',
+                        'name'         => isset($biz['displayName']['text']) ? (string) $biz['displayName']['text'] : '',
                         'rating'       => isset($biz['rating']) ? (float) $biz['rating'] : null,
-                        'review_count' => isset($biz['user_ratings_total']) ? (int) $biz['user_ratings_total'] : null,
+                        'review_count' => isset($biz['userRatingCount']) ? (int) $biz['userRatingCount'] : null,
                         'phone'        => $phone,
                         'image_url'    => $image_url,
                         'hours_text'   => $hours_text,
-                        'business_url' => isset($biz['url']) ? (string) $biz['url'] : '',
+                        'business_url' => isset($biz['googleMapsUri']) ? (string) $biz['googleMapsUri'] : '',
                         'fetched_at'   => current_time('mysql'),
                     ]
                 );

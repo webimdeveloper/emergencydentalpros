@@ -1,6 +1,11 @@
 <?php
 /**
- * Minimal Google Places API client (Text Search + Place Details + Photo resolve).
+ * Google Places API (New) client — Text Search + Place Details + Photo.
+ *
+ * Endpoints:
+ *   POST https://places.googleapis.com/v1/places:searchText
+ *   GET  https://places.googleapis.com/v1/places/{id}
+ *   GET  https://places.googleapis.com/v1/{photo_name}/media
  *
  * @package EmergencyDentalPros
  */
@@ -11,9 +16,9 @@ if (!defined('ABSPATH')) {
 
 final class EDP_Google_Places_Client
 {
-    private const SEARCH_URL  = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
-    private const DETAILS_URL = 'https://maps.googleapis.com/maps/api/place/details/json';
-    private const PHOTO_URL   = 'https://maps.googleapis.com/maps/api/place/photo';
+    private const SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+    private const DETAILS_URL = 'https://places.googleapis.com/v1/places/';
+    private const PHOTO_URL   = 'https://places.googleapis.com/v1/';
 
     private string $api_key;
 
@@ -23,7 +28,8 @@ final class EDP_Google_Places_Client
     }
 
     /**
-     * Text Search for businesses in a location.
+     * Text Search for businesses.
+     * Returns the raw decoded JSON body or WP_Error.
      *
      * @return array<string, mixed>|\WP_Error
      */
@@ -31,65 +37,67 @@ final class EDP_Google_Places_Client
     {
         $limit = max(1, min(20, $limit));
 
-        $url = add_query_arg(
+        $body = wp_json_encode([
+            'textQuery'      => $query,
+            'includedType'   => 'dentist',
+            'maxResultCount' => $limit,
+        ]);
+
+        $response = wp_remote_post(
+            self::SEARCH_URL,
             [
-                'query' => $query,
-                'type'  => 'dentist',
-                'key'   => $this->api_key,
-            ],
-            self::SEARCH_URL
+                'timeout' => 20,
+                'headers' => [
+                    'Content-Type'       => 'application/json',
+                    'X-Goog-Api-Key'     => $this->api_key,
+                    'X-Goog-FieldMask'   => 'places.id,places.displayName,places.rating,places.userRatingCount,places.photos,places.googleMapsUri',
+                ],
+                'body' => $body,
+            ]
         );
 
-        $result = $this->get_json($url);
-
-        if (is_wp_error($result)) {
-            return $result;
-        }
-
-        /* Trim results to the requested limit */
-        if (isset($result['results']) && is_array($result['results']) && count($result['results']) > $limit) {
-            $result['results'] = array_slice($result['results'], 0, $limit);
-        }
-
-        return $result;
+        return $this->parse_response($response);
     }
 
     /**
-     * Place Details for a single place_id.
+     * Place Details for a single place id.
      *
      * @return array<string, mixed>|\WP_Error
      */
     public function place_details(string $place_id)
     {
-        $url = add_query_arg(
+        $url = self::DETAILS_URL . rawurlencode($place_id);
+
+        $response = wp_remote_get(
+            $url,
             [
-                'place_id' => $place_id,
-                'fields'   => 'name,formatted_phone_number,opening_hours,photos,url,rating,user_ratings_total',
-                'key'      => $this->api_key,
-            ],
-            self::DETAILS_URL
+                'timeout' => 20,
+                'headers' => [
+                    'X-Goog-Api-Key'   => $this->api_key,
+                    'X-Goog-FieldMask' => 'id,displayName,nationalPhoneNumber,regularOpeningHours,photos,googleMapsUri,rating,userRatingCount',
+                ],
+            ]
         );
 
-        return $this->get_json($url);
+        return $this->parse_response($response);
     }
 
     /**
-     * Resolve a photo_reference to a publicly-cacheable CDN URL (lh3.googleusercontent.com).
-     * Makes a HEAD request and reads the Location header — no body download.
+     * Resolve a photo resource name to a CDN URL.
+     * photo_name format: "places/{place_id}/photos/{photo_id}"
      */
-    public function resolve_photo_url(string $photo_reference, int $max_width = 400): string
+    public function resolve_photo_url(string $photo_name, int $max_width = 400): string
     {
-        if ($photo_reference === '') {
+        if ($photo_name === '') {
             return '';
         }
 
         $url = add_query_arg(
             [
-                'maxwidth'        => $max_width,
-                'photo_reference' => $photo_reference,
-                'key'             => $this->api_key,
+                'maxWidthPx' => $max_width,
+                'key'        => $this->api_key,
             ],
-            self::PHOTO_URL
+            self::PHOTO_URL . ltrim($photo_name, '/') . '/media'
         );
 
         $response = wp_remote_head(
@@ -97,7 +105,6 @@ final class EDP_Google_Places_Client
             [
                 'timeout'     => 10,
                 'redirection' => 0,
-                'headers'     => ['Accept' => 'image/*'],
             ]
         );
 
@@ -107,37 +114,15 @@ final class EDP_Google_Places_Client
 
         $location = (string) wp_remote_retrieve_header($response, 'location');
 
-        if ($location !== '' && str_starts_with($location, 'https://')) {
-            return $location;
-        }
-
-        return '';
+        return ($location !== '' && str_starts_with($location, 'https://')) ? $location : '';
     }
 
     /**
+     * @param array<string,mixed>|\WP_Error $response
      * @return array<string, mixed>|\WP_Error
      */
-    private function get_json(string $url, int $attempt = 1)
+    private function parse_response($response)
     {
-        $ua = apply_filters(
-            'edp_google_places_user_agent',
-            'EmergencyDentalPros/' . (defined('EDP_PLUGIN_VERSION') ? EDP_PLUGIN_VERSION : '1')
-                . ' WordPress/' . get_bloginfo('version')
-                . ' (+' . home_url('/') . ')'
-        );
-
-        $response = wp_remote_get(
-            $url,
-            [
-                'timeout'     => 20,
-                'redirection' => 2,
-                'headers'     => [
-                    'Accept'     => 'application/json',
-                    'User-Agent' => is_string($ua) && $ua !== '' ? $ua : 'WordPress/' . get_bloginfo('version'),
-                ],
-            ]
-        );
-
         if (is_wp_error($response)) {
             return $response;
         }
@@ -145,21 +130,22 @@ final class EDP_Google_Places_Client
         $code = (int) wp_remote_retrieve_response_code($response);
         $body = (string) wp_remote_retrieve_body($response);
 
-        /* Retry on 429 */
-        if ($code === 429 && $attempt < 4) {
-            sleep(min(2 * $attempt, 10));
-
-            return $this->get_json($url, $attempt + 1);
-        }
-
         if ($code < 200 || $code >= 300) {
+            $detail = mb_substr(wp_strip_all_tags(trim($body)), 0, 300);
+
+            /* Try to extract Google error message from JSON */
+            $decoded = json_decode($body, true);
+            if (is_array($decoded) && isset($decoded['error']['message'])) {
+                $detail = (string) $decoded['error']['message'];
+            }
+
             return new WP_Error(
                 'google_places_http_error',
                 sprintf(
-                    /* translators: 1: HTTP status, 2: body excerpt */
+                    /* translators: 1: HTTP status, 2: error detail */
                     __('Google Places API error (%1$d): %2$s', 'emergencydentalpros'),
                     $code,
-                    mb_substr(wp_strip_all_tags(trim($body)), 0, 300)
+                    $detail
                 ),
                 ['status' => $code, 'body' => $body]
             );
@@ -169,23 +155,6 @@ final class EDP_Google_Places_Client
 
         if (!is_array($data)) {
             return new WP_Error('google_places_json_error', __('Invalid JSON from Google Places API.', 'emergencydentalpros'));
-        }
-
-        /* Google returns status in the body, not in HTTP code */
-        $api_status = (string) ($data['status'] ?? 'OK');
-
-        if (!in_array($api_status, ['OK', 'ZERO_RESULTS'], true)) {
-            $msg = (string) ($data['error_message'] ?? $api_status);
-
-            return new WP_Error(
-                'google_places_api_status',
-                sprintf(
-                    /* translators: 1: Google API status string, 2: error message */
-                    __('Google Places API status %1$s: %2$s', 'emergencydentalpros'),
-                    $api_status,
-                    $msg
-                )
-            );
         }
 
         return $data;
