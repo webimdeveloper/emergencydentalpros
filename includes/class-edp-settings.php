@@ -49,18 +49,21 @@ final class EDP_Settings
                     'meta_title' => 'Dental service areas by state | {site_name}',
                     'meta_description' => 'Browse emergency dental service areas by state.',
                     'h1' => 'Dental service areas by state',
-                    'body' => '<p>Select a state to view cities we serve.</p>',
+                    'subtitle' => 'Select your state to browse cities and find a same-day emergency dentist.',
+                    'body' => '',
                 ],
                 'state_cities' => [
                     'meta_title' => 'Emergency dental in {state_name} ({state_short}) | {site_name}',
                     'meta_description' => 'Cities we serve in {state_name}.',
                     'h1' => 'Emergency dental in {state_name}',
-                    'body' => '<p>Browse cities we serve in {state_name}.</p>',
+                    'subtitle' => 'Browse cities we serve in {state_name}.',
+                    'body' => '',
                 ],
                 'city_landing' => [
                     'meta_title' => 'Emergency Dental in {city_name}, {state_short} - 24 Hour | {site_name}',
                     'meta_description' => 'Emergency dental in {city_name}, {state_name}. Service areas: {list_of_related_zips}.',
                     'h1' => 'Emergency dental in {city_name}, {state_short}',
+                    'subtitle' => '',
                     'body' => '<p>We provide emergency dental care in {city_name}, {state_name}. ZIPs: {list_of_related_zips}.</p>',
                 ],
             ],
@@ -91,6 +94,7 @@ final class EDP_Settings
             $out['templates'][$ctx]['meta_title'] = sanitize_text_field((string) ($t['meta_title'] ?? $defaults['templates'][$ctx]['meta_title']));
             $out['templates'][$ctx]['meta_description'] = sanitize_textarea_field((string) ($t['meta_description'] ?? $defaults['templates'][$ctx]['meta_description']));
             $out['templates'][$ctx]['h1'] = sanitize_text_field((string) ($t['h1'] ?? $defaults['templates'][$ctx]['h1']));
+            $out['templates'][$ctx]['subtitle'] = sanitize_text_field((string) ($t['subtitle'] ?? $defaults['templates'][$ctx]['subtitle']));
             $out['templates'][$ctx]['body'] = wp_kses_post((string) ($t['body'] ?? $defaults['templates'][$ctx]['body']));
         }
 

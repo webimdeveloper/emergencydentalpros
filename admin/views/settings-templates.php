@@ -80,6 +80,14 @@ if (!defined('ABSPATH')) {
 					</td>
 				</tr>
 				<tr>
+					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_subtitle"><?php esc_html_e('Subtitle', 'emergencydentalpros'); ?></label></th>
+					<td>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][subtitle]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_subtitle"
+							value="<?php echo esc_attr((string) ($t['subtitle'] ?? '')); ?>" />
+						<p class="description"><?php esc_html_e('Section heading displayed below H1 on the page.', 'emergencydentalpros'); ?></p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_body"><?php esc_html_e('Content (HTML)', 'emergencydentalpros'); ?></label></th>
 					<td>
 						<?php
