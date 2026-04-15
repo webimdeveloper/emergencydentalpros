@@ -27,8 +27,8 @@ final class EDP_Locations_List_Table extends WP_List_Table
     /** @var int Total rows in table (COUNT). */
     public $debug_total_count = 0;
 
-    /** @var array<int, bool> location id => has Yelp rows */
-    public $yelp_status_map = [];
+    /** @var array<int, bool> location id => has Google Places rows */
+    public $nearby_status_map = [];
 
     /**
      * @param string $screen_hook Return value of add_submenu_page for this screen (required so
@@ -61,7 +61,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             'id' => __('ID', 'emergencydentalpros'),
             'state' => __('State', 'emergencydentalpros'),
             'city' => __('City', 'emergencydentalpros'),
-            'yelp' => __('Yelp', 'emergencydentalpros'),
+            'google' => __('Google', 'emergencydentalpros'),
             'zips' => __('ZIPs', 'emergencydentalpros'),
             'override' => __('Override', 'emergencydentalpros'),
             'edp_actions' => __('Actions', 'emergencydentalpros'),
@@ -109,7 +109,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function get_bulk_actions(): array
     {
         return [
-            'fetch_yelp' => __('Fetch Yelp', 'emergencydentalpros'),
+            'fetch_google' => __('Fetch Google', 'emergencydentalpros'),
         ];
     }
 
@@ -170,7 +170,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             }
         }
 
-        $this->yelp_status_map = EDP_Database::get_yelp_status_for_locations($ids);
+        $this->nearby_status_map = EDP_Database::get_nearby_status_for_locations($ids);
 
         $this->set_pagination_args(
             [
@@ -236,7 +236,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
         return esc_html((string) ($item['id'] ?? ''));
     }
 
-    public function column_yelp($item): string
+    public function column_google($item): string
     {
         $id = isset($item['id']) ? (int) $item['id'] : 0;
 
@@ -244,20 +244,20 @@ final class EDP_Locations_List_Table extends WP_List_Table
             return '';
         }
 
-        $has = !empty($this->yelp_status_map[$id]);
+        $has = !empty($this->nearby_status_map[$id]);
 
         if ($has) {
-            return '<span class="edp-yelp-status edp-yelp-status--ok" title="' . esc_attr__('Yelp data saved', 'emergencydentalpros') . '" aria-label="' . esc_attr__('Yelp data saved', 'emergencydentalpros') . '">'
-                . '<span class="edp-yelp-dot"></span></span>';
+            return '<span class="edp-google-status edp-google-status--ok" title="' . esc_attr__('Google data saved', 'emergencydentalpros') . '" aria-label="' . esc_attr__('Google data saved', 'emergencydentalpros') . '">'
+                . '<span class="edp-google-dot"></span></span>';
         }
 
         ob_start();
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="edp-yelp-fetch-one">
-            <?php wp_nonce_field('edp_seo_yelp_single', 'edp_seo_yelp_single_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_yelp_fetch_single" />
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="edp-google-fetch-one">
+            <?php wp_nonce_field('edp_seo_google_single', 'edp_seo_google_single_nonce'); ?>
+            <input type="hidden" name="action" value="edp_seo_google_fetch_single" />
             <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Fetch Yelp', 'emergencydentalpros'); ?></button>
+            <button type="submit" class="button button-small"><?php esc_html_e('Fetch Google', 'emergencydentalpros'); ?></button>
         </form>
         <?php
 

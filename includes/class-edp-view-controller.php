@@ -329,7 +329,7 @@ final class EDP_View_Controller
 
             $location_id = (int) ($row['id'] ?? 0);
             $nearby = $location_id > 0
-                ? EDP_Database::get_nearby_for_location($location_id, 'yelp')
+                ? EDP_Database::get_nearby_for_location($location_id, 'google')
                 : [];
 
             $current_city_slug = (string) ($row['city_slug'] ?? '');

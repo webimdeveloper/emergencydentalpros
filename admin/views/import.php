@@ -17,33 +17,33 @@ if (!is_array($persisted)) {
 	$persisted = [];
 }
 
-$yelp = EDP_Yelp_Config::get_all();
-$yelp_key_set = EDP_Yelp_Config::get_api_key() !== '';
+$google = EDP_Google_Places_Config::get_all();
+$google_key_set = EDP_Google_Places_Config::get_api_key() !== '';
 
 $uid = get_current_user_id();
-$yelp_test_result = get_transient('edp_seo_yelp_test_' . $uid);
+$google_test_result = get_transient('edp_seo_google_test_' . $uid);
 
-if (is_array($yelp_test_result)) {
-	delete_transient('edp_seo_yelp_test_' . $uid);
+if (is_array($google_test_result)) {
+	delete_transient('edp_seo_google_test_' . $uid);
 } else {
-	$yelp_test_result = null;
+	$google_test_result = null;
 }
 
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e('Local SEO — Import', 'emergencydentalpros'); ?></h1>
 
-	<?php if ($yelp_test_result !== null) : ?>
-		<div class="notice notice-<?php echo !empty($yelp_test_result['ok']) ? 'success' : 'error'; ?> is-dismissible">
-			<p><strong><?php esc_html_e('Yelp API test', 'emergencydentalpros'); ?></strong></p>
-			<p><?php echo esc_html((string) ($yelp_test_result['message'] ?? '')); ?></p>
-			<?php if (isset($yelp_test_result['api_calls'])) : ?>
+	<?php if ($google_test_result !== null) : ?>
+		<div class="notice notice-<?php echo !empty($google_test_result['ok']) ? 'success' : 'error'; ?> is-dismissible">
+			<p><strong><?php esc_html_e('Google Places API test', 'emergencydentalpros'); ?></strong></p>
+			<p><?php echo esc_html((string) ($google_test_result['message'] ?? '')); ?></p>
+			<?php if (isset($google_test_result['api_calls'])) : ?>
 				<p class="description">
 					<?php
 					printf(
 						/* translators: %d: number of API calls */
 						esc_html__('API calls used: %d', 'emergencydentalpros'),
-						(int) $yelp_test_result['api_calls']
+						(int) $google_test_result['api_calls']
 					);
 					?>
 				</p>
@@ -51,15 +51,15 @@ if (is_array($yelp_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['yelp_saved'])) : ?>
-		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Yelp settings saved.', 'emergencydentalpros'); ?></p></div>
+	<?php if (isset($_GET['google_saved'])) : ?>
+		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Google Places settings saved.', 'emergencydentalpros'); ?></p></div>
 	<?php endif; ?>
 
-	<?php if (isset($_GET['yelp_imported'])) : ?>
-		<?php if (isset($_GET['yelp_error'])) : ?>
-			<div class="notice notice-error is-dismissible"><p><?php esc_html_e('Yelp import could not complete. See details below.', 'emergencydentalpros'); ?></p></div>
+	<?php if (isset($_GET['google_imported'])) : ?>
+		<?php if (isset($_GET['google_error'])) : ?>
+			<div class="notice notice-error is-dismissible"><p><?php esc_html_e('Google Places import could not complete. See details below.', 'emergencydentalpros'); ?></p></div>
 		<?php else : ?>
-			<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Yelp batch finished.', 'emergencydentalpros'); ?></p></div>
+			<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Google Places batch finished.', 'emergencydentalpros'); ?></p></div>
 		<?php endif; ?>
 	<?php endif; ?>
 
@@ -220,100 +220,98 @@ if (is_array($yelp_test_result)) {
 
 	<hr />
 
-	<h2><?php esc_html_e('Yelp — dentists per city', 'emergencydentalpros'); ?></h2>
+	<h2><?php esc_html_e(‘Google Places — dentists per city’, ‘emergencydentalpros’); ?></h2>
 	<p class="description">
-		<?php esc_html_e('Fetches up to 10 dentist listings per city from the Yelp Fusion API and stores them for city landing pages. Respect Yelp’s display rules and your monthly API limits. Large sites should use WP-CLI in small batches.', 'emergencydentalpros'); ?>
+		<?php esc_html_e(‘Fetches up to 5 dentist listings per city from the Google Places API and stores them for city landing pages. Requires a Google Cloud project with the Places API enabled. The $200/month free credit covers thousands of requests.’, ‘emergencydentalpros’); ?>
+	</p>
+	<p class="description">
+		<?php esc_html_e(‘Setup: Google Cloud Console → APIs & Services → Enable "Places API" → Credentials → Create API Key.’, ‘emergencydentalpros’); ?>
 	</p>
 
-	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-		<?php wp_nonce_field('edp_seo_save_yelp', 'edp_seo_yelp_save_nonce'); ?>
-		<input type="hidden" name="action" value="edp_seo_save_yelp" />
+	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
+		<?php wp_nonce_field(‘edp_seo_save_google’, ‘edp_seo_google_save_nonce’); ?>
+		<input type="hidden" name="action" value="edp_seo_save_google" />
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><label for="edp_yelp_api_key"><?php esc_html_e('Yelp API key', 'emergencydentalpros'); ?></label></th>
+				<th scope="row"><label for="edp_google_api_key"><?php esc_html_e(‘Google Places API key’, ‘emergencydentalpros’); ?></label></th>
 				<td>
-					<input name="edp_yelp[api_key]" type="password" id="edp_yelp_api_key" class="large-text code" autocomplete="off"
-						placeholder="<?php echo $yelp_key_set ? esc_attr__('Leave blank to keep the saved key', 'emergencydentalpros') : esc_attr__('Paste API key from Yelp Developers', 'emergencydentalpros'); ?>" />
-					<?php if ($yelp_key_set) : ?>
-						<p class="description"><?php esc_html_e('A key is already saved. Enter a new value only to replace it.', 'emergencydentalpros'); ?></p>
+					<input name="edp_google[api_key]" type="password" id="edp_google_api_key" class="large-text code" autocomplete="off"
+						placeholder="<?php echo $google_key_set ? esc_attr__(‘Leave blank to keep the saved key’, ‘emergencydentalpros’) : esc_attr__(‘Paste API key from Google Cloud Console’, ‘emergencydentalpros’); ?>" />
+					<?php if ($google_key_set) : ?>
+						<p class="description"><?php esc_html_e(‘A key is already saved. Enter a new value only to replace it.’, ‘emergencydentalpros’); ?></p>
 					<?php endif; ?>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="edp_yelp_client_id"><?php esc_html_e('Client ID (optional)', 'emergencydentalpros'); ?></label></th>
+				<th scope="row"><label for="edp_google_term"><?php esc_html_e(‘Search term’, ‘emergencydentalpros’); ?></label></th>
 				<td>
-					<input name="edp_yelp[client_id]" type="text" id="edp_yelp_client_id" class="large-text code"
-						value="<?php echo esc_attr((string) ($yelp['client_id'] ?? '')); ?>" />
+					<input name="edp_google[term]" type="text" id="edp_google_term" class="regular-text"
+						value="<?php echo esc_attr((string) ($google[‘term’] ?? ‘emergency dentist’)); ?>" />
+					<p class="description"><?php esc_html_e(‘Combined with city + state, e.g. "emergency dentist Birmingham AL".’, ‘emergencydentalpros’); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="edp_yelp_term"><?php esc_html_e('Search term', 'emergencydentalpros'); ?></label></th>
+				<th scope="row"><label for="edp_google_limit"><?php esc_html_e(‘Max businesses per city’, ‘emergencydentalpros’); ?></label></th>
 				<td>
-					<input name="edp_yelp[term]" type="text" id="edp_yelp_term" class="regular-text"
-						value="<?php echo esc_attr((string) ($yelp['term'] ?? 'Dentists')); ?>" />
+					<input name="edp_google[limit]" type="number" id="edp_google_limit" min="1" max="5" step="1"
+						value="<?php echo esc_attr((string) (int) ($google[‘limit’] ?? 5)); ?>" />
+					<p class="description"><?php esc_html_e(‘Maximum 5.’, ‘emergencydentalpros’); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="edp_yelp_limit"><?php esc_html_e('Max businesses per city', 'emergencydentalpros'); ?></label></th>
-				<td>
-					<input name="edp_yelp[limit]" type="number" id="edp_yelp_limit" min="1" max="10" step="1"
-						value="<?php echo esc_attr((string) (int) ($yelp['limit'] ?? 10)); ?>" />
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e('Opening hours', 'emergencydentalpros'); ?></th>
+				<th scope="row"><?php esc_html_e(‘Opening hours’, ‘emergencydentalpros’); ?></th>
 				<td>
 					<label>
-						<input name="edp_yelp[fetch_details]" type="checkbox" value="1" <?php checked(!empty($yelp['fetch_details'])); ?> />
-						<?php esc_html_e('Fetch full hours (one extra API call per business — higher quota use)', 'emergencydentalpros'); ?>
+						<input name="edp_google[fetch_details]" type="checkbox" value="1" <?php checked(!empty($google[‘fetch_details’])); ?> />
+						<?php esc_html_e(‘Fetch full hours + phone (one extra API call per business)’, ‘emergencydentalpros’); ?>
 					</label>
 				</td>
 			</tr>
 		</table>
-		<?php submit_button(__('Save Yelp settings', 'emergencydentalpros')); ?>
+		<?php submit_button(__(‘Save Google Places settings’, ‘emergencydentalpros’)); ?>
 	</form>
 
 	<p class="description">
-		<?php esc_html_e('To verify your key: save settings above, then run a test (one Business Search — does not import cities).', 'emergencydentalpros'); ?>
+		<?php esc_html_e(‘To verify your key: save settings above, then run a test (one Text Search — does not import cities).’, ‘emergencydentalpros’); ?>
 	</p>
-	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-		<?php wp_nonce_field('edp_seo_yelp_test', 'edp_seo_yelp_test_nonce'); ?>
-		<input type="hidden" name="action" value="edp_seo_yelp_test" />
+	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
+		<?php wp_nonce_field(‘edp_seo_google_test’, ‘edp_seo_google_test_nonce’); ?>
+		<input type="hidden" name="action" value="edp_seo_google_test" />
 		<?php
 		submit_button(
-			__('Test Yelp API connection', 'emergencydentalpros'),
-			'secondary',
-			'submit',
+			__(‘Test Google Places API connection’, ‘emergencydentalpros’),
+			‘secondary’,
+			‘submit’,
 			false,
-			['id' => 'edp-seo-yelp-test-btn']
+			[‘id’ => ‘edp-seo-google-test-btn’]
 		);
 		?>
 	</form>
 
 	<?php
-	$yelp_last = get_transient('edp_seo_last_yelp_import');
-	if (is_array($yelp_last)) {
-		delete_transient('edp_seo_last_yelp_import');
+	$google_last = get_transient(‘edp_seo_last_google_import’);
+	if (is_array($google_last)) {
+		delete_transient(‘edp_seo_last_google_import’);
 	}
 	?>
-	<?php if (is_array($yelp_last)) : ?>
+	<?php if (is_array($google_last)) : ?>
 		<div class="notice notice-info">
 			<p>
 				<?php
 				printf(
 					/* translators: 1: cities processed, 2: API calls */
-					esc_html__('Last Yelp batch — Cities processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
-					(int) ($yelp_last['processed'] ?? 0),
-					(int) ($yelp_last['api_calls'] ?? 0)
+					esc_html__(‘Last Google batch — Cities processed: %1$d — API calls (approx.): %2$d’, ‘emergencydentalpros’),
+					(int) ($google_last[‘processed’] ?? 0),
+					(int) ($google_last[‘api_calls’] ?? 0)
 				);
 				?>
 			</p>
-			<?php if (!empty($yelp_last['error'])) : ?>
-				<p><code><?php echo esc_html((string) $yelp_last['error']); ?></code></p>
+			<?php if (!empty($google_last[‘error’])) : ?>
+				<p><code><?php echo esc_html((string) $google_last[‘error’]); ?></code></p>
 			<?php endif; ?>
-			<?php if (!empty($yelp_last['messages']) && is_array($yelp_last['messages'])) : ?>
+			<?php if (!empty($google_last[‘messages’]) && is_array($google_last[‘messages’])) : ?>
 				<ul>
-					<?php foreach (array_slice($yelp_last['messages'], 0, 20) as $msg) : ?>
+					<?php foreach (array_slice($google_last[‘messages’], 0, 20) as $msg) : ?>
 						<li><code><?php echo esc_html((string) $msg); ?></code></li>
 					<?php endforeach; ?>
 				</ul>
@@ -321,33 +319,34 @@ if (is_array($yelp_test_result)) {
 		</div>
 	<?php endif; ?>
 
-	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-		<?php wp_nonce_field('edp_seo_yelp_import', 'edp_seo_yelp_import_nonce'); ?>
-		<input type="hidden" name="action" value="edp_seo_yelp_import" />
+	<form method="post" action="<?php echo esc_url(admin_url(‘admin-post.php’)); ?>">
+		<?php wp_nonce_field(‘edp_seo_google_import’, ‘edp_seo_google_import_nonce’); ?>
+		<input type="hidden" name="action" value="edp_seo_google_import" />
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><label for="yelp_offset"><?php esc_html_e('City offset', 'emergencydentalpros'); ?></label></th>
+				<th scope="row"><label for="google_offset"><?php esc_html_e(‘City offset’, ‘emergencydentalpros’); ?></label></th>
 				<td>
-					<input name="yelp_offset" type="number" id="yelp_offset" min="0" step="1" value="0" />
-					<p class="description"><?php esc_html_e('Row offset in the locations table (order by id). Increase after each batch.', 'emergencydentalpros'); ?></p>
+					<input name="google_offset" type="number" id="google_offset" min="0" step="1" value="0" />
+					<p class="description"><?php esc_html_e(‘Row offset in the locations table (order by id). Increase after each batch to continue where you left off.’, ‘emergencydentalpros’); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="yelp_limit"><?php esc_html_e('Cities in this batch', 'emergencydentalpros'); ?></label></th>
+				<th scope="row"><label for="google_limit"><?php esc_html_e(‘Cities in this batch’, ‘emergencydentalpros’); ?></label></th>
 				<td>
-					<input name="yelp_limit" type="number" id="yelp_limit" min="1" max="500" step="1" value="25" />
+					<input name="google_limit" type="number" id="google_limit" min="1" max="300" step="1" value="25" />
+					<p class="description"><?php esc_html_e(‘Max 300 per batch. Each city = 1 Text Search call + up to 5 Details calls if hours are enabled.’, ‘emergencydentalpros’); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e('Hours in this batch', 'emergencydentalpros'); ?></th>
+				<th scope="row"><?php esc_html_e(‘Hours in this batch’, ‘emergencydentalpros’); ?></th>
 				<td>
 					<label>
-						<input name="yelp_fetch_details" type="checkbox" value="1" <?php checked(EDP_Yelp_Config::should_fetch_details()); ?> />
-						<?php esc_html_e('Fetch opening hours (more API calls per city)', 'emergencydentalpros'); ?>
+						<input name="google_fetch_details" type="checkbox" value="1" <?php checked(EDP_Google_Places_Config::should_fetch_details()); ?> />
+						<?php esc_html_e(‘Fetch opening hours + phone (more API calls per city)’, ‘emergencydentalpros’); ?>
 					</label>
 				</td>
 			</tr>
 		</table>
-		<?php submit_button(__('Run Yelp batch import', 'emergencydentalpros'), 'secondary'); ?>
+		<?php submit_button(__(‘Run Google Places batch import’, ‘emergencydentalpros’), ‘secondary’); ?>
 	</form>
 </div>

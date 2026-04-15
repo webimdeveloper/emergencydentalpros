@@ -91,9 +91,9 @@ final class EDP_Database
 
     /**
      * @param list<int> $ids Location row ids
-     * @return array<int, bool> id => has at least one Yelp listing stored
+     * @return array<int, bool> id => has at least one nearby listing stored (any provider)
      */
-    public static function get_yelp_status_for_locations(array $ids): array
+    public static function get_nearby_status_for_locations(array $ids): array
     {
         global $wpdb;
 
@@ -112,8 +112,7 @@ final class EDP_Database
         $placeholders = implode(',', array_fill(0, count($ids), '%d'));
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
-            "SELECT DISTINCT location_id FROM {$near} WHERE provider = %s AND location_id IN ({$placeholders})",
-            'yelp',
+            "SELECT DISTINCT location_id FROM {$near} WHERE location_id IN ({$placeholders})",
             ...$ids
         );
 
