@@ -293,14 +293,16 @@ final class EDP_View_Controller
 
             $vars = EDP_Template_Engine::context_from_state($base, $state_row);
             $t = $templates['state_cities'] ?? [];
-            $h1 = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $vars);
-            $body = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $vars);
+            $h1       = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $vars);
+            $subtitle = EDP_Template_Engine::replace((string) ($t['subtitle'] ?? ''), $vars);
+            $body     = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $vars);
 
             return [
-                'h1' => $h1,
-                'body' => $body,
-                'state' => $state_row,
-                'cities' => EDP_Database::get_cities_by_state_slug($slug),
+                'h1'       => $h1,
+                'subtitle' => $subtitle,
+                'body'     => $body,
+                'state'    => $state_row,
+                'cities'   => EDP_Database::get_cities_by_state_slug($slug),
             ];
         }
 
@@ -327,8 +329,21 @@ final class EDP_View_Controller
 
             $location_id = (int) ($row['id'] ?? 0);
             $nearby = $location_id > 0
-                ? EDP_Database::get_nearby_for_location($location_id, 'yelp')
+                ? EDP_Database::get_nearby_for_location($location_id, 'google')
                 : [];
+
+            $current_city_slug = (string) ($row['city_slug'] ?? '');
+            $state_slug_for_cities = (string) ($row['state_slug'] ?? '');
+            $all_state_cities = $state_slug_for_cities !== ''
+                ? EDP_Database::get_cities_by_state_slug($state_slug_for_cities)
+                : [];
+            $other_cities = array_values(array_filter(
+                $all_state_cities,
+                fn($c) => sanitize_title((string) ($c['city_slug'] ?? '')) !== $current_city_slug
+            ));
+            if (count($other_cities) > 12) {
+                $other_cities = array_slice($other_cities, 0, 12);
+            }
 
             return [
                 'h1' => $resolved['h1'],
@@ -337,6 +352,7 @@ final class EDP_View_Controller
                 'row' => $row,
                 'source' => $resolved['source'],
                 'nearby_businesses' => $nearby,
+                'other_cities' => $other_cities,
             ];
         }
 
