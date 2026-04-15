@@ -27,7 +27,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
     /** @var int Total rows in table (COUNT). */
     public $debug_total_count = 0;
 
-    /** @var array<int, bool> location id => has Google Places rows */
+    /** @var array<int, int> location id => count of Google Places rows (0 = none) */
     public $nearby_status_map = [];
 
     /**
@@ -61,7 +61,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             'id' => __('ID', 'emergencydentalpros'),
             'state' => __('State', 'emergencydentalpros'),
             'city' => __('City', 'emergencydentalpros'),
-            'google' => __('Google', 'emergencydentalpros'),
+            'google' => __('Listings', 'emergencydentalpros'),
             'zips' => __('ZIPs', 'emergencydentalpros'),
             'override' => __('Override', 'emergencydentalpros'),
             'edp_actions' => __('Actions', 'emergencydentalpros'),
@@ -244,24 +244,9 @@ final class EDP_Locations_List_Table extends WP_List_Table
             return '';
         }
 
-        $has = !empty($this->nearby_status_map[$id]);
+        $count = (int) ($this->nearby_status_map[$id] ?? 0);
 
-        if ($has) {
-            return '<span class="edp-google-status edp-google-status--ok" title="' . esc_attr__('Google data saved', 'emergencydentalpros') . '" aria-label="' . esc_attr__('Google data saved', 'emergencydentalpros') . '">'
-                . '<span class="edp-google-dot"></span></span>';
-        }
-
-        ob_start();
-        ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="edp-google-fetch-one">
-            <?php wp_nonce_field('edp_seo_google_single', 'edp_seo_google_single_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_google_fetch_single" />
-            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Fetch Google', 'emergencydentalpros'); ?></button>
-        </form>
-        <?php
-
-        return (string) ob_get_clean();
+        return EDP_Admin::build_listing_cell_html($id, $count);
     }
 
     public function column_state($item): string

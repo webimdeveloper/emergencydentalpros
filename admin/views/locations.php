@@ -20,65 +20,60 @@ if (!defined('ABSPATH')) {
 
 $edp_seo_debug = $edp_seo_debug ?? false;
 $edp_debug_data = $edp_debug_data ?? [];
-$edp_yelp_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $edp_yelp_notice : null;
+$edp_google_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $edp_yelp_notice : null;
 
 ?>
 <style>
-	.edp-yelp-status--ok { display: inline-flex; align-items: center; vertical-align: middle; }
-	.edp-yelp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; background: #16a34a; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
-	.edp-yelp-fetch-one { display: inline-block; margin: 0; }
+	/* Listing status cell */
+	.edp-listing-cell { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+	.edp-listing-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; line-height: 1; }
+	.edp-listing-badge--has { color: #0a7040; font-weight: 600; }
+	.edp-listing-badge--empty { color: #8c8f94; }
+	.edp-listing-badge .dashicons { font-size: 15px; width: 15px; height: 15px; }
+	.edp-listing-btns { display: inline-flex; gap: 3px; }
+	.edp-listing-btn { padding: 1px 5px !important; min-height: 24px !important; line-height: 1 !important; display: inline-flex !important; align-items: center !important; }
+	.edp-listing-btn .dashicons { font-size: 13px; width: 13px; height: 13px; }
+	.edp-listing-btn--danger { color: #b32d2e !important; border-color: #b32d2e !important; }
+	.edp-listing-btn--danger:hover { background: #b32d2e !important; color: #fff !important; }
+	.edp-listing-cell--loading { opacity: 0.45; pointer-events: none; }
 </style>
 <div class="wrap">
 	<h1><?php esc_html_e('Local SEO — Locations', 'emergencydentalpros'); ?></h1>
 
-	<?php if (isset($_GET['yelp_none'])) : ?>
-		<div class="notice notice-warning is-dismissible"><p><?php esc_html_e('No locations were selected for Yelp.', 'emergencydentalpros'); ?></p></div>
+	<?php if (isset($_GET['google_none'])) : ?>
+		<div class="notice notice-warning is-dismissible"><p><?php esc_html_e('No locations were selected.', 'emergencydentalpros'); ?></p></div>
 	<?php endif; ?>
 
-	<?php if ($edp_yelp_notice !== null) : ?>
+	<?php if ($edp_google_notice !== null) : ?>
 		<?php
-		$proc = (int) ($edp_yelp_notice['processed'] ?? 0);
-		$calls = (int) ($edp_yelp_notice['api_calls'] ?? 0);
-		$msgs = isset($edp_yelp_notice['messages']) && is_array($edp_yelp_notice['messages']) ? $edp_yelp_notice['messages'] : [];
-		$yelp_ok = !empty($edp_yelp_notice['ok']);
-		$yelp_err = isset($edp_yelp_notice['error']) ? (string) $edp_yelp_notice['error'] : '';
-		$has403 = false;
-
-		foreach ($msgs as $m) {
-			if (is_string($m) && str_contains($m, '(403)')) {
-				$has403 = true;
-				break;
-			}
-		}
+		$proc      = (int) ($edp_google_notice['processed'] ?? 0);
+		$calls     = (int) ($edp_google_notice['api_calls'] ?? 0);
+		$msgs      = isset($edp_google_notice['messages']) && is_array($edp_google_notice['messages']) ? $edp_google_notice['messages'] : [];
+		$g_ok      = !empty($edp_google_notice['ok']);
+		$g_err     = isset($edp_google_notice['error']) ? (string) $edp_google_notice['error'] : '';
 
 		$notice_class = 'info';
-
-		if (!$yelp_ok && $yelp_err === 'missing_api_key') {
+		if (!$g_ok && $g_err === 'missing_api_key') {
 			$notice_class = 'error';
-		} elseif ($msgs === [] && $yelp_ok) {
+		} elseif ($msgs === [] && $g_ok) {
 			$notice_class = 'success';
-		} elseif ($msgs !== [] || !$yelp_ok) {
+		} elseif ($msgs !== [] || !$g_ok) {
 			$notice_class = 'warning';
 		}
 		?>
 		<div class="notice notice-<?php echo esc_attr($notice_class); ?> is-dismissible">
-			<?php if (!$yelp_ok && $yelp_err === 'missing_api_key') : ?>
-				<p><?php esc_html_e('Yelp API key is missing. Add it under Local SEO → Import (Yelp section) or define EDP_YELP_API_KEY in wp-config.php.', 'emergencydentalpros'); ?></p>
+			<?php if (!$g_ok && $g_err === 'missing_api_key') : ?>
+				<p><?php esc_html_e('Google Places API key is missing. Add it under Local SEO → Import.', 'emergencydentalpros'); ?></p>
 			<?php else : ?>
-			<p>
-				<?php
-				printf(
-					/* translators: 1: locations processed, 2: API calls */
-					esc_html__('Yelp fetch finished — locations processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
-					$proc,
-					$calls
-				);
-				?>
-			</p>
-			<?php endif; ?>
-			<?php if ($has403) : ?>
 				<p>
-					<?php esc_html_e('HTTP 403 from Yelp usually means the API key is invalid, the app is restricted, or the Fusion API is not enabled for this key. Regenerate the key in the Yelp developer dashboard and save it under Import → Yelp.', 'emergencydentalpros'); ?>
+					<?php
+					printf(
+						/* translators: 1: locations processed, 2: API calls */
+						esc_html__('Google fetch finished — locations processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
+						$proc,
+						$calls
+					);
+					?>
 				</p>
 			<?php endif; ?>
 			<?php if ($msgs !== []) : ?>
@@ -187,3 +182,42 @@ $edp_yelp_notice = isset($edp_yelp_notice) && is_array($edp_yelp_notice) ? $edp_
 
 	<?php $table->display(); ?>
 </div>
+<script>
+(function () {
+	function attachListingBtn(btn) {
+		btn.addEventListener('click', function () {
+			var locationId = this.dataset.locationId;
+			var action     = this.dataset.listingAction;
+			var nonce      = this.dataset.nonce;
+			var cell       = this.closest('td');
+			var original   = cell.innerHTML;
+
+			cell.querySelector('.edp-listing-cell').classList.add('edp-listing-cell--loading');
+
+			var body = new URLSearchParams({
+				action:      action === 'fetch' ? 'edp_google_fetch_location' : 'edp_google_delete_location',
+				nonce:       nonce,
+				location_id: locationId,
+			});
+
+			fetch(ajaxurl, { method: 'POST', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						cell.innerHTML = json.data.html;
+						cell.querySelectorAll('.edp-listing-btn').forEach(attachListingBtn);
+					} else {
+						cell.innerHTML = original;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>);
+					}
+				})
+				.catch(function () {
+					cell.innerHTML = original;
+				});
+		});
+	}
+
+	document.querySelectorAll('.edp-listing-btn').forEach(attachListingBtn);
+})();
+</script>

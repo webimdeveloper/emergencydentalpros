@@ -32,6 +32,8 @@ final class EDP_Admin
         add_action('admin_init', [self::class, 'maybe_bulk_fetch_google'], 20);
         add_action('admin_post_edp_seo_location_action', [self::class, 'handle_location_action']);
         add_action('wp_ajax_edp_google_import_step', [self::class, 'ajax_google_import_step']);
+        add_action('wp_ajax_edp_google_fetch_location', [self::class, 'ajax_google_fetch_location']);
+        add_action('wp_ajax_edp_google_delete_location', [self::class, 'ajax_google_delete_location']);
     }
 
     public static function menus(): void
@@ -600,6 +602,114 @@ final class EDP_Admin
 
         wp_safe_redirect(admin_url('admin.php?page=edp-seo-import'));
         exit;
+    }
+
+    /**
+     * Build the HTML for a single row's listing status cell.
+     * Used both by the list table column and by the AJAX handlers to return updated HTML.
+     */
+    public static function build_listing_cell_html(int $location_id, int $count): string
+    {
+        $nonce = wp_create_nonce('edp_google_location_actions');
+
+        if ($count > 0) {
+            return sprintf(
+                '<div class="edp-listing-cell">'
+                    . '<span class="edp-listing-badge edp-listing-badge--has">'
+                    . '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> %1$d'
+                    . '</span>'
+                    . '<span class="edp-listing-btns">'
+                    . '<button type="button" class="button button-small edp-listing-btn" '
+                    .     'data-location-id="%2$d" data-listing-action="fetch" data-nonce="%3$s" '
+                    .     'title="%4$s">'
+                    .     '<span class="dashicons dashicons-update" aria-hidden="true"></span>'
+                    . '</button>'
+                    . '<button type="button" class="button button-small edp-listing-btn edp-listing-btn--danger" '
+                    .     'data-location-id="%2$d" data-listing-action="delete" data-nonce="%3$s" '
+                    .     'title="%5$s">'
+                    .     '<span class="dashicons dashicons-trash" aria-hidden="true"></span>'
+                    . '</button>'
+                    . '</span>'
+                . '</div>',
+                $count,
+                $location_id,
+                esc_attr($nonce),
+                esc_attr__('Update listings', 'emergencydentalpros'),
+                esc_attr__('Delete all listings', 'emergencydentalpros')
+            );
+        }
+
+        return sprintf(
+            '<div class="edp-listing-cell">'
+                . '<span class="edp-listing-badge edp-listing-badge--empty">'
+                . '<span class="dashicons dashicons-minus" aria-hidden="true"></span>'
+                . '</span>'
+                . '<span class="edp-listing-btns">'
+                . '<button type="button" class="button button-small edp-listing-btn" '
+                .     'data-location-id="%1$d" data-listing-action="fetch" data-nonce="%2$s" '
+                .     'title="%3$s">'
+                .     '<span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>'
+                . '</button>'
+                . '</span>'
+            . '</div>',
+            $location_id,
+            esc_attr($nonce),
+            esc_attr__('Fetch listings', 'emergencydentalpros')
+        );
+    }
+
+    /**
+     * AJAX: fetch Google listings for a single location and return updated cell HTML.
+     */
+    public static function ajax_google_fetch_location(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_google_location_actions', 'nonce');
+
+        $id = max(0, (int) ($_POST['location_id'] ?? 0));
+
+        if ($id <= 0) {
+            wp_send_json_error(['message' => 'Invalid location ID']);
+        }
+
+        $result   = EDP_Google_Places_Importer::import_for_location_ids([$id], null);
+        $map      = EDP_Database::get_nearby_status_for_locations([$id]);
+        $count    = (int) ($map[$id] ?? 0);
+
+        wp_send_json_success([
+            'html'      => self::build_listing_cell_html($id, $count),
+            'count'     => $count,
+            'api_calls' => (int) ($result['api_calls'] ?? 0),
+            'messages'  => $result['messages'] ?? [],
+        ]);
+    }
+
+    /**
+     * AJAX: delete all Google listings for a single location and return updated cell HTML.
+     */
+    public static function ajax_google_delete_location(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_google_location_actions', 'nonce');
+
+        $id = max(0, (int) ($_POST['location_id'] ?? 0));
+
+        if ($id <= 0) {
+            wp_send_json_error(['message' => 'Invalid location ID']);
+        }
+
+        EDP_Database::delete_nearby_for_location($id, 'google');
+
+        wp_send_json_success([
+            'html'  => self::build_listing_cell_html($id, 0),
+            'count' => 0,
+        ]);
     }
 
     /**

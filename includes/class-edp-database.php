@@ -91,7 +91,7 @@ final class EDP_Database
 
     /**
      * @param list<int> $ids Location row ids
-     * @return array<int, bool> id => has at least one nearby listing stored (any provider)
+     * @return array<int, int> id => count of nearby listings stored (any provider), 0 if none
      */
     public static function get_nearby_status_for_locations(array $ids): array
     {
@@ -101,7 +101,7 @@ final class EDP_Database
         $map = [];
 
         foreach ($ids as $id) {
-            $map[$id] = false;
+            $map[$id] = 0;
         }
 
         if ($ids === []) {
@@ -112,16 +112,18 @@ final class EDP_Database
         $placeholders = implode(',', array_fill(0, count($ids), '%d'));
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
-            "SELECT DISTINCT location_id FROM {$near} WHERE location_id IN ({$placeholders})",
+            "SELECT location_id, COUNT(*) AS cnt FROM {$near} WHERE location_id IN ({$placeholders}) GROUP BY location_id",
             ...$ids
         );
 
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $found = $wpdb->get_col($sql);
+        $rows = $wpdb->get_results($sql, ARRAY_A);
 
-        if (is_array($found)) {
-            foreach ($found as $fid) {
-                $map[(int) $fid] = true;
+        if (is_array($rows)) {
+            foreach ($rows as $row) {
+                if (is_array($row) && isset($row['location_id'])) {
+                    $map[(int) $row['location_id']] = (int) ($row['cnt'] ?? 0);
+                }
             }
         }
 
