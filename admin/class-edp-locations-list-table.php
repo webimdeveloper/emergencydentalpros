@@ -319,21 +319,21 @@ final class EDP_Locations_List_Table extends WP_List_Table
             <input type="hidden" name="edp_action" value="map_post" />
             <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
             <input type="number" name="post_id" placeholder="<?php esc_attr_e('Post ID', 'emergencydentalpros'); ?>" min="1" style="width:90px;" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Map', 'emergencydentalpros'); ?></button>
+            <button type="submit" class="button button-small"><?php esc_html_e('Redirect', 'emergencydentalpros'); ?></button>
         </form>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;margin-right:8px;">
             <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
             <input type="hidden" name="action" value="edp_seo_location_action" />
             <input type="hidden" name="edp_action" value="create_cpt" />
             <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Create CPT', 'emergencydentalpros'); ?></button>
+            <button type="submit" class="button button-small"><?php esc_html_e('Customize', 'emergencydentalpros'); ?></button>
         </form>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;">
             <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
             <input type="hidden" name="action" value="edp_seo_location_action" />
             <input type="hidden" name="edp_action" value="clear_override" />
             <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Clear', 'emergencydentalpros'); ?></button>
+            <button type="submit" class="button button-small"><?php esc_html_e('Reset', 'emergencydentalpros'); ?></button>
         </form>
         <?php
 

@@ -418,4 +418,27 @@ final class EDP_Database
 
         return is_array($row) ? $row : null;
     }
+
+    /**
+     * Find the location row that has been mapped to a given post ID.
+     * Only rows with override_type = 'mapped' are considered (map_post action).
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function get_location_by_post_id(int $post_id): ?array
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE custom_post_id = %d AND override_type = 'mapped' LIMIT 1",
+            $post_id
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $row = $wpdb->get_row($sql, ARRAY_A);
+
+        return is_array($row) ? $row : null;
+    }
 }

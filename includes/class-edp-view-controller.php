@@ -17,6 +17,7 @@ final class EDP_View_Controller
     public static function register(): void
     {
         add_action('wp', [self::class, 'bootstrap'], 0);
+        add_action('template_redirect', [self::class, 'redirect_mapped_posts'], 0);
         add_action('template_redirect', [self::class, 'render'], 1);
     }
 
@@ -210,6 +211,50 @@ final class EDP_View_Controller
 
         $resolved = EDP_Content_Resolver::resolve_city($row);
         EDP_Schema::output_city_schema($row, $resolved['title']);
+    }
+
+    /**
+     * 301-redirect a mapped post's permalink to the plugin's canonical location URL.
+     *
+     * When an admin maps a post to a location via the "Redirect" action, visiting the
+     * post's own permalink (e.g. /dallas-dentist/) should 301 to the plugin URL
+     * (e.g. /locations/texas/dallas/) to prevent duplicate content.
+     */
+    public static function redirect_mapped_posts(): void
+    {
+        if (is_admin()) {
+            return;
+        }
+
+        if (!is_singular()) {
+            return;
+        }
+
+        $post_id = (int) get_the_ID();
+
+        if ($post_id <= 0) {
+            return;
+        }
+
+        $location = EDP_Database::get_location_by_post_id($post_id);
+
+        if ($location === null) {
+            return;
+        }
+
+        $state_slug = sanitize_title((string) ($location['state_slug'] ?? ''));
+        $city_slug  = sanitize_title((string) ($location['city_slug'] ?? ''));
+
+        if ($state_slug === '' || $city_slug === '') {
+            return;
+        }
+
+        $url = home_url(user_trailingslashit(
+            'locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)
+        ));
+
+        wp_redirect($url, 301);
+        exit;
     }
 
     public static function render(): void
