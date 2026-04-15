@@ -83,8 +83,11 @@ final class EDP_Google_Places_Client
     }
 
     /**
-     * Resolve a photo resource name to a CDN URL.
+     * Resolve a photo resource name to a stable CDN URL.
      * photo_name format: "places/{place_id}/photos/{photo_id}"
+     *
+     * Uses skipHttpRedirect=true so the API returns JSON {"photoUri":"https://..."} instead
+     * of a 302 redirect, which is more reliable for server-side calls.
      */
     public function resolve_photo_url(string $photo_name, int $max_width = 400): string
     {
@@ -94,17 +97,17 @@ final class EDP_Google_Places_Client
 
         $url = add_query_arg(
             [
-                'maxWidthPx' => $max_width,
-                'key'        => $this->api_key,
+                'maxWidthPx'       => $max_width,
+                'skipHttpRedirect' => 'true',
+                'key'              => $this->api_key,
             ],
             self::PHOTO_URL . ltrim($photo_name, '/') . '/media'
         );
 
-        $response = wp_remote_head(
+        $response = wp_remote_get(
             $url,
             [
-                'timeout'     => 10,
-                'redirection' => 0,
+                'timeout' => 10,
             ]
         );
 
@@ -112,9 +115,16 @@ final class EDP_Google_Places_Client
             return '';
         }
 
-        $location = (string) wp_remote_retrieve_header($response, 'location');
+        $code = (int) wp_remote_retrieve_response_code($response);
 
-        return ($location !== '' && str_starts_with($location, 'https://')) ? $location : '';
+        if ($code !== 200) {
+            return '';
+        }
+
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        $uri  = isset($body['photoUri']) && is_string($body['photoUri']) ? $body['photoUri'] : '';
+
+        return str_starts_with($uri, 'https://') ? $uri : '';
     }
 
     /**
