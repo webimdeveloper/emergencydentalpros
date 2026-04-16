@@ -37,6 +37,9 @@ final class EDP_Admin
         add_action('wp_ajax_edp_google_delete_location', [self::class, 'ajax_google_delete_location']);
         add_action('admin_post_edp_sheet_save_url', [self::class, 'handle_sheet_save_url']);
         add_action('wp_ajax_edp_sheet_sync', [self::class, 'ajax_sheet_sync']);
+        add_action('admin_post_edp_sheet_sa_save', [self::class, 'handle_sheet_sa_save']);
+        add_action('admin_post_edp_sheet_sa_clear', [self::class, 'handle_sheet_sa_clear']);
+        add_action('wp_ajax_edp_sheet_sync_v2', [self::class, 'ajax_sheet_sync_v2']);
     }
 
     public static function menus(): void
@@ -140,6 +143,108 @@ final class EDP_Admin
         }
 
         require EDP_PLUGIN_DIR . 'admin/views/import.php';
+    }
+
+    /**
+     * Save the uploaded service-account JSON key file.
+     */
+    public static function handle_sheet_sa_save(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_sheet_sa_save', 'edp_sheet_sa_nonce');
+
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated via is_uploaded_file() below.
+        $file = isset($_FILES['edp_sa_json']) && is_array($_FILES['edp_sa_json']) ? $_FILES['edp_sa_json'] : null;
+
+        if ($file === null || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            wp_safe_redirect(add_query_arg('sa_error', 'upload', admin_url('admin.php?page=edp-seo-import')));
+            exit;
+        }
+
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            wp_safe_redirect(add_query_arg('sa_error', 'upload', admin_url('admin.php?page=edp-seo-import')));
+            exit;
+        }
+
+        $json = file_get_contents($file['tmp_name']); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+
+        if ($json === false || $json === '') {
+            wp_safe_redirect(add_query_arg('sa_error', 'empty', admin_url('admin.php?page=edp-seo-import')));
+            exit;
+        }
+
+        $result = EDP_Sheet_Credentials::save_from_json($json);
+
+        if (is_wp_error($result)) {
+            wp_safe_redirect(add_query_arg(
+                ['sa_error' => 'parse', 'sa_msg' => rawurlencode($result->get_error_message())],
+                admin_url('admin.php?page=edp-seo-import')
+            ));
+            exit;
+        }
+
+        // Clear any cached token — credentials changed.
+        EDP_Sheet_API::clear_token_cache();
+
+        wp_safe_redirect(add_query_arg('sa_saved', '1', admin_url('admin.php?page=edp-seo-import')));
+        exit;
+    }
+
+    /**
+     * Remove saved service-account credentials.
+     */
+    public static function handle_sheet_sa_clear(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
+        }
+
+        check_admin_referer('edp_sheet_sa_clear', 'edp_sheet_sa_clear_nonce');
+
+        EDP_Sheet_Credentials::clear();
+        EDP_Sheet_API::clear_token_cache();
+
+        wp_safe_redirect(add_query_arg('sa_cleared', '1', admin_url('admin.php?page=edp-seo-import')));
+        exit;
+    }
+
+    /**
+     * AJAX: run the two-way Google Sheets sync (v2 — uses Sheets API + writes back).
+     */
+    public static function ajax_sheet_sync_v2(): void
+    {
+        check_ajax_referer('edp_sheet_sync_v2', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        if (!EDP_Sheet_Credentials::is_configured()) {
+            wp_send_json_error(['message' => esc_html__('Service account credentials not configured. Upload the JSON key file first.', 'emergencydentalpros')]);
+        }
+
+        $url = (string) get_option(self::OPTION_SHEET_URL, '');
+
+        if ($url === '') {
+            wp_send_json_error(['message' => esc_html__('No Google Sheets URL saved. Enter and save a URL first.', 'emergencydentalpros')]);
+        }
+
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        @set_time_limit(120);
+
+        $result = EDP_Sheet_Sync::run($url);
+
+        $log = array_merge($result, ['at' => time(), 'ok' => empty($result['error'])]);
+        update_option(self::OPTION_IMPORT_LOG, $log, false);
+
+        if (!empty($result['error'])) {
+            wp_send_json_error(['message' => (string) $result['error'], 'result' => $result]);
+        }
+
+        wp_send_json_success($result);
     }
 
     /**

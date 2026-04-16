@@ -75,6 +75,12 @@ final class EDP_View_Controller
                     return;
                 }
 
+                if (($row['page_status'] ?? 'published') === 'draft') {
+                    self::set_404();
+
+                    return;
+                }
+
                 self::$ctx = [
                     'view' => 'city',
                     'state_slug' => $state_slug,

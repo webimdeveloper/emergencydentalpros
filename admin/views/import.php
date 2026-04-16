@@ -17,7 +17,9 @@ if (!is_array($persisted)) {
 	$persisted = [];
 }
 
-$saved_sheet_url = (string) get_option(EDP_Admin::OPTION_SHEET_URL, '');
+$saved_sheet_url  = (string) get_option(EDP_Admin::OPTION_SHEET_URL, '');
+$sa_configured    = EDP_Sheet_Credentials::is_configured();
+$sa_email         = $sa_configured ? EDP_Sheet_Credentials::get_client_email() : '';
 
 $google = EDP_Google_Places_Config::get_all();
 $google_key_set = EDP_Google_Places_Config::get_api_key() !== '';
@@ -153,6 +155,179 @@ if (is_array($google_test_result)) {
 	<?php endif; ?>
 
 	<p><?php esc_html_e('Imports USA 50 states + DC only. Rows are grouped by state and city; ZIP codes are merged.', 'emergencydentalpros'); ?></p>
+
+	<?php /* ------------------------------------------------------------------ */ ?>
+	<?php /* Service account credentials                                        */ ?>
+	<?php /* ------------------------------------------------------------------ */ ?>
+
+	<h2><?php esc_html_e('Google Sheets — Service Account', 'emergencydentalpros'); ?></h2>
+	<p class="description">
+		<?php esc_html_e('Required for the two-way sync. Upload the JSON key file you downloaded from Google Cloud Console after creating the service account. The sheet must be shared with the service account email as Editor.', 'emergencydentalpros'); ?>
+	</p>
+
+	<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['sa_saved'])) : ?>
+		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Service account credentials saved.', 'emergencydentalpros'); ?></p></div>
+	<?php endif; ?>
+	<?php if (isset($_GET['sa_cleared'])) : ?>
+		<div class="notice notice-info is-dismissible"><p><?php esc_html_e('Service account credentials removed.', 'emergencydentalpros'); ?></p></div>
+	<?php endif; ?>
+	<?php if (isset($_GET['sa_error'])) : ?>
+		<div class="notice notice-error is-dismissible">
+			<p>
+				<?php
+				$sa_err_code = sanitize_key((string) wp_unslash($_GET['sa_error']));
+				$sa_err_msg  = isset($_GET['sa_msg']) ? sanitize_text_field((string) wp_unslash($_GET['sa_msg'])) : '';
+				if ($sa_err_code === 'parse' && $sa_err_msg !== '') {
+					echo esc_html($sa_err_msg);
+				} elseif ($sa_err_code === 'empty') {
+					esc_html_e('The uploaded file was empty.', 'emergencydentalpros');
+				} else {
+					esc_html_e('Could not read the uploaded file. Make sure you selected a valid JSON key file.', 'emergencydentalpros');
+				}
+				?>
+			</p>
+		</div>
+	<?php endif; ?>
+	<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
+
+	<?php if ($sa_configured) : ?>
+		<p>
+			<span class="dashicons dashicons-yes" style="color:#0a7040;vertical-align:middle;"></span>
+			<strong><?php esc_html_e('Connected:', 'emergencydentalpros'); ?></strong>
+			<code><?php echo esc_html($sa_email); ?></code>
+		</p>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
+			<?php wp_nonce_field('edp_sheet_sa_clear', 'edp_sheet_sa_clear_nonce'); ?>
+			<input type="hidden" name="action" value="edp_sheet_sa_clear" />
+			<?php submit_button(__('Remove credentials', 'emergencydentalpros'), 'delete', 'submit', false); ?>
+		</form>
+	<?php else : ?>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+			<?php wp_nonce_field('edp_sheet_sa_save', 'edp_sheet_sa_nonce'); ?>
+			<input type="hidden" name="action" value="edp_sheet_sa_save" />
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="edp_sa_json"><?php esc_html_e('Service account JSON key', 'emergencydentalpros'); ?></label></th>
+					<td>
+						<input name="edp_sa_json" type="file" id="edp_sa_json" accept=".json,application/json" required />
+						<p class="description">
+							<?php esc_html_e('Download from: Google Cloud Console → IAM & Admin → Service Accounts → your account → Keys → Add Key → JSON.', 'emergencydentalpros'); ?>
+						</p>
+					</td>
+				</tr>
+			</table>
+			<?php submit_button(__('Upload & save credentials', 'emergencydentalpros'), 'primary', 'submit', false); ?>
+		</form>
+	<?php endif; ?>
+
+	<hr />
+
+	<?php /* ------------------------------------------------------------------ */ ?>
+	<?php /* Two-way sync (v2 — Sheets API)                                     */ ?>
+	<?php /* ------------------------------------------------------------------ */ ?>
+
+	<h2><?php esc_html_e('Google Sheets — Two-Way Sync', 'emergencydentalpros'); ?></h2>
+	<p class="description">
+		<?php esc_html_e('Reads every row where action=TRUE, upserts city data into the database, then writes city_slug / sync_note / last_synced back to the sheet and resets action to FALSE. Requires credentials above and the Sheet URL below.', 'emergencydentalpros'); ?>
+	</p>
+	<p class="description">
+		<?php esc_html_e('Required sheet columns (add any missing ones to row 1 before the first sync):', 'emergencydentalpros'); ?><br />
+		<code>action, status, type, google_places, faq, city, state_id, state_name, county_name, zips, city_slug, sync_note, last_synced</code>
+	</p>
+
+	<?php
+	$v2_ready = $sa_configured && $saved_sheet_url !== '';
+	?>
+
+	<div id="edp-sheet-sync-v2-wrap" style="margin-top:12px;">
+		<button
+			id="edp-sheet-sync-v2-btn"
+			class="button button-primary"
+			<?php echo $v2_ready ? '' : 'disabled'; ?>
+		><?php esc_html_e('Run Two-Way Sync', 'emergencydentalpros'); ?></button>
+
+		<?php if (!$sa_configured) : ?>
+			<span class="description" style="margin-left:8px;"><?php esc_html_e('Upload service account credentials first.', 'emergencydentalpros'); ?></span>
+		<?php elseif ($saved_sheet_url === '') : ?>
+			<span class="description" style="margin-left:8px;"><?php esc_html_e('Save a Sheet URL (below) first.', 'emergencydentalpros'); ?></span>
+		<?php endif; ?>
+	</div>
+
+	<div id="edp-sheet-v2-progress" style="display:none; margin-top:16px; max-width:600px;">
+		<p id="edp-sheet-v2-status" style="margin:4px 0; font-style:italic;"></p>
+		<div id="edp-sheet-v2-result" style="display:none; margin-top:8px; padding:10px 14px; background:#f0f6fc; border-left:4px solid #2271b1;">
+			<strong><?php esc_html_e('Sync complete', 'emergencydentalpros'); ?></strong>
+			<ul id="edp-sheet-v2-result-list" style="margin:6px 0 0; padding-left:1.25em; list-style:disc;"></ul>
+		</div>
+		<div id="edp-sheet-v2-error" style="display:none; margin-top:8px; padding:10px 14px; background:#fff3cd; border-left:4px solid #f0b429;">
+			<strong><?php esc_html_e('Error', 'emergencydentalpros'); ?></strong>
+			<p id="edp-sheet-v2-error-msg" style="margin:4px 0 0;"></p>
+		</div>
+	</div>
+
+	<script>
+	(function () {
+		var btn     = document.getElementById('edp-sheet-sync-v2-btn');
+		var wrap    = document.getElementById('edp-sheet-v2-progress');
+		var status  = document.getElementById('edp-sheet-v2-status');
+		var result  = document.getElementById('edp-sheet-v2-result');
+		var resList = document.getElementById('edp-sheet-v2-result-list');
+		var errBox  = document.getElementById('edp-sheet-v2-error');
+		var errMsg  = document.getElementById('edp-sheet-v2-error-msg');
+
+		if (!btn) { return; }
+
+		var nonce   = <?php echo wp_json_encode(wp_create_nonce('edp_sheet_sync_v2')); ?>;
+		var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
+
+		function esc(str) {
+			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
+
+		btn.addEventListener('click', function () {
+			btn.disabled = true;
+			wrap.style.display   = 'block';
+			result.style.display = 'none';
+			errBox.style.display = 'none';
+			resList.innerHTML    = '';
+			status.textContent   = <?php echo wp_json_encode(__('Contacting Google Sheets API…', 'emergencydentalpros')); ?>;
+
+			var body = new URLSearchParams({ action: 'edp_sheet_sync_v2', nonce: nonce });
+
+			fetch(ajaxUrl, { method: 'POST', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					btn.disabled   = false;
+					status.textContent = '';
+
+					if (!json.success) {
+						errMsg.textContent   = (json.data && json.data.message) || <?php echo wp_json_encode(__('Unknown error.', 'emergencydentalpros')); ?>;
+						errBox.style.display = 'block';
+						return;
+					}
+
+					var d    = json.data;
+					var rows = [
+						<?php echo wp_json_encode(__('Processed (action=TRUE):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.processed) + '</strong>',
+						<?php echo wp_json_encode(__('Skipped (action=FALSE):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.skipped) + '</strong>',
+						<?php echo wp_json_encode(__('Errors (duplicate / DB fail):', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.errors) + '</strong>',
+						<?php echo wp_json_encode(__('Written back to sheet:', 'emergencydentalpros')); ?> + ' <strong>' + esc(d.written_back) + '</strong>',
+					];
+					resList.innerHTML    = rows.map(function (r) { return '<li>' + r + '</li>'; }).join('');
+					result.style.display = 'block';
+				})
+				.catch(function (err) {
+					btn.disabled         = false;
+					status.textContent   = '';
+					errMsg.textContent   = 'Network error: ' + esc(err.message || err);
+					errBox.style.display = 'block';
+				});
+		});
+	})();
+	</script>
+
+	<hr />
 
 	<?php /* ------------------------------------------------------------------ */ ?>
 	<?php /* Google Sheets sync                                                  */ ?>
