@@ -65,6 +65,9 @@ final class EDP_Settings
                     'h1' => 'Emergency dental in {city_name}, {state_short}',
                     'subtitle' => '',
                     'body' => '<p>We provide emergency dental care in {city_name}, {state_name}. ZIPs: {list_of_related_zips}.</p>',
+                    'communities_h2' => 'Communities We Cover in {county_name}',
+                    'communities_body' => '<p>We serve patients across {city_name} and the surrounding communities. Service ZIP codes: {list_of_related_zips}.</p>',
+                    'other_cities_h2' => 'Other Cities We Serve in {state_name}',
                 ],
             ],
         ];
@@ -96,6 +99,12 @@ final class EDP_Settings
             $out['templates'][$ctx]['h1'] = sanitize_text_field((string) ($t['h1'] ?? $defaults['templates'][$ctx]['h1']));
             $out['templates'][$ctx]['subtitle'] = sanitize_text_field((string) ($t['subtitle'] ?? $defaults['templates'][$ctx]['subtitle']));
             $out['templates'][$ctx]['body'] = wp_kses_post((string) ($t['body'] ?? $defaults['templates'][$ctx]['body']));
+
+            if ($ctx === 'city_landing') {
+                $out['templates'][$ctx]['communities_h2']   = sanitize_text_field((string) ($t['communities_h2'] ?? $defaults['templates'][$ctx]['communities_h2']));
+                $out['templates'][$ctx]['communities_body'] = wp_kses_post((string) ($t['communities_body'] ?? $defaults['templates'][$ctx]['communities_body']));
+                $out['templates'][$ctx]['other_cities_h2']  = sanitize_text_field((string) ($t['other_cities_h2'] ?? $defaults['templates'][$ctx]['other_cities_h2']));
+            }
         }
 
         return $out;

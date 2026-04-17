@@ -32,7 +32,7 @@ final class EDP_Sheet_Sync {
 
 	private const ALL_REQUIRED = [
 		'action', 'status', 'type', 'google_places', 'faq',
-		'city', 'state_id', 'state_name', 'county_name', 'zips',
+		'city', 'state_id', 'state_name', 'county_name', 'main_zip', 'zips',
 		'city_slug', 'sync_note', 'last_synced',
 	];
 
@@ -146,6 +146,7 @@ final class EDP_Sheet_Sync {
 				'state_id'      => $state_id,
 				'state_name'    => $get( 'state_name' ),
 				'county_name'   => $get( 'county_name' ),
+				'main_zip'      => preg_replace( '/\D/', '', $get( 'main_zip' ) ),
 				'zips_raw'      => $get( 'zips' ),
 				'status'        => in_array( $status, self::VALID_STATUS, true ) ? $status : 'published',
 				'google_places' => in_array( $google_places, self::VALID_GOOGLE_PLACES, true ) ? $google_places : 'false',
@@ -302,14 +303,15 @@ final class EDP_Sheet_Sync {
 		$sql = $wpdb->prepare(
 			"INSERT INTO {$table}
 			(state_slug, state_name, state_id, city_slug, city_name, zips, county_name,
-			 page_status, google_places, faq_type, updated_at)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			 main_zip, page_status, google_places, faq_type, updated_at)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON DUPLICATE KEY UPDATE
 			  state_slug    = VALUES(state_slug),
 			  state_name    = VALUES(state_name),
 			  city_name     = IF(custom_post_id IS NULL OR custom_post_id = 0, VALUES(city_name), city_name),
 			  zips          = VALUES(zips),
 			  county_name   = VALUES(county_name),
+			  main_zip      = VALUES(main_zip),
 			  page_status   = VALUES(page_status),
 			  google_places = VALUES(google_places),
 			  faq_type      = VALUES(faq_type),
@@ -321,6 +323,7 @@ final class EDP_Sheet_Sync {
 			$r['city'],
 			$zips_json,
 			$r['county_name'],
+			$r['main_zip'],
 			$r['status'],
 			$r['google_places'],
 			$r['faq'],

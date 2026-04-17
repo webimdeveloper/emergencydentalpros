@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class EDP_Activator {
 
-	public const DB_VERSION        = '1.2.0';
+	public const DB_VERSION        = '1.3.0';
 	public const OPTION_DB_VERSION = 'edp_seo_db_version';
 
 	public static function activate(): void {
@@ -47,6 +47,7 @@ final class EDP_Activator {
             county_fips_all text DEFAULT NULL,
             custom_post_id bigint(20) unsigned DEFAULT NULL,
             override_type varchar(20) DEFAULT NULL,
+            main_zip varchar(10) NOT NULL DEFAULT '',
             page_status varchar(20) NOT NULL DEFAULT 'published',
             google_places varchar(10) NOT NULL DEFAULT 'false',
             faq_type varchar(10) NOT NULL DEFAULT 'dynamic',

@@ -12,10 +12,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$h1 = isset($edp_data['h1']) ? (string) $edp_data['h1'] : '';
-$body = isset($edp_data['body']) ? (string) $edp_data['body'] : '';
-$zips = isset($edp_data['zips']) && is_array($edp_data['zips']) ? $edp_data['zips'] : [];
-$nearby = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_businesses']) ? $edp_data['nearby_businesses'] : [];
+$h1               = isset($edp_data['h1']) ? (string) $edp_data['h1'] : '';
+$body             = isset($edp_data['body']) ? (string) $edp_data['body'] : '';
+$zips             = isset($edp_data['zips']) && is_array($edp_data['zips']) ? $edp_data['zips'] : [];
+$nearby           = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_businesses']) ? $edp_data['nearby_businesses'] : [];
+$communities_h2   = isset($edp_data['communities_h2']) ? (string) $edp_data['communities_h2'] : '';
+$communities_body = isset($edp_data['communities_body']) ? (string) $edp_data['communities_body'] : '';
+$other_cities_h2  = isset($edp_data['other_cities_h2']) ? (string) $edp_data['other_cities_h2'] : '';
+$other_cities     = isset($edp_data['other_cities']) && is_array($edp_data['other_cities']) ? $edp_data['other_cities'] : [];
+$row              = isset($edp_data['row']) && is_array($edp_data['row']) ? $edp_data['row'] : [];
 ?>
 <main class="edp-seo edp-seo-city" id="edp-seo-main">
 	<header class="edp-seo-header">
@@ -24,10 +29,43 @@ $nearby = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_bu
 	<div class="edp-seo-body edp-seo-content edp-block-order-body">
 		<?php echo wp_kses_post($body); ?>
 	</div>
-	<?php if ($zips !== []) : ?>
+	<?php if ($communities_h2 !== '' || $communities_body !== '') : ?>
+		<section class="edp-seo-communities edp-block-order-communities" aria-label="<?php esc_attr_e('Communities we serve', 'emergencydentalpros'); ?>">
+			<?php if ($communities_h2 !== '') : ?>
+				<h2 class="edp-seo-h2"><?php echo esc_html($communities_h2); ?></h2>
+			<?php endif; ?>
+			<?php if ($communities_body !== '') : ?>
+				<div class="edp-seo-communities-body"><?php echo wp_kses_post($communities_body); ?></div>
+			<?php endif; ?>
+		</section>
+	<?php elseif ($zips !== []) : ?>
 		<section class="edp-seo-zips edp-block-order-zips" aria-label="<?php esc_attr_e('Service ZIP codes', 'emergencydentalpros'); ?>">
 			<h2 class="edp-seo-h2"><?php esc_html_e('Service ZIP codes', 'emergencydentalpros'); ?></h2>
 			<p class="edp-seo-zip-list"><?php echo esc_html(implode(', ', $zips)); ?></p>
+		</section>
+	<?php endif; ?>
+
+	<?php if ($other_cities !== []) : ?>
+		<section class="edp-seo-other-cities edp-block-order-other-cities" aria-label="<?php esc_attr_e('Other cities', 'emergencydentalpros'); ?>">
+			<?php if ($other_cities_h2 !== '') : ?>
+				<h2 class="edp-seo-h2"><?php echo esc_html($other_cities_h2); ?></h2>
+			<?php endif; ?>
+			<ul class="edp-cities-grid">
+				<?php foreach ($other_cities as $oc) : ?>
+					<?php
+					if (!is_array($oc)) {
+						continue;
+					}
+					$oc_name       = (string) ($oc['city_name'] ?? '');
+					$oc_city_slug  = (string) ($oc['city_slug'] ?? '');
+					$oc_state_slug = (string) ($row['state_slug'] ?? '');
+					$oc_url        = home_url( user_trailingslashit( 'locations/' . $oc_state_slug . '/' . $oc_city_slug ) );
+					?>
+					<li class="edp-city-item">
+						<a href="<?php echo esc_url($oc_url); ?>"><?php echo esc_html($oc_name); ?></a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
 		</section>
 	<?php endif; ?>
 

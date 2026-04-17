@@ -45,11 +45,12 @@ final class EDP_Template_Engine
 
         sort($zips);
 
-        $base['city_name'] = isset($data['city_name']) ? (string) $data['city_name'] : '';
+        $base['city_name']  = isset($data['city_name']) ? (string) $data['city_name'] : '';
         $base['state_name'] = isset($data['state_name']) ? (string) $data['state_name'] : '';
         $base['state_short'] = isset($data['state_id']) ? strtoupper((string) $data['state_id']) : '';
-        $base['state_slug'] = isset($data['state_slug']) ? (string) $data['state_slug'] : '';
-        $base['state_slug'] = sanitize_title($base['state_slug']);
+        $base['state_slug'] = isset($data['state_slug']) ? sanitize_title((string) $data['state_slug']) : '';
+        $base['county_name'] = isset($data['county_name']) ? (string) $data['county_name'] : '';
+        $base['main_zip']   = isset($data['main_zip']) ? (string) $data['main_zip'] : '';
         $base['list_of_related_zips'] = implode(', ', $zips);
 
         return $base;

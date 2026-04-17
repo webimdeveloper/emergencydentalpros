@@ -51,7 +51,7 @@ if (!defined('ABSPATH')) {
 			<p class="description">
 				<?php
 				if ($key === 'city_landing') {
-					esc_html_e('Variables: {city_name}, {state_name}, {state_short}, {list_of_related_zips}, {site_name}', 'emergencydentalpros');
+					esc_html_e('Variables: {city_name}, {state_name}, {state_short}, {county_name}, {main_zip}, {list_of_related_zips}, {site_name}', 'emergencydentalpros');
 				} elseif ($key === 'state_cities') {
 					esc_html_e('Variables: {state_name}, {state_short}, {state_slug}, {site_name}', 'emergencydentalpros');
 				} else {
@@ -104,6 +104,41 @@ if (!defined('ABSPATH')) {
 						?>
 					</td>
 				</tr>
+				<?php if ($key === 'city_landing') : ?>
+				<tr>
+					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_communities_h2"><?php esc_html_e('Communities section — H2', 'emergencydentalpros'); ?></label></th>
+					<td>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][communities_h2]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_communities_h2"
+							value="<?php echo esc_attr((string) ($t['communities_h2'] ?? '')); ?>" />
+						<p class="description"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_communities_body"><?php esc_html_e('Communities section — Text (HTML)', 'emergencydentalpros'); ?></label></th>
+					<td>
+						<?php
+						wp_editor(
+							(string) ($t['communities_body'] ?? ''),
+							'edp_communities_body_' . $key,
+							[
+								'textarea_name' => 'edp_seo[templates][' . $key . '][communities_body]',
+								'media_buttons' => false,
+								'textarea_rows' => 5,
+							]
+						);
+						?>
+						<p class="description"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}, {list_of_related_zips}, {main_zip}', 'emergencydentalpros'); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_other_cities_h2"><?php esc_html_e('Other cities section — H2', 'emergencydentalpros'); ?></label></th>
+					<td>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][other_cities_h2]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_other_cities_h2"
+							value="<?php echo esc_attr((string) ($t['other_cities_h2'] ?? '')); ?>" />
+						<p class="description"><?php esc_html_e('Variables: {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+					</td>
+				</tr>
+				<?php endif; ?>
 			</table>
 			<?php
 		endforeach;

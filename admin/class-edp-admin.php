@@ -118,10 +118,17 @@ final class EDP_Admin
             }
 
             $t = $raw['templates'][$ctx];
-            $merged['templates'][$ctx]['meta_title'] = (string) ($t['meta_title'] ?? '');
+            $merged['templates'][$ctx]['meta_title']       = (string) ($t['meta_title'] ?? '');
             $merged['templates'][$ctx]['meta_description'] = (string) ($t['meta_description'] ?? '');
-            $merged['templates'][$ctx]['h1'] = (string) ($t['h1'] ?? '');
-            $merged['templates'][$ctx]['body'] = (string) ($t['body'] ?? '');
+            $merged['templates'][$ctx]['h1']               = (string) ($t['h1'] ?? '');
+            $merged['templates'][$ctx]['subtitle']         = (string) ($t['subtitle'] ?? '');
+            $merged['templates'][$ctx]['body']             = (string) ($t['body'] ?? '');
+
+            if ($ctx === 'city_landing') {
+                $merged['templates'][$ctx]['communities_h2']   = (string) ($t['communities_h2'] ?? '');
+                $merged['templates'][$ctx]['communities_body'] = (string) ($t['communities_body'] ?? '');
+                $merged['templates'][$ctx]['other_cities_h2']  = (string) ($t['other_cities_h2'] ?? '');
+            }
         }
 
         EDP_Settings::save($merged);
