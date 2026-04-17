@@ -25,7 +25,6 @@ final class EDP_Admin
     {
         add_action('admin_menu', [self::class, 'menus']);
         add_action('admin_post_edp_seo_save_settings', [self::class, 'handle_save_settings']);
-        add_action('admin_post_edp_seo_import', [self::class, 'handle_import']);
         add_action('admin_post_edp_seo_save_google', [self::class, 'handle_save_google']);
         add_action('admin_post_edp_seo_google_import', [self::class, 'handle_google_import']);
         add_action('admin_post_edp_seo_google_test', [self::class, 'handle_google_test']);
@@ -36,7 +35,6 @@ final class EDP_Admin
         add_action('wp_ajax_edp_google_fetch_location', [self::class, 'ajax_google_fetch_location']);
         add_action('wp_ajax_edp_google_delete_location', [self::class, 'ajax_google_delete_location']);
         add_action('admin_post_edp_sheet_save_url', [self::class, 'handle_sheet_save_url']);
-        add_action('wp_ajax_edp_sheet_sync', [self::class, 'ajax_sheet_sync']);
         add_action('admin_post_edp_sheet_sa_save', [self::class, 'handle_sheet_sa_save']);
         add_action('admin_post_edp_sheet_sa_clear', [self::class, 'handle_sheet_sa_clear']);
         add_action('wp_ajax_edp_sheet_sync_v2', [self::class, 'ajax_sheet_sync_v2']);
@@ -275,171 +273,6 @@ final class EDP_Admin
             add_query_arg('sheet_saved', '1', admin_url('admin.php?page=edp-seo-import'))
         );
         exit;
-    }
-
-    /**
-     * AJAX: run a full Google Sheets sync in one call.
-     * Fetches the saved Sheet URL, downloads CSV, upserts + smart-deletes cities.
-     */
-    public static function ajax_sheet_sync(): void
-    {
-        check_ajax_referer('edp_sheet_sync', 'nonce');
-
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
-        }
-
-        $url = (string) get_option(self::OPTION_SHEET_URL, '');
-
-        if ($url === '') {
-            wp_send_json_error(['message' => esc_html__('No Google Sheets URL saved. Enter and save a URL first.', 'emergencydentalpros')]);
-        }
-
-        // Allow more time — large sheets can take a few seconds to download + parse.
-        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-        @set_time_limit(120);
-
-        $result = EDP_Importer::sync_from_sheet($url);
-
-        // Persist log so the Locations screen can show it.
-        $log = array_merge(
-            $result,
-            [
-                'at'   => time(),
-                'ok'   => empty($result['error']),
-                'rows' => (int) ($result['rows'] ?? 0),
-            ]
-        );
-        update_option(self::OPTION_IMPORT_LOG, $log, false);
-
-        if (!empty($result['error'])) {
-            wp_send_json_error(['message' => (string) $result['error'], 'result' => $result]);
-        }
-
-        wp_send_json_success($result);
-    }
-
-    public static function handle_import(): void
-    {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Forbidden', 'emergencydentalpros'));
-        }
-
-        check_admin_referer('edp_seo_import', 'edp_seo_import_nonce');
-
-        $default_path = EDP_PLUGIN_DIR . 'raw_data.csv';
-        $path = '';
-        $cleanup_temp = null;
-        $upload_label = '';
-
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES not unslashed; validated via is_uploaded_file() below.
-        $file = isset( $_FILES['edp_csv_file'] ) && is_array( $_FILES['edp_csv_file'] ) ? $_FILES['edp_csv_file'] : null;
-
-        if ($file !== null && !empty($file['name'])) {
-            $err = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
-
-            if ($err !== UPLOAD_ERR_OK) {
-                if ($err === UPLOAD_ERR_NO_FILE) {
-                    // Treat as "no upload" and fall through to server default below.
-                } else {
-                    $reason = self::map_php_upload_error_code($err);
-                    wp_safe_redirect(
-                        admin_url('admin.php?page=edp-seo-import&import_error=upload&reason=' . rawurlencode($reason))
-                    );
-                    exit;
-                }
-            } else {
-                $original_name = isset($file['name']) ? (string) $file['name'] : '';
-
-                if ($original_name === '' || !preg_match('/\.csv$/i', $original_name)) {
-                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload_wp'));
-                    exit;
-                }
-
-                if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
-                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload_wp'));
-                    exit;
-                }
-
-                $tmp = trailingslashit(get_temp_dir()) . 'edp-seo-' . wp_generate_password(16, false, false) . '.csv';
-
-                if (!@move_uploaded_file($file['tmp_name'], $tmp)) {
-                    wp_safe_redirect(admin_url('admin.php?page=edp-seo-import&import_error=upload&reason=write'));
-                    exit;
-                }
-
-                $path = $tmp;
-                $cleanup_temp = $path;
-                $upload_label = 'upload:' . sanitize_file_name($original_name);
-            }
-        }
-
-        if ($path === '') {
-            $path = $default_path;
-        }
-
-        $result = null;
-
-        try {
-            $result = EDP_Importer::import_from_csv_file($path);
-        } finally {
-            if ($cleanup_temp !== null && is_string($cleanup_temp) && $cleanup_temp !== '' && is_file($cleanup_temp)) {
-                wp_delete_file($cleanup_temp);
-            }
-        }
-
-        if ($upload_label !== '' && is_array($result)) {
-            $result['path'] = $upload_label;
-        }
-
-        $log = [
-            'at' => time(),
-            'path' => is_array($result) ? ($result['path'] ?? $path) : $path,
-            'ok' => is_array($result) && empty($result['error']),
-            'error' => is_array($result) && isset($result['error']) ? (string) $result['error'] : '',
-            'rows' => is_array($result) ? (int) ($result['rows'] ?? 0) : 0,
-            'skipped' => is_array($result) ? (int) ($result['skipped'] ?? 0) : 0,
-            'groups' => is_array($result) ? (int) ($result['groups'] ?? 0) : 0,
-        ];
-
-        update_option(self::OPTION_IMPORT_LOG, $log, false);
-
-        if (is_array($result)) {
-            set_transient(
-                'edp_seo_last_import',
-                $result,
-                MINUTE_IN_SECONDS * 30
-            );
-        }
-
-        $query = ['imported' => '1'];
-
-        if (is_array($result) && !empty($result['error'])) {
-            $query['import_error'] = '1';
-        }
-
-        wp_safe_redirect(add_query_arg($query, admin_url('admin.php?page=edp-seo-import')));
-        exit;
-    }
-
-    private static function map_php_upload_error_code(int $code): string
-    {
-        switch ($code) {
-            case UPLOAD_ERR_INI_SIZE:
-                return 'ini';
-            case UPLOAD_ERR_FORM_SIZE:
-                return 'form';
-            case UPLOAD_ERR_PARTIAL:
-                return 'partial';
-            case UPLOAD_ERR_NO_TMP_DIR:
-                return 'tmp';
-            case UPLOAD_ERR_CANT_WRITE:
-                return 'write';
-            case UPLOAD_ERR_EXTENSION:
-                return 'ext';
-            default:
-                return 'unknown';
-        }
     }
 
     /**
