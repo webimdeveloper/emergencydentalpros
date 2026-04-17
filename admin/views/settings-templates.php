@@ -12,85 +12,287 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-?>
-<div class="wrap">
-	<h1><?php esc_html_e('Local SEO — Templates', 'emergencydentalpros'); ?></h1>
+$contexts = [
+	'states_index' => __('States Index', 'emergencydentalpros'),
+	'state_cities' => __('State + Cities', 'emergencydentalpros'),
+	'city_landing' => __('City Landing', 'emergencydentalpros'),
+];
 
-	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- post-redirect-get success flag. ?>
-	<?php if ( isset( $_GET['updated'] ) ) : ?>
-		<div class="notice notice-success is-dismissible"><p><?php esc_html_e('Settings saved.', 'emergencydentalpros'); ?></p></div>
+$context_vars = [
+	'states_index' => '{site_name}',
+	'state_cities' => '{state_name}, {state_short}, {state_slug}, {site_name}',
+	'city_landing' => '{city_name}, {state_name}, {state_short}, {county_name}, {main_zip}, {list_of_related_zips}, {site_name}',
+];
+
+?>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&display=swap');
+
+#edp-tpl-wrap {
+	font-family: 'Lato', sans-serif;
+	color: #3A3541;
+	max-width: 900px;
+}
+#edp-tpl-wrap h1 {
+	font-family: 'Lato', sans-serif;
+	font-weight: 700;
+	font-size: 25.63px;
+	color: #3A3541;
+	margin-bottom: 4px;
+}
+#edp-tpl-wrap .edp-subtitle {
+	font-size: 14.22px;
+	color: #89868D;
+	margin-top: 0;
+	margin-bottom: 24px;
+}
+
+/* Notice */
+.edp-notice {
+	border-radius: 8px;
+	padding: 12px 16px;
+	margin-bottom: 16px;
+	font-size: 14.22px;
+}
+.edp-notice-success { background: #f0faf4; border-left: 4px solid #2ecc71; color: #0a7040; }
+
+/* Card */
+.edp-card {
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 0 4px rgba(0,0,0,0.15);
+	margin-bottom: 24px;
+	overflow: hidden;
+}
+.edp-card-header {
+	background: #E7E7F4;
+	padding: 16px 20px;
+	font-weight: 500;
+	font-size: 16px;
+	color: #3A3541;
+}
+.edp-card-body {
+	padding: 20px;
+}
+
+/* Form rows */
+.edp-form-row {
+	margin-bottom: 16px;
+}
+.edp-form-row label {
+	display: block;
+	font-size: 14.22px;
+	font-weight: 500;
+	color: #3A3541;
+	margin-bottom: 6px;
+}
+.edp-form-row input[type="text"],
+.edp-form-row textarea {
+	background: #F4F5F9;
+	border: 1px solid #DBDCDE;
+	border-radius: 8px;
+	padding: 10px 14px;
+	font-size: 14.22px;
+	font-family: 'Lato', sans-serif;
+	color: #3A3541;
+	width: 100%;
+	max-width: 600px;
+	box-sizing: border-box;
+}
+.edp-form-row input[type="text"]:focus,
+.edp-form-row textarea:focus {
+	outline: none;
+	border-color: #6E39CB;
+	box-shadow: 0 0 0 2px rgba(110,57,203,0.15);
+}
+.edp-form-row textarea { resize: vertical; }
+.edp-form-row .edp-hint {
+	font-size: 12.64px;
+	color: #89868D;
+	margin-top: 4px;
+}
+.edp-hint-vars {
+	display: inline-block;
+	background: #F4F5F9;
+	border: 1px solid #DBDCDE;
+	border-radius: 6px;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: #3A3541;
+	margin-bottom: 16px;
+	font-family: monospace;
+}
+.edp-divider {
+	border: none;
+	border-top: 1px solid #DBDCDE;
+	margin: 20px 0;
+}
+
+/* Buttons */
+.edp-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: 4px;
+	height: 32px;
+	padding: 0 24px;
+	font-size: 12.64px;
+	font-family: 'Lato', sans-serif;
+	cursor: pointer;
+	transition: opacity 0.15s;
+}
+.edp-btn:hover { opacity: 0.88; }
+.edp-btn-primary { background: #6E39CB; color: #fff; }
+.edp-btn-row { margin-top: 20px; }
+
+/* --- Tabs --- */
+.edp-tabs-nav {
+	display: flex;
+	border-bottom: 2px solid #DBDCDE;
+	margin-bottom: 0;
+	padding: 0 20px;
+	background: #fff;
+	gap: 0;
+}
+.edp-tab-btn {
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	padding: 14px 20px;
+	font-family: 'Lato', sans-serif;
+	font-size: 14.22px;
+	color: #89868D;
+	cursor: pointer;
+	transition: color 0.15s, border-color 0.15s;
+	white-space: nowrap;
+}
+.edp-tab-btn:hover { color: #3A3541; }
+.edp-tab-btn.is-active {
+	color: #6E39CB;
+	border-bottom-color: #6E39CB;
+	font-weight: 700;
+}
+
+/*
+ * TinyMCE-safe hide: off-screen rather than display:none so WP editors
+ * can initialize on all panels, then we visually show/hide via JS.
+ */
+.edp-tab-panel {
+	position: absolute;
+	left: -9999px;
+	top: -9999px;
+	width: 860px;         /* keeps layout stable for TinyMCE */
+	pointer-events: none;
+	opacity: 0;
+	overflow: hidden;
+	height: 0;
+}
+.edp-tab-panel.is-active {
+	position: static;
+	left: auto;
+	top: auto;
+	width: auto;
+	pointer-events: auto;
+	opacity: 1;
+	overflow: visible;
+	height: auto;
+	padding: 20px;
+}
+
+/* WP editor overrides inside our form rows */
+.edp-tab-panel .wp-editor-wrap { border-radius: 6px; overflow: hidden; }
+.edp-tab-panel .edp-form-row .wp-editor-container textarea {
+	background: #F4F5F9;
+	border: none;
+}
+</style>
+
+<div id="edp-tpl-wrap" class="wrap">
+	<h1><?php esc_html_e('Local SEO — Templates', 'emergencydentalpros'); ?></h1>
+	<p class="edp-subtitle"><?php esc_html_e('SEO meta, headings, and content templates for each page type.', 'emergencydentalpros'); ?></p>
+
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['updated'])) : ?>
+		<div class="edp-notice edp-notice-success"><?php esc_html_e('Settings saved.', 'emergencydentalpros'); ?></div>
 	<?php endif; ?>
 
 	<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 		<?php wp_nonce_field('edp_seo_save_settings', 'edp_seo_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_save_settings" />
 
-		<h2><?php esc_html_e('Business', 'emergencydentalpros'); ?></h2>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><label for="edp_business_name"><?php esc_html_e('Business name (schema)', 'emergencydentalpros'); ?></label></th>
-				<td>
-					<input name="edp_seo[business_name]" type="text" id="edp_business_name" class="regular-text"
+		<?php /* ---- Business card ---- */ ?>
+		<div class="edp-card">
+			<div class="edp-card-header"><?php esc_html_e('Business', 'emergencydentalpros'); ?></div>
+			<div class="edp-card-body">
+				<div class="edp-form-row">
+					<label for="edp_business_name"><?php esc_html_e('Business name (schema)', 'emergencydentalpros'); ?></label>
+					<input name="edp_seo[business_name]" type="text" id="edp_business_name"
 						value="<?php echo esc_attr((string) ($settings['business_name'] ?? '')); ?>" />
-				</td>
-			</tr>
-		</table>
+				</div>
+			</div>
+		</div>
 
-		<?php
-		$contexts = [
-			'states_index' => __('States index (/locations/)', 'emergencydentalpros'),
-			'state_cities' => __('State + cities list (/locations/{state}/)', 'emergencydentalpros'),
-			'city_landing' => __('City landing page', 'emergencydentalpros'),
-		];
+		<?php /* ---- Tabbed template sections ---- */ ?>
+		<div class="edp-card">
+			<div class="edp-tabs-nav" role="tablist">
+				<?php foreach ($contexts as $key => $label) : ?>
+					<button
+						type="button"
+						class="edp-tab-btn<?php echo $key === 'states_index' ? ' is-active' : ''; ?>"
+						role="tab"
+						aria-selected="<?php echo $key === 'states_index' ? 'true' : 'false'; ?>"
+						aria-controls="edp-panel-<?php echo esc_attr($key); ?>"
+						data-tab="<?php echo esc_attr($key); ?>"
+					><?php echo esc_html($label); ?></button>
+				<?php endforeach; ?>
+			</div>
 
-		foreach ($contexts as $key => $label) :
-			$t = isset($templates[$key]) && is_array($templates[$key]) ? $templates[$key] : [];
+			<?php foreach ($contexts as $key => $label) :
+				$t = isset($templates[$key]) && is_array($templates[$key]) ? $templates[$key] : [];
 			?>
-			<hr />
-			<h2><?php echo esc_html($label); ?></h2>
-			<p class="description">
-				<?php
-				if ($key === 'city_landing') {
-					esc_html_e('Variables: {city_name}, {state_name}, {state_short}, {county_name}, {main_zip}, {list_of_related_zips}, {site_name}', 'emergencydentalpros');
-				} elseif ($key === 'state_cities') {
-					esc_html_e('Variables: {state_name}, {state_short}, {state_slug}, {site_name}', 'emergencydentalpros');
-				} else {
-					esc_html_e('Variables: {site_name}', 'emergencydentalpros');
-				}
-				?>
-			</p>
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_mt"><?php esc_html_e('Meta title', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][meta_title]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_mt"
+				<div
+					id="edp-panel-<?php echo esc_attr($key); ?>"
+					class="edp-tab-panel<?php echo $key === 'states_index' ? ' is-active' : ''; ?>"
+					role="tabpanel"
+					aria-labelledby="edp-tab-<?php echo esc_attr($key); ?>"
+				>
+					<p class="edp-hint" style="margin-top:0; margin-bottom:12px;">
+						<?php esc_html_e('Available variables:', 'emergencydentalpros'); ?>
+						<span class="edp-hint-vars"><?php echo esc_html($context_vars[$key]); ?></span>
+					</p>
+
+					<div class="edp-form-row">
+						<label for="edp_<?php echo esc_attr($key); ?>_mt"><?php esc_html_e('Meta title', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][meta_title]" type="text"
+							id="edp_<?php echo esc_attr($key); ?>_mt"
 							value="<?php echo esc_attr((string) ($t['meta_title'] ?? '')); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_md"><?php esc_html_e('Meta description', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<textarea name="edp_seo[templates][<?php echo esc_attr($key); ?>][meta_description]" class="large-text" rows="3" id="edp_<?php echo esc_attr($key); ?>_md"><?php echo esc_textarea((string) ($t['meta_description'] ?? '')); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_h1"><?php esc_html_e('H1', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][h1]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_h1"
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_<?php echo esc_attr($key); ?>_md"><?php esc_html_e('Meta description', 'emergencydentalpros'); ?></label>
+						<textarea name="edp_seo[templates][<?php echo esc_attr($key); ?>][meta_description]"
+							rows="3" id="edp_<?php echo esc_attr($key); ?>_md"><?php echo esc_textarea((string) ($t['meta_description'] ?? '')); ?></textarea>
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_<?php echo esc_attr($key); ?>_h1"><?php esc_html_e('H1', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][h1]" type="text"
+							id="edp_<?php echo esc_attr($key); ?>_h1"
 							value="<?php echo esc_attr((string) ($t['h1'] ?? '')); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_subtitle"><?php esc_html_e('Subtitle', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][subtitle]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_subtitle"
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_<?php echo esc_attr($key); ?>_subtitle"><?php esc_html_e('Subtitle', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][subtitle]" type="text"
+							id="edp_<?php echo esc_attr($key); ?>_subtitle"
 							value="<?php echo esc_attr((string) ($t['subtitle'] ?? '')); ?>" />
-						<p class="description"><?php esc_html_e('Section heading displayed below H1 on the page.', 'emergencydentalpros'); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_body"><?php esc_html_e('Content (HTML)', 'emergencydentalpros'); ?></label></th>
-					<td>
+						<p class="edp-hint"><?php esc_html_e('Section heading displayed below H1 on the page.', 'emergencydentalpros'); ?></p>
+					</div>
+
+					<div class="edp-form-row">
+						<label><?php esc_html_e('Content (HTML)', 'emergencydentalpros'); ?></label>
 						<?php
 						wp_editor(
 							(string) ($t['body'] ?? ''),
@@ -102,48 +304,88 @@ if (!defined('ABSPATH')) {
 							]
 						);
 						?>
-					</td>
-				</tr>
-				<?php if ($key === 'city_landing') : ?>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_communities_h2"><?php esc_html_e('Communities section — H2', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][communities_h2]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_communities_h2"
-							value="<?php echo esc_attr((string) ($t['communities_h2'] ?? '')); ?>" />
-						<p class="description"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_communities_body"><?php esc_html_e('Communities section — Text (HTML)', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<?php
-						wp_editor(
-							(string) ($t['communities_body'] ?? ''),
-							'edp_communities_body_' . $key,
-							[
-								'textarea_name' => 'edp_seo[templates][' . $key . '][communities_body]',
-								'media_buttons' => false,
-								'textarea_rows' => 5,
-							]
-						);
-						?>
-						<p class="description"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}, {list_of_related_zips}, {main_zip}', 'emergencydentalpros'); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="edp_<?php echo esc_attr($key); ?>_other_cities_h2"><?php esc_html_e('Other cities section — H2', 'emergencydentalpros'); ?></label></th>
-					<td>
-						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][other_cities_h2]" type="text" class="large-text" id="edp_<?php echo esc_attr($key); ?>_other_cities_h2"
-							value="<?php echo esc_attr((string) ($t['other_cities_h2'] ?? '')); ?>" />
-						<p class="description"><?php esc_html_e('Variables: {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-					</td>
-				</tr>
-				<?php endif; ?>
-			</table>
-			<?php
-		endforeach;
-		?>
+					</div>
 
-		<?php submit_button(__('Save', 'emergencydentalpros')); ?>
+					<?php if ($key === 'city_landing') : ?>
+						<hr class="edp-divider" />
+
+						<div class="edp-form-row">
+							<label for="edp_<?php echo esc_attr($key); ?>_communities_h2"><?php esc_html_e('Communities section — H2', 'emergencydentalpros'); ?></label>
+							<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][communities_h2]" type="text"
+								id="edp_<?php echo esc_attr($key); ?>_communities_h2"
+								value="<?php echo esc_attr((string) ($t['communities_h2'] ?? '')); ?>" />
+							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+						</div>
+
+						<div class="edp-form-row">
+							<label><?php esc_html_e('Communities section — Text (HTML)', 'emergencydentalpros'); ?></label>
+							<?php
+							wp_editor(
+								(string) ($t['communities_body'] ?? ''),
+								'edp_communities_body_' . $key,
+								[
+									'textarea_name' => 'edp_seo[templates][' . $key . '][communities_body]',
+									'media_buttons' => false,
+									'textarea_rows' => 5,
+								]
+							);
+							?>
+							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}, {list_of_related_zips}, {main_zip}', 'emergencydentalpros'); ?></p>
+						</div>
+
+						<div class="edp-form-row">
+							<label for="edp_<?php echo esc_attr($key); ?>_other_cities_h2"><?php esc_html_e('Other cities section — H2', 'emergencydentalpros'); ?></label>
+							<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][other_cities_h2]" type="text"
+								id="edp_<?php echo esc_attr($key); ?>_other_cities_h2"
+								value="<?php echo esc_attr((string) ($t['other_cities_h2'] ?? '')); ?>" />
+							<p class="edp-hint"><?php esc_html_e('Variables: {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+		</div>
+
+		<div class="edp-btn-row">
+			<button type="submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Save', 'emergencydentalpros'); ?></button>
+		</div>
 	</form>
 </div>
+
+<script>
+(function () {
+	var tabs   = document.querySelectorAll('#edp-tpl-wrap .edp-tab-btn');
+	var panels = document.querySelectorAll('#edp-tpl-wrap .edp-tab-panel');
+
+	tabs.forEach(function (tab) {
+		tab.addEventListener('click', function () {
+			var target = tab.dataset.tab;
+
+			tabs.forEach(function (t) {
+				t.classList.remove('is-active');
+				t.setAttribute('aria-selected', 'false');
+			});
+			panels.forEach(function (p) {
+				p.classList.remove('is-active');
+			});
+
+			tab.classList.add('is-active');
+			tab.setAttribute('aria-selected', 'true');
+
+			var panel = document.getElementById('edp-panel-' + target);
+			if (panel) {
+				panel.classList.add('is-active');
+
+				/* Re-init any TinyMCE editors in this panel so they render correctly */
+				if (typeof tinymce !== 'undefined') {
+					panel.querySelectorAll('.wp-editor-area').forEach(function (el) {
+						var id = el.id;
+						if (tinymce.get(id)) {
+							tinymce.get(id).show();
+						}
+					});
+				}
+			}
+		});
+	});
+})();
+</script>
