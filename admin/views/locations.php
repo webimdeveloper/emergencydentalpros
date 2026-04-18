@@ -551,7 +551,9 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				<p><?php esc_html_e('Map a post ID, create a static page from templates, or fetch Google Business data.', 'emergencydentalpros'); ?></p>
 			</div>
 		</div>
-		<?php $table->display(); ?>
+		<form id="edp-locations-filter" method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
+			<?php $table->display(); ?>
+		</form>
 	</div>
 </div>
 
