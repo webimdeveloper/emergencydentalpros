@@ -26,40 +26,72 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&display=swap');
 
-/* ── Page shell ───────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════
+   EDP Locations Admin — scoped to #edp-locations-wrap
+   ════════════════════════════════════════════════════ */
+
+/* ── 1. Design Tokens ─────────────────────────────── */
 #edp-locations-wrap {
+	--c-brand:       #6E39CB;
+	--c-brand-ring:  rgba(110,57,203,.15);
+	--c-type:        #3A3541;
+	--c-muted:       #89868D;
+	--c-surface:     #F4F5F9;
+	--c-surface2:    #E7E7F4;
+	--c-border:      #DBDCDE;
+	--c-white:       #fff;
+	--c-shadow:      0 0 4px rgba(0,0,0,.15);
+	--c-ok:          #0a7040;
+	--c-ok-bg:       #f0faf4;
+	--c-ok-bd:       #2ecc71;
+	--c-err:         #b32d2e;
+	--c-err-bg:      #fff5f5;
+	--c-err-bd:      #e74c3c;
+	--c-warn:        #7a5200;
+	--c-warn-bg:     #fff3cd;
+	--c-warn-bd:     #f0b429;
+	--c-info-tx:     #1a4a7a;
+	--c-info-bg:     #f0f6fc;
+	--c-info-bd:     #2271b1;
+	--r-card:        8px;
+	--r-btn:         4px;
+	--r-input:       8px;
+	--h-btn:         32px;
+	--h-btn-sm:      26px;
 	font-family: 'Lato', sans-serif;
-	color: #3A3541;
+	color: var(--c-type);
 }
+
+/* ── 2. Page Shell ────────────────────────────────── */
 #edp-locations-wrap h1 {
 	font-family: 'Lato', sans-serif;
 	font-weight: 700;
 	font-size: 25.63px;
-	color: #3A3541;
+	color: var(--c-type);
 	margin-bottom: 4px;
 }
 #edp-locations-wrap .edp-subtitle {
 	font-size: 14.22px;
-	color: #89868D;
+	color: var(--c-muted);
 	margin-top: 0;
 	margin-bottom: 24px;
 }
 
-/* ── Notices ──────────────────────────────────────────────── */
+/* ── 3. Notices ───────────────────────────────────── */
 .edp-notice {
-	border-radius: 8px;
+	border-radius: var(--r-card);
 	padding: 12px 16px;
 	margin-bottom: 16px;
 	font-size: 14.22px;
 	font-family: 'Lato', sans-serif;
 }
 .edp-notice ul { margin: 6px 0 0; padding-left: 1.25em; list-style: disc; }
-.edp-notice-success { background: #f0faf4; border-left: 4px solid #2ecc71; color: #0a7040; }
-.edp-notice-error   { background: #fff5f5; border-left: 4px solid #e74c3c; color: #c0392b; }
-.edp-notice-warning { background: #fff3cd; border-left: 4px solid #f0b429; color: #7a5200; }
-.edp-notice-info    { background: #f0f6fc; border-left: 4px solid #2271b1; color: #1a4a7a; }
+.edp-notice-success { background: var(--c-ok-bg);   border-left: 4px solid var(--c-ok-bd);   color: var(--c-ok); }
+.edp-notice-error   { background: var(--c-err-bg);  border-left: 4px solid var(--c-err-bd);  color: var(--c-err); }
+.edp-notice-warning { background: var(--c-warn-bg); border-left: 4px solid var(--c-warn-bd); color: var(--c-warn); }
+.edp-notice-info    { background: var(--c-info-bg); border-left: 4px solid var(--c-info-bd); color: var(--c-info-tx); }
 
-/* ── Stat cards row ───────────────────────────────────────── */
+/* ── 4. Stat Cards ────────────────────────────────── */
 .edp-stat-row {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -67,100 +99,88 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	margin-bottom: 24px;
 }
 .edp-stat-card {
-	background: #fff;
-	border-radius: 8px;
-	box-shadow: 0 0 4px rgba(0,0,0,0.15);
+	background: var(--c-white);
+	border-radius: var(--r-card);
+	box-shadow: var(--c-shadow);
 	padding: 20px;
 	font-family: 'Lato', sans-serif;
 }
 .edp-stat-card-title {
 	font-weight: 700;
 	font-size: 25.63px;
-	color: #3A3541;
+	color: var(--c-type);
 	margin: 0 0 4px;
 	line-height: 1;
 }
 .edp-stat-card-sub {
 	font-size: 14.22px;
-	color: #89868D;
+	color: var(--c-muted);
 	margin: 0 0 16px;
 }
-.edp-stat-row-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+.edp-stat-row-items { display: flex; flex-direction: column; gap: 8px; }
 .edp-stat-item {
 	display: flex;
 	align-items: flex-start;
 	gap: 8px;
 	font-size: 14.22px;
-	color: #3A3541;
+	color: var(--c-type);
 }
-.edp-stat-item .dashicons {
-	flex-shrink: 0;
-	font-size: 16px;
-	width: 16px;
-	height: 16px;
-	margin-top: 2px;
-}
-.edp-stat-item .dashicons-yes  { color: #0a7040; }
-.edp-stat-item .dashicons-warning { color: #b32d2e; }
-.edp-stat-item .dashicons-info  { color: #2271b1; }
-.edp-stat-label { color: #89868D; }
-.edp-stat-val   { color: #3A3541; font-weight: 500; }
-.edp-stat-err   { color: #b32d2e; font-size: 12.64px; margin-top: 2px; }
+.edp-stat-item .dashicons { flex-shrink: 0; font-size: 16px; width: 16px; height: 16px; margin-top: 2px; }
+.edp-stat-item .dashicons-yes     { color: var(--c-ok); }
+.edp-stat-item .dashicons-warning { color: var(--c-err); }
+.edp-stat-item .dashicons-info    { color: #2271b1; }
+.edp-stat-label { color: var(--c-muted); }
+.edp-stat-val   { color: var(--c-type); font-weight: 500; }
+.edp-stat-err   { color: var(--c-err); font-size: 12.64px; margin-top: 2px; }
 .edp-stat-card-actions {
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	margin-top: 16px;
 	padding-top: 14px;
-	border-top: 1px solid #DBDCDE;
+	border-top: 1px solid var(--c-border);
 }
 
-/* ── Buttons ──────────────────────────────────────────────── */
+/* ── 5. Buttons ───────────────────────────────────── */
 .edp-btn {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	border: none;
-	border-radius: 4px;
-	height: 32px;
+	border-radius: var(--r-btn);
+	height: var(--h-btn);
 	padding: 0 16px;
 	font-size: 12.64px;
 	font-family: 'Lato', sans-serif;
 	cursor: pointer;
 	text-decoration: none;
-	transition: opacity 0.15s;
+	transition: opacity .15s;
 	line-height: 1;
 }
-.edp-btn:hover { opacity: 0.88; text-decoration: none; }
-.edp-btn-primary   { background: #6E39CB; color: #fff !important; }
-.edp-btn-secondary { background: #fff; color: #3A3541 !important; box-shadow: 0 0 4px rgba(0,0,0,0.15); }
+.edp-btn:hover          { opacity: .88; text-decoration: none; }
+.edp-btn-primary        { background: var(--c-brand); color: var(--c-white) !important; }
+.edp-btn-secondary      { background: var(--c-white); color: var(--c-type) !important; box-shadow: var(--c-shadow); }
 
-/* ── Diagnostics card ─────────────────────────────────────── */
+/* ── 6. Diagnostics Card ──────────────────────────── */
 .edp-diag-card {
-	background: #fff;
-	border-radius: 8px;
-	box-shadow: 0 0 4px rgba(0,0,0,0.15);
+	background: var(--c-white);
+	border-radius: var(--r-card);
+	box-shadow: var(--c-shadow);
 	margin-bottom: 24px;
 	overflow: hidden;
 }
 .edp-diag-header {
-	background: #fff3cd;
+	background: var(--c-warn-bg);
 	padding: 12px 20px;
 	font-weight: 500;
 	font-size: 14.22px;
-	color: #7a5200;
+	color: var(--c-warn);
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
-.edp-diag-body {
-	padding: 16px 20px;
-}
-.edp-diag-body p { font-size: 13px; color: #89868D; margin: 0 0 8px; }
+.edp-diag-body { padding: 16px 20px; }
+.edp-diag-body p { font-size: 13px; color: var(--c-muted); margin: 0 0 8px; }
 .edp-diag-body pre {
 	max-height: 420px;
 	overflow: auto;
@@ -172,11 +192,11 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	margin: 0;
 }
 
-/* ── Table card ───────────────────────────────────────────── */
+/* ── 7. Table Card ────────────────────────────────── */
 .edp-table-card {
-	background: #fff;
-	border-radius: 8px;
-	box-shadow: 0 0 4px rgba(0,0,0,0.15);
+	background: var(--c-white);
+	border-radius: var(--r-card);
+	box-shadow: var(--c-shadow);
 	overflow: hidden;
 }
 .edp-table-header {
@@ -185,62 +205,46 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	justify-content: space-between;
 	padding: 20px 20px 0;
 }
-.edp-table-header-text {}
-.edp-table-header-text h2 {
+.edp-table-header h2 {
 	font-weight: 700;
 	font-size: 25.63px;
-	color: #3A3541;
+	color: var(--c-type);
 	margin: 0 0 4px;
 	padding: 0;
 	line-height: 1;
 	border: none;
 }
-.edp-table-header-text p {
-	font-size: 14.22px;
-	color: #89868D;
-	margin: 0;
-}
+.edp-table-header p { font-size: 14.22px; color: var(--c-muted); margin: 0; }
 
-/* WP List Table overrides — matches Figma table style */
+/* ── 8. WP List Table Overrides ───────────────────── */
 #edp-locations-wrap .tablenav {
 	padding: 10px 20px;
 	display: flex;
 	align-items: center;
 }
-#edp-locations-wrap .tablenav.top {
-	border-bottom: 1px solid #DBDCDE;
-}
-#edp-locations-wrap .tablenav.bottom {
-	border-top: 1px solid #DBDCDE;
-}
-#edp-locations-wrap .tablenav .tablenav-pages {
-	font-family: 'Lato', sans-serif;
-	font-size: 13px;
-	color: #89868D;
-}
-#edp-locations-wrap .tablenav .button {
-	font-family: 'Lato', sans-serif;
-	border-radius: 4px;
-}
+#edp-locations-wrap .tablenav.top    { border-bottom: 1px solid var(--c-border); }
+#edp-locations-wrap .tablenav.bottom { border-top: 1px solid var(--c-border); }
+#edp-locations-wrap .tablenav .tablenav-pages { font-family: 'Lato', sans-serif; font-size: 13px; color: var(--c-muted); }
+#edp-locations-wrap .tablenav .button { font-family: 'Lato', sans-serif; border-radius: var(--r-btn); }
 #edp-locations-wrap .search-box input[type="search"] {
-	background: #F4F5F9;
-	border: 1px solid #DBDCDE;
-	border-radius: 8px;
+	background: var(--c-surface);
+	border: 1px solid var(--c-border);
+	border-radius: var(--r-input);
 	padding: 6px 12px;
 	font-family: 'Lato', sans-serif;
 	font-size: 14.22px;
-	color: #3A3541;
+	color: var(--c-type);
 }
 #edp-locations-wrap .search-box input[type="search"]:focus {
 	outline: none;
-	border-color: #6E39CB;
-	box-shadow: 0 0 0 2px rgba(110,57,203,0.15);
+	border-color: var(--c-brand);
+	box-shadow: 0 0 0 2px var(--c-brand-ring);
 }
 #edp-locations-wrap .search-box .button {
-	background: #6E39CB;
-	color: #fff;
-	border-color: #6E39CB;
-	border-radius: 4px;
+	background: var(--c-brand);
+	color: var(--c-white);
+	border-color: var(--c-brand);
+	border-radius: var(--r-btn);
 	font-family: 'Lato', sans-serif;
 }
 #edp-locations-wrap table.wp-list-table {
@@ -253,78 +257,64 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 }
 #edp-locations-wrap table.wp-list-table thead th,
 #edp-locations-wrap table.wp-list-table thead td {
-	background: #fff;
+	background: var(--c-white);
 	font-family: 'Lato', sans-serif;
 	font-weight: 500;
 	font-size: 16px;
-	color: #3A3541;
-	border-bottom: 1px solid #DBDCDE;
+	color: var(--c-type);
+	border-bottom: 1px solid var(--c-border);
 	border-top: none;
 	padding: 14px 20px;
 	white-space: nowrap;
 }
 #edp-locations-wrap table.wp-list-table thead th a,
-#edp-locations-wrap table.wp-list-table thead th a:hover {
-	color: #3A3541;
-	font-weight: 500;
-}
+#edp-locations-wrap table.wp-list-table thead th a:hover { color: var(--c-type); font-weight: 500; }
 #edp-locations-wrap table.wp-list-table thead th.sorted,
 #edp-locations-wrap table.wp-list-table thead th.asc,
-#edp-locations-wrap table.wp-list-table thead th.desc {
-	background: #F4F5F9;
-}
+#edp-locations-wrap table.wp-list-table thead th.desc { background: var(--c-surface); }
 #edp-locations-wrap table.wp-list-table tbody tr {
-	border-bottom: 1px solid #F4F5F9;
-	background: #fff;
-	transition: background 0.1s;
+	border-bottom: 1px solid var(--c-surface);
+	background: var(--c-white);
+	transition: background .1s;
 }
-#edp-locations-wrap table.wp-list-table tbody tr:hover {
-	background: #fafafa;
-}
-#edp-locations-wrap table.wp-list-table tbody tr.alternate {
-	background: #fff;
-}
+#edp-locations-wrap table.wp-list-table tbody tr:hover { background: #fafafa; }
+#edp-locations-wrap table.wp-list-table tbody tr.alternate { background: var(--c-white); }
 #edp-locations-wrap table.wp-list-table tbody td,
 #edp-locations-wrap table.wp-list-table tbody th {
-	border-bottom: 1px solid #F4F5F9;
+	border-bottom: 1px solid var(--c-surface);
 	border-top: none;
 	padding: 14px 20px;
 	font-size: 14.22px;
-	color: #89868D;
+	color: var(--c-muted);
 	vertical-align: middle;
 	font-family: 'Lato', sans-serif;
 }
 #edp-locations-wrap table.wp-list-table tbody td.column-primary,
-#edp-locations-wrap table.wp-list-table tbody th.column-primary {
-	color: #3A3541;
-	font-weight: 500;
-}
-#edp-locations-wrap table.wp-list-table .row-actions {
-	font-size: 12.64px;
-	color: #89868D;
-}
-#edp-locations-wrap table.wp-list-table .row-actions a {
-	color: #6E39CB;
-}
+#edp-locations-wrap table.wp-list-table tbody th.column-primary { color: var(--c-type); font-weight: 500; }
+#edp-locations-wrap table.wp-list-table .row-actions { font-size: 12.64px; color: var(--c-muted); }
+#edp-locations-wrap table.wp-list-table .row-actions a { color: var(--c-brand); }
 #edp-locations-wrap table.wp-list-table .row-actions .delete a,
-#edp-locations-wrap table.wp-list-table .row-actions .trash a {
-	color: #b32d2e;
-}
+#edp-locations-wrap table.wp-list-table .row-actions .trash a { color: var(--c-err); }
 
-/* Existing listing-cell badges — keep functional, refine visuals */
+/* ── 9. Table Cell Components ─────────────────────── */
+
+/* Google Business cell */
 #edp-locations-wrap .edp-listing-cell { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 #edp-locations-wrap .edp-listing-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; line-height: 1; font-family: 'Lato', sans-serif; }
-#edp-locations-wrap .edp-listing-badge--has   { color: #0a7040; font-weight: 600; }
-#edp-locations-wrap .edp-listing-badge--empty { color: #89868D; }
+#edp-locations-wrap .edp-listing-badge--has   { color: var(--c-ok); font-weight: 600; }
+#edp-locations-wrap .edp-listing-badge--empty { color: var(--c-muted); }
 #edp-locations-wrap .edp-listing-badge .dashicons { font-size: 15px; width: 15px; height: 15px; }
 #edp-locations-wrap .edp-listing-btns { display: inline-flex; gap: 4px; }
+#edp-locations-wrap .edp-listing-cell--loading { opacity: .45; pointer-events: none; }
+
+/* Shared small button */
 #edp-locations-wrap .edp-listing-btn {
-	background: #fff !important;
-	border: 1px solid #DBDCDE !important;
-	border-radius: 4px !important;
-	color: #3A3541 !important;
+	background: var(--c-white) !important;
+	border: 1px solid var(--c-border) !important;
+	border-radius: var(--r-btn) !important;
+	color: var(--c-type) !important;
 	padding: 3px 8px !important;
-	min-height: 26px !important;
+	min-height: var(--h-btn-sm) !important;
 	line-height: 1 !important;
 	display: inline-flex !important;
 	align-items: center !important;
@@ -332,28 +322,77 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	font-size: 12px !important;
 	font-family: 'Lato', sans-serif !important;
 	cursor: pointer;
-	transition: background 0.12s, border-color 0.12s;
+	transition: background .12s, border-color .12s;
 }
 #edp-locations-wrap .edp-listing-btn:hover {
-	background: #F4F5F9 !important;
-	border-color: #6E39CB !important;
-	color: #6E39CB !important;
+	background: var(--c-surface) !important;
+	border-color: var(--c-brand) !important;
+	color: var(--c-brand) !important;
 }
 #edp-locations-wrap .edp-listing-btn .dashicons { font-size: 13px; width: 13px; height: 13px; }
-#edp-locations-wrap .edp-listing-btn--danger { color: #b32d2e !important; border-color: #b32d2e !important; }
-#edp-locations-wrap .edp-listing-btn--danger:hover { background: #fff5f5 !important; }
-#edp-locations-wrap .edp-listing-cell--loading { opacity: 0.45; pointer-events: none; }
+#edp-locations-wrap .edp-listing-btn--danger { color: var(--c-err) !important; border-color: var(--c-err) !important; }
+#edp-locations-wrap .edp-listing-btn--danger:hover { background: var(--c-err-bg) !important; }
+
+/* Static Page cell */
+#edp-locations-wrap .edp-static-page-cell { display: inline-flex; align-items: center; gap: 8px; }
+#edp-locations-wrap .edp-page-link {
+	color: var(--c-brand);
+	font-weight: 500;
+	font-size: 13px;
+	text-decoration: none;
+}
+#edp-locations-wrap .edp-page-link:hover { text-decoration: underline; }
+#edp-locations-wrap .edp-btn-create {
+	gap: 4px;
+}
+
+/* Map Post input */
+#edp-locations-wrap .edp-map-post-input {
+	background: var(--c-surface);
+	border: 1px solid var(--c-border);
+	border-radius: var(--r-input);
+	padding: 5px 10px;
+	font-size: 13px;
+	font-family: 'Lato', sans-serif;
+	color: var(--c-type);
+	width: 90px;
+	transition: border-color .15s, box-shadow .15s;
+}
+#edp-locations-wrap .edp-map-post-input:focus {
+	outline: none;
+	border-color: var(--c-brand);
+	box-shadow: 0 0 0 2px var(--c-brand-ring);
+}
+#edp-locations-wrap .edp-map-post-input.edp-input--error {
+	border-color: var(--c-err-bd);
+	box-shadow: 0 0 0 2px rgba(231,76,60,.15);
+}
 </style>
 
 <div id="edp-locations-wrap" class="wrap">
 	<h1><?php esc_html_e('Local SEO — Locations', 'emergencydentalpros'); ?></h1>
-	<p class="edp-subtitle"><?php esc_html_e('Map locations to posts, create CPT overrides, or run Google Places fetch per city.', 'emergencydentalpros'); ?></p>
+	<p class="edp-subtitle"><?php esc_html_e('Map locations to posts, create static page overrides, or run Google Places fetch per city.', 'emergencydentalpros'); ?></p>
 
 	<?php /* ── Flash notices ── */ ?>
 
 	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 	<?php if (isset($_GET['google_none'])) : ?>
 		<div class="edp-notice edp-notice-warning"><?php esc_html_e('No locations were selected.', 'emergencydentalpros'); ?></div>
+	<?php endif; ?>
+
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['pages_created'])) :
+		$_pages_created = (int) $_GET['pages_created'];
+		$_pages_skipped = isset($_GET['pages_skipped']) ? (int) $_GET['pages_skipped'] : 0;
+	?>
+		<div class="edp-notice edp-notice-success">
+			<?php printf(
+				/* translators: 1: created count, 2: skipped count */
+				esc_html__('Created %1$d static page(s). Skipped %2$d (already exist or errors).', 'emergencydentalpros'),
+				(int) $_pages_created,
+				(int) $_pages_skipped
+			); ?>
+		</div>
 	<?php endif; ?>
 
 	<?php if ($edp_google_notice !== null) :
@@ -430,10 +469,10 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 							<?php if ($has_err) :
 								$err_code = isset($import_log['error']) ? (string) $import_log['error'] : '';
 								$err_msgs = [
-									'file_not_readable'      => __('CSV could not be read (wrong path or permissions).', 'emergencydentalpros'),
-									'fopen_failed'           => __('Could not open CSV file.', 'emergencydentalpros'),
-									'empty_or_invalid_csv'   => __('CSV was empty or invalid.', 'emergencydentalpros'),
-									'missing_columns'        => __('CSV is missing required columns (zip, city, state_id, state_name).', 'emergencydentalpros'),
+									'file_not_readable'        => __('CSV could not be read (wrong path or permissions).', 'emergencydentalpros'),
+									'fopen_failed'             => __('Could not open CSV file.', 'emergencydentalpros'),
+									'empty_or_invalid_csv'     => __('CSV was empty or invalid.', 'emergencydentalpros'),
+									'missing_columns'          => __('CSV is missing required columns (zip, city, state_id, state_name).', 'emergencydentalpros'),
 									'custom_path_not_readable' => __('The custom CSV path was not readable.', 'emergencydentalpros'),
 								];
 							?>
@@ -507,9 +546,9 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	<?php /* ── Table card ── */ ?>
 	<div class="edp-table-card">
 		<div class="edp-table-header">
-			<div class="edp-table-header-text">
+			<div>
 				<h2><?php esc_html_e('Locations', 'emergencydentalpros'); ?></h2>
-				<p><?php esc_html_e('Map a location to an existing post/page ID, create a CPT override from global templates, or clear overrides.', 'emergencydentalpros'); ?></p>
+				<p><?php esc_html_e('Map a post ID, create a static page from templates, or fetch Google Business data.', 'emergencydentalpros'); ?></p>
 			</div>
 		</div>
 		<?php $table->display(); ?>
@@ -518,6 +557,16 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 <script>
 (function () {
+	var nonces = {
+		mapPost:      <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
+		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
+		listingActions: null, // per-button via data-nonce
+	};
+
+	var errMsg = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
+	var confirmClear = <?php echo wp_json_encode(__('Remove static page override? The WordPress post will remain, only the link is removed.', 'emergencydentalpros')); ?>;
+
+	/* ── Google Business listing buttons ──────────────── */
 	function attachListingBtn(btn) {
 		btn.addEventListener('click', function () {
 			var locationId = this.dataset.locationId;
@@ -543,7 +592,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 					} else {
 						cell.innerHTML = original;
 						// eslint-disable-next-line no-alert
-						alert((json.data && json.data.message) || <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>);
+						alert((json.data && json.data.message) || errMsg);
 					}
 				})
 				.catch(function () {
@@ -552,6 +601,92 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		});
 	}
 
-	document.querySelectorAll('.edp-listing-btn').forEach(attachListingBtn);
+	document.querySelectorAll('.edp-listing-btn[data-listing-action]').forEach(attachListingBtn);
+
+	/* ── Map Post input — AJAX save on Enter / blur ───── */
+	function saveMapPost(input) {
+		var postId     = input.value.trim();
+		var locationId = input.dataset.locationId;
+
+		if (postId === '' || postId === '0') {
+			return;
+		}
+
+		fetch(ajaxurl, {
+			method: 'POST',
+			body: new URLSearchParams({
+				action:      'edp_save_post_mapping',
+				nonce:       nonces.mapPost,
+				location_id: locationId,
+				post_id:     postId,
+			}),
+		})
+			.then(function (r) { return r.json(); })
+			.then(function (json) {
+				if (json.success) {
+					input.classList.remove('edp-input--error');
+				} else {
+					input.classList.add('edp-input--error');
+				}
+			})
+			.catch(function () {
+				input.classList.add('edp-input--error');
+			});
+	}
+
+	document.querySelectorAll('.edp-map-post-input').forEach(function (input) {
+		input.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				input._skipBlur = true;
+				saveMapPost(input);
+				setTimeout(function () { input._skipBlur = false; }, 300);
+			}
+		});
+		input.addEventListener('blur', function () {
+			if (!input._skipBlur) {
+				saveMapPost(input);
+			}
+		});
+		input.addEventListener('input', function () {
+			input.classList.remove('edp-input--error');
+		});
+	});
+
+	/* ── Static Page — trash icon (clear override) ────── */
+	document.querySelectorAll('.edp-clear-cpt-btn').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			var locationId = this.dataset.locationId;
+
+			// eslint-disable-next-line no-alert
+			if (!confirm(confirmClear)) {
+				return;
+			}
+
+			btn.disabled = true;
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_clear_override',
+					nonce:       nonces.clearOverride,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						window.location.reload();
+					} else {
+						btn.disabled = false;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					btn.disabled = false;
+				});
+		});
+	});
 })();
 </script>

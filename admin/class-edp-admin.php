@@ -38,6 +38,8 @@ final class EDP_Admin
         add_action('admin_post_edp_sheet_sa_save', [self::class, 'handle_sheet_sa_save']);
         add_action('admin_post_edp_sheet_sa_clear', [self::class, 'handle_sheet_sa_clear']);
         add_action('wp_ajax_edp_sheet_sync_v2', [self::class, 'ajax_sheet_sync_v2']);
+        add_action('wp_ajax_edp_save_post_mapping', [self::class, 'ajax_save_post_mapping']);
+        add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
     }
 
     public static function menus(): void
@@ -383,7 +385,7 @@ final class EDP_Admin
     }
 
     /**
-     * Bulk action: Fetch Google Places (GET request from WP_List_Table).
+     * Bulk actions dispatcher: Fetch Google Places or Create Pages (GET request from WP_List_Table).
      */
     public static function maybe_bulk_fetch_google(): void
     {
@@ -400,17 +402,23 @@ final class EDP_Admin
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
         require_once EDP_PLUGIN_DIR . 'admin/class-edp-locations-list-table.php';
 
-        $table = new EDP_Locations_List_Table('');
+        $table  = new EDP_Locations_List_Table('');
         $action = $table->current_action();
 
-        if ($action !== 'fetch_google') {
-            return;
+        if ($action === 'fetch_google') {
+            self::bulk_fetch_google();
+        } elseif ($action === 'create_pages') {
+            self::bulk_create_pages();
         }
+    }
 
+    private static function bulk_fetch_google(): void
+    {
         check_admin_referer('bulk-locations');
 
-        $ids = isset($_REQUEST['location']) ? array_map('intval', (array) wp_unslash($_REQUEST['location'])) : [];
-        $ids = array_values(array_filter($ids));
+        $ids = isset($_REQUEST['location'])
+            ? array_values(array_filter(array_map('intval', (array) wp_unslash($_REQUEST['location']))))
+            : [];
 
         if ($ids === []) {
             wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&google_none=1'));
@@ -426,6 +434,79 @@ final class EDP_Admin
         );
 
         wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&google_bulk=1'));
+        exit;
+    }
+
+    private static function bulk_create_pages(): void
+    {
+        check_admin_referer('bulk-locations');
+
+        $ids = isset($_REQUEST['location'])
+            ? array_values(array_filter(array_map('intval', (array) wp_unslash($_REQUEST['location']))))
+            : [];
+
+        if ($ids === []) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&google_none=1'));
+            exit;
+        }
+
+        $settings = EDP_Settings::get_all();
+        $tpl      = $settings['templates']['city_landing'] ?? [];
+        $base     = EDP_Template_Engine::base_vars();
+        $created  = 0;
+        $skipped  = 0;
+
+        global $wpdb;
+        $db_table = EDP_Database::table_name();
+
+        foreach ($ids as $id) {
+            $row = EDP_Database::get_row_by_id($id);
+
+            if ($row === null) {
+                $skipped++;
+                continue;
+            }
+
+            // Skip rows that already have a CPT override.
+            if ((string) ($row['override_type'] ?? '') === 'cpt' && (int) ($row['custom_post_id'] ?? 0) > 0) {
+                $skipped++;
+                continue;
+            }
+
+            $vars  = EDP_Template_Engine::context_from_city_row($base, $row);
+            $title = EDP_Template_Engine::replace((string) ($tpl['meta_title'] ?? ''), $vars);
+            $body  = EDP_Template_Engine::replace((string) ($tpl['body'] ?? ''), $vars);
+
+            $post_id = wp_insert_post(
+                [
+                    'post_type'    => EDP_CPT::POST_TYPE,
+                    'post_status'  => 'publish',
+                    'post_title'   => $title,
+                    'post_content' => $body,
+                ],
+                true
+            );
+
+            if (!is_wp_error($post_id) && $post_id > 0) {
+                update_post_meta((int) $post_id, '_edp_location_id', $id);
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $wpdb->update(
+                    $db_table,
+                    ['custom_post_id' => (int) $post_id, 'override_type' => 'cpt'],
+                    ['id' => $id],
+                    ['%d', '%s'],
+                    ['%d']
+                );
+                $created++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        wp_safe_redirect(add_query_arg(
+            ['pages_created' => $created, 'pages_skipped' => $skipped],
+            admin_url('admin.php?page=edp-seo-locations')
+        ));
         exit;
     }
 
@@ -728,6 +809,74 @@ final class EDP_Admin
             'html'  => self::build_listing_cell_html($id, 0),
             'count' => 0,
         ]);
+    }
+
+    /**
+     * AJAX: save a post mapping for a location (Map Post column).
+     */
+    public static function ajax_save_post_mapping(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_map_post', 'nonce');
+
+        $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+        $post_id     = max(0, absint(wp_unslash($_POST['post_id'] ?? 0)));
+
+        if ($location_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        if ($post_id <= 0 || !get_post($post_id)) {
+            wp_send_json_error(['not_found' => true, 'message' => esc_html__('Post not found.', 'emergencydentalpros')]);
+        }
+
+        global $wpdb;
+        $table = EDP_Database::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->update(
+            $table,
+            ['custom_post_id' => $post_id, 'override_type' => 'mapped'],
+            ['id' => $location_id],
+            ['%d', '%s'],
+            ['%d']
+        );
+
+        wp_send_json_success(['post_id' => $post_id]);
+    }
+
+    /**
+     * AJAX: clear the static page override for a location (trash icon in Static Page column).
+     */
+    public static function ajax_clear_override(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_clear_override', 'nonce');
+
+        $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($location_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        global $wpdb;
+        $table = EDP_Database::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$table} SET custom_post_id = NULL, override_type = NULL WHERE id = %d",
+                $location_id
+            )
+        );
+
+        wp_send_json_success(['cleared' => true]);
     }
 
     /**

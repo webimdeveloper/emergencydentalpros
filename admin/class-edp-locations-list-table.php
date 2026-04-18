@@ -57,14 +57,13 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function get_columns(): array
     {
         return [
-            'cb' => '<input type="checkbox" />',
-            'id' => __('ID', 'emergencydentalpros'),
-            'state' => __('State', 'emergencydentalpros'),
-            'city' => __('City', 'emergencydentalpros'),
-            'google' => __('Listings', 'emergencydentalpros'),
-            'zips' => __('ZIPs', 'emergencydentalpros'),
-            'override' => __('Override', 'emergencydentalpros'),
-            'edp_actions' => __('Actions', 'emergencydentalpros'),
+            'cb'          => '<input type="checkbox" />',
+            'id'          => __('ID', 'emergencydentalpros'),
+            'state'       => __('State', 'emergencydentalpros'),
+            'city'        => __('City', 'emergencydentalpros'),
+            'google'      => __('Google Business', 'emergencydentalpros'),
+            'override'    => __('Static Page', 'emergencydentalpros'),
+            'edp_actions' => __('Map Post', 'emergencydentalpros'),
         ];
     }
 
@@ -110,6 +109,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
     {
         return [
             'fetch_google' => __('Fetch Google', 'emergencydentalpros'),
+            'create_pages' => __('Create Pages', 'emergencydentalpros'),
         ];
     }
 
@@ -267,76 +267,76 @@ final class EDP_Locations_List_Table extends WP_List_Table
         return '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html((string) ($item['city_name'] ?? '')) . '</a>';
     }
 
-    public function column_zips($item): string
-    {
-        $zips = [];
-
-        if (!empty($item['zips'])) {
-            $decoded = json_decode((string) $item['zips'], true);
-
-            if (is_array($decoded)) {
-                $zips = $decoded;
-            }
-        }
-
-        $count = count($zips);
-
-        return esc_html((string) $count);
-    }
-
+    /**
+     * Static Page column: "Create" button when no CPT exists; link + trash when CPT is set.
+     */
     public function column_override($item): string
     {
         $type = isset($item['override_type']) ? (string) $item['override_type'] : '';
-        $pid = isset($item['custom_post_id']) ? (int) $item['custom_post_id'] : 0;
+        $pid  = isset($item['custom_post_id']) ? (int) $item['custom_post_id'] : 0;
+        $id   = (int) ($item['id'] ?? 0);
 
-        if ($pid > 0 && $type !== '') {
-            $link = get_edit_post_link($pid);
+        if ($pid > 0 && $type === 'cpt') {
+            $edit_url = get_edit_post_link($pid);
+            $link     = $edit_url
+                ? '<a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer" class="edp-page-link">#' . esc_html((string) $pid) . '</a>'
+                : '<span class="edp-page-link">#' . esc_html((string) $pid) . '</span>';
 
-            if ($link) {
-                return esc_html($type) . ' (<a href="' . esc_url($link) . '">#' . esc_html((string) $pid) . '</a>)';
-            }
-
-            return esc_html($type) . ' (#' . esc_html((string) $pid) . ')';
+            return '<span class="edp-static-page-cell">'
+                . $link
+                . '<button type="button" '
+                . 'class="edp-listing-btn edp-listing-btn--danger edp-clear-cpt-btn" '
+                . 'data-location-id="' . esc_attr((string) $id) . '" '
+                . 'title="' . esc_attr__('Remove static page override', 'emergencydentalpros') . '">'
+                . '<span class="dashicons dashicons-trash" aria-hidden="true"></span>'
+                . '</button>'
+                . '</span>';
         }
 
-        return '—';
+        if ($id <= 0) {
+            return '—';
+        }
+
+        ob_start();
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
+            <input type="hidden" name="action" value="edp_seo_location_action" />
+            <input type="hidden" name="edp_action" value="create_cpt" />
+            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
+            <button type="submit" class="edp-listing-btn edp-btn-create">
+                <span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>
+                <?php esc_html_e('Create', 'emergencydentalpros'); ?>
+            </button>
+        </form>
+        <?php
+        return (string) ob_get_clean();
     }
 
+    /**
+     * Map Post column: post ID input field; AJAX save on Enter/blur.
+     */
     public function column_edp_actions($item): string
     {
-        $id = (int) ($item['id'] ?? 0);
+        $id   = (int) ($item['id'] ?? 0);
 
         if ($id <= 0) {
             return '';
         }
 
-        ob_start();
+        $pid  = isset($item['custom_post_id']) ? (int) $item['custom_post_id'] : 0;
+        $type = isset($item['override_type']) ? (string) $item['override_type'] : '';
+        $val  = ($type === 'mapped' && $pid > 0) ? $pid : '';
 
-        ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;margin-right:8px;">
-            <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_location_action" />
-            <input type="hidden" name="edp_action" value="map_post" />
-            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <input type="number" name="post_id" placeholder="<?php esc_attr_e('Post ID', 'emergencydentalpros'); ?>" min="1" style="width:90px;" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Redirect', 'emergencydentalpros'); ?></button>
-        </form>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;margin-right:8px;">
-            <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_location_action" />
-            <input type="hidden" name="edp_action" value="create_cpt" />
-            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Customize', 'emergencydentalpros'); ?></button>
-        </form>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block;">
-            <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_location_action" />
-            <input type="hidden" name="edp_action" value="clear_override" />
-            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="button button-small"><?php esc_html_e('Reset', 'emergencydentalpros'); ?></button>
-        </form>
-        <?php
-
-        return (string) ob_get_clean();
+        return sprintf(
+            '<input type="number" class="edp-map-post-input" '
+            . 'data-location-id="%1$d" '
+            . 'value="%2$s" '
+            . 'placeholder="%3$s" '
+            . 'min="1" />',
+            $id,
+            esc_attr((string) $val),
+            esc_attr__('Post ID', 'emergencydentalpros')
+        );
     }
 }
