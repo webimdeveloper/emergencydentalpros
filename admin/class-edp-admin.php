@@ -29,7 +29,6 @@ final class EDP_Admin
         add_action('admin_post_edp_seo_google_import', [self::class, 'handle_google_import']);
         add_action('admin_post_edp_seo_google_test', [self::class, 'handle_google_test']);
         add_action('admin_post_edp_seo_google_fetch_single', [self::class, 'handle_google_fetch_single']);
-        add_action('admin_init', [self::class, 'maybe_bulk_fetch_google'], 20);
         add_action('admin_post_edp_seo_location_action', [self::class, 'handle_location_action']);
         add_action('wp_ajax_edp_google_import_step', [self::class, 'ajax_google_import_step']);
         add_action('wp_ajax_edp_google_fetch_location', [self::class, 'ajax_google_fetch_location']);
@@ -72,7 +71,7 @@ final class EDP_Admin
             [self::class, 'render_import']
         );
 
-        add_submenu_page(
+        $locations_hook = add_submenu_page(
             'edp-seo',
             __('Locations', 'emergencydentalpros'),
             __('Locations', 'emergencydentalpros'),
@@ -80,6 +79,13 @@ final class EDP_Admin
             'edp-seo-locations',
             [self::class, 'render_locations']
         );
+
+        self::$locations_screen_hook = (string) $locations_hook;
+
+        // load-{hook} fires after the page is identified but before output — safe to redirect.
+        if ($locations_hook) {
+            add_action('load-' . $locations_hook, [self::class, 'maybe_bulk_fetch_google']);
+        }
     }
 
     public static function render_settings(): void
@@ -385,17 +391,12 @@ final class EDP_Admin
     }
 
     /**
-     * Bulk actions dispatcher: Fetch Google Places or Create Pages (GET request from WP_List_Table).
+     * Bulk actions dispatcher — hooked to load-{locations_hook} so it only runs on this page,
+     * before any output is sent, making wp_safe_redirect() safe to call.
      */
     public static function maybe_bulk_fetch_google(): void
     {
-        if (!is_admin() || !current_user_can('manage_options')) {
-            return;
-        }
-
-        $page = isset($_REQUEST['page']) ? sanitize_key((string) wp_unslash($_REQUEST['page'])) : '';
-
-        if ($page !== 'edp-seo-locations') {
+        if (!current_user_can('manage_options')) {
             return;
         }
 
