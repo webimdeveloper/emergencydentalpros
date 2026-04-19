@@ -91,17 +91,14 @@ test('Clicking "Check SEO" shows the status indicator on success', async ({ page
   await goToLocations(page);
   await mockPsiSuccess(page, 87, 95);
 
-  const btn = page.locator('.edp-check-seo-btn').first();
-  const td  = btn.locator('xpath=ancestor::td').first();
+  await page.locator('.edp-check-seo-btn').first().click();
 
-  await btn.click();
-
-  // Wait for the indicator to appear.
-  const indicator = td.locator('.edp-seo-indicator');
+  // After AJAX the cell innerHTML is replaced — look up from page root.
+  const indicator = page.locator('.edp-seo-indicator').first();
   await expect(indicator).toBeVisible({ timeout: 15_000 });
 
   // Score is shown.
-  await expect(td.locator('.edp-seo-score')).toContainText('87');
+  await expect(page.locator('.edp-seo-score').first()).toContainText('87');
 });
 
 // ── 4. Correct status class applied ──────────────────────────────────────────
