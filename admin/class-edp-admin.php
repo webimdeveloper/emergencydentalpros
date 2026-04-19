@@ -43,6 +43,8 @@ final class EDP_Admin
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
         add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
         add_action('wp_ajax_edp_check_pagespeed', [self::class, 'ajax_check_pagespeed']);
+        add_action('add_meta_boxes', [self::class, 'register_faq_metabox']);
+        add_action('save_post_' . EDP_CPT::POST_TYPE, [self::class, 'save_faq_metabox'], 10, 1);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             add_action('wp_ajax_edp_dev_seed_csv', [self::class, 'ajax_dev_seed_csv']);
@@ -142,6 +144,10 @@ final class EDP_Admin
                 $merged['templates'][$ctx]['communities_h2']   = (string) ($t['communities_h2'] ?? '');
                 $merged['templates'][$ctx]['communities_body'] = (string) ($t['communities_body'] ?? '');
                 $merged['templates'][$ctx]['other_cities_h2']  = (string) ($t['other_cities_h2'] ?? '');
+                $merged['templates'][$ctx]['faq_h2']           = (string) ($t['faq_h2'] ?? '');
+                $merged['templates'][$ctx]['faq_intro']        = (string) ($t['faq_intro'] ?? '');
+                // faq_items arrives as a JSON string from the hidden input serialized by JS.
+                $merged['templates'][$ctx]['faq_items']        = (string) ($t['faq_items'] ?? '[]');
             }
         }
 
@@ -1296,5 +1302,72 @@ final class EDP_Admin
             'mobile_score'   => $mobile['score'],
             'desktop_score'  => $desktop['score'],
         ]);
+    }
+
+    // ── CPT FAQ metabox ────────────────────────────────────────────────────────
+
+    public static function register_faq_metabox(): void
+    {
+        add_meta_box(
+            'edp_faq_metabox',
+            __('FAQ Section', 'emergencydentalpros'),
+            [self::class, 'render_faq_metabox'],
+            EDP_CPT::POST_TYPE,
+            'normal',
+            'default'
+        );
+    }
+
+    public static function render_faq_metabox(\WP_Post $post): void
+    {
+        require EDP_PLUGIN_DIR . 'admin/views/city-faq-metabox.php';
+    }
+
+    public static function save_faq_metabox(int $post_id): void
+    {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        if (!isset($_POST['edp_faq_metabox_nonce'])
+            || !wp_verify_nonce(sanitize_key($_POST['edp_faq_metabox_nonce']), 'edp_faq_metabox_' . $post_id)
+        ) {
+            return;
+        }
+
+        // Toggle: 1 = enabled, 0 = disabled.
+        $enabled = isset($_POST['edp_faq_enabled']) ? 1 : 0;
+        update_post_meta($post_id, '_edp_faq_enabled', $enabled);
+
+        $h2    = isset($_POST['edp_faq_h2'])    ? sanitize_text_field(wp_unslash((string) $_POST['edp_faq_h2']))    : '';
+        $intro = isset($_POST['edp_faq_intro'])  ? sanitize_text_field(wp_unslash((string) $_POST['edp_faq_intro'])) : '';
+        update_post_meta($post_id, '_edp_faq_h2', $h2);
+        update_post_meta($post_id, '_edp_faq_intro', $intro);
+
+        $raw_items = isset($_POST['edp_faq_items']) ? wp_unslash((string) $_POST['edp_faq_items']) : '[]';
+        $items_arr = json_decode($raw_items, true);
+        $clean     = [];
+
+        if (is_array($items_arr)) {
+            foreach ($items_arr as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $q = sanitize_text_field((string) ($item['q'] ?? ''));
+                if ($q === '') {
+                    continue;
+                }
+                $clean[] = [
+                    'q' => $q,
+                    'a' => wp_kses_post((string) ($item['a'] ?? '')),
+                ];
+            }
+        }
+
+        update_post_meta($post_id, '_edp_faq_items', wp_json_encode($clean));
     }
 }

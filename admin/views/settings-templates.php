@@ -207,6 +207,67 @@ $context_vars = [
 	background: #F4F5F9;
 	border: none;
 }
+
+/* ── FAQ repeater ── */
+.edp-faq-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-width: 600px;
+}
+.edp-faq-item {
+	display: flex;
+	gap: 8px;
+	align-items: flex-start;
+	background: #F4F5F9;
+	border: 1px solid #DBDCDE;
+	border-radius: 8px;
+	padding: 12px;
+}
+.edp-faq-item-fields {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.edp-faq-item-fields input[type="text"],
+.edp-faq-item-fields textarea {
+	width: 100%;
+	background: #fff;
+	border: 1px solid #DBDCDE;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-size: 13.5px;
+	font-family: 'Lato', sans-serif;
+	color: #3A3541;
+	box-sizing: border-box;
+}
+.edp-faq-item-fields input[type="text"]:focus,
+.edp-faq-item-fields textarea:focus {
+	outline: none;
+	border-color: #6E39CB;
+	box-shadow: 0 0 0 2px rgba(110,57,203,.15);
+}
+.edp-faq-item-fields textarea { resize: vertical; }
+.edp-faq-delete-btn {
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #89868D;
+	font-size: 16px;
+	line-height: 1;
+	padding: 4px 6px;
+	border-radius: 4px;
+	margin-top: 2px;
+	transition: color .12s, background .12s;
+}
+.edp-faq-delete-btn:hover { color: #b32d2e; background: #fff5f5; }
+.edp-btn-secondary {
+	background: #fff;
+	color: #3A3541;
+	box-shadow: 0 0 4px rgba(0,0,0,.15);
+}
 </style>
 
 <div id="edp-tpl-wrap" class="wrap">
@@ -340,6 +401,49 @@ $context_vars = [
 								value="<?php echo esc_attr((string) ($t['other_cities_h2'] ?? '')); ?>" />
 							<p class="edp-hint"><?php esc_html_e('Variables: {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
 						</div>
+
+						<hr class="edp-divider" />
+
+						<div class="edp-form-row">
+							<label for="edp_city_landing_faq_h2"><?php esc_html_e('FAQ section — H2', 'emergencydentalpros'); ?></label>
+							<input name="edp_seo[templates][city_landing][faq_h2]" type="text"
+								id="edp_city_landing_faq_h2"
+								value="<?php echo esc_attr((string) ($t['faq_h2'] ?? '')); ?>" />
+							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+						</div>
+
+						<div class="edp-form-row">
+							<label for="edp_city_landing_faq_intro"><?php esc_html_e('FAQ section — Short description', 'emergencydentalpros'); ?></label>
+							<input name="edp_seo[templates][city_landing][faq_intro]" type="text"
+								id="edp_city_landing_faq_intro"
+								value="<?php echo esc_attr((string) ($t['faq_intro'] ?? '')); ?>" />
+							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
+						</div>
+
+						<div class="edp-form-row">
+							<label><?php esc_html_e('FAQ Items', 'emergencydentalpros'); ?></label>
+							<p class="edp-hint" style="margin-bottom:10px;"><?php esc_html_e('These items appear on every dynamic city page. Static pages can override with unique content.', 'emergencydentalpros'); ?></p>
+							<div id="edp-faq-items-list" class="edp-faq-items-list">
+								<?php
+								$faq_items_saved = isset($t['faq_items']) && is_array($t['faq_items']) ? $t['faq_items'] : [];
+								foreach ($faq_items_saved as $idx => $faq_item) :
+									$fq = (string) ($faq_item['q'] ?? '');
+									$fa = (string) ($faq_item['a'] ?? '');
+								?>
+								<div class="edp-faq-item" data-index="<?php echo (int) $idx; ?>">
+									<div class="edp-faq-item-fields">
+										<input type="text" class="edp-faq-q" placeholder="<?php esc_attr_e('Question', 'emergencydentalpros'); ?>" value="<?php echo esc_attr($fq); ?>" />
+										<textarea class="edp-faq-a" rows="3" placeholder="<?php esc_attr_e('Answer', 'emergencydentalpros'); ?>"><?php echo esc_textarea($fa); ?></textarea>
+									</div>
+									<button type="button" class="edp-faq-delete-btn" title="<?php esc_attr_e('Delete item', 'emergencydentalpros'); ?>">&#x2715;</button>
+								</div>
+								<?php endforeach; ?>
+							</div>
+							<button type="button" id="edp-faq-add-btn" class="edp-btn edp-btn-secondary" style="margin-top:10px;">
+								+ <?php esc_html_e('Add FAQ Item', 'emergencydentalpros'); ?>
+							</button>
+							<input type="hidden" name="edp_seo[templates][city_landing][faq_items]" id="edp_faq_items_json" value="<?php echo esc_attr(wp_json_encode($faq_items_saved)); ?>" />
+						</div>
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
@@ -387,5 +491,61 @@ $context_vars = [
 			}
 		});
 	});
+})();
+
+/* ── FAQ repeater (settings page) ── */
+(function () {
+	var list    = document.getElementById('edp-faq-items-list');
+	var addBtn  = document.getElementById('edp-faq-add-btn');
+	var jsonIn  = document.getElementById('edp_faq_items_json');
+	var form    = jsonIn ? jsonIn.closest('form') : null;
+
+	if (!list || !addBtn || !jsonIn) { return; }
+
+	function makeItem(q, a) {
+		var wrap = document.createElement('div');
+		wrap.className = 'edp-faq-item';
+		wrap.innerHTML =
+			'<div class="edp-faq-item-fields">'
+			+ '<input type="text" class="edp-faq-q" placeholder="Question" value="' + escAttr(q) + '" />'
+			+ '<textarea class="edp-faq-a" rows="3" placeholder="Answer">' + escHtml(a) + '</textarea>'
+			+ '</div>'
+			+ '<button type="button" class="edp-faq-delete-btn" title="Delete">&#x2715;</button>';
+
+		wrap.querySelector('.edp-faq-delete-btn').addEventListener('click', function () {
+			wrap.remove();
+		});
+		return wrap;
+	}
+
+	function escAttr(s) {
+		return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+	}
+	function escHtml(s) {
+		return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+	}
+
+	/* Attach delete to pre-rendered items */
+	list.querySelectorAll('.edp-faq-delete-btn').forEach(function (btn) {
+		btn.addEventListener('click', function () { btn.closest('.edp-faq-item').remove(); });
+	});
+
+	addBtn.addEventListener('click', function () {
+		list.appendChild(makeItem('', ''));
+		list.lastElementChild.querySelector('.edp-faq-q').focus();
+	});
+
+	/* Serialize to JSON before submit */
+	if (form) {
+		form.addEventListener('submit', function () {
+			var items = [];
+			list.querySelectorAll('.edp-faq-item').forEach(function (row) {
+				var q = (row.querySelector('.edp-faq-q').value || '').trim();
+				var a = (row.querySelector('.edp-faq-a').value || '').trim();
+				if (q !== '') { items.push({ q: q, a: a }); }
+			});
+			jsonIn.value = JSON.stringify(items);
+		});
+	}
 })();
 </script>

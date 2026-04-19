@@ -409,6 +409,7 @@ final class EDP_View_Controller
                 'communities_h2'   => EDP_Template_Engine::replace((string) ($t_city['communities_h2'] ?? ''), $vars),
                 'communities_body' => EDP_Template_Engine::replace((string) ($t_city['communities_body'] ?? ''), $vars),
                 'other_cities_h2'  => EDP_Template_Engine::replace((string) ($t_city['other_cities_h2'] ?? ''), $vars),
+                'faq'              => $resolved['faq'] ?? ['enabled' => false, 'h2' => '', 'intro' => '', 'items' => []],
             ];
         }
 

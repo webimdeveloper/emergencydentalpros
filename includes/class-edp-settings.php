@@ -68,6 +68,9 @@ final class EDP_Settings
                     'communities_h2' => 'Communities We Cover in {county_name}',
                     'communities_body' => '<p>We serve patients across {city_name} and the surrounding communities. Service ZIP codes: {list_of_related_zips}.</p>',
                     'other_cities_h2' => 'Other Cities We Serve in {state_name}',
+                    'faq_h2' => 'Frequently Asked Questions in {city_name}',
+                    'faq_intro' => 'Got questions about emergency dental care in {city_name}? We have answers.',
+                    'faq_items' => [],
                 ],
             ],
         ];
@@ -104,6 +107,30 @@ final class EDP_Settings
                 $out['templates'][$ctx]['communities_h2']   = sanitize_text_field((string) ($t['communities_h2'] ?? $defaults['templates'][$ctx]['communities_h2']));
                 $out['templates'][$ctx]['communities_body'] = wp_kses_post((string) ($t['communities_body'] ?? $defaults['templates'][$ctx]['communities_body']));
                 $out['templates'][$ctx]['other_cities_h2']  = sanitize_text_field((string) ($t['other_cities_h2'] ?? $defaults['templates'][$ctx]['other_cities_h2']));
+                $out['templates'][$ctx]['faq_h2']           = sanitize_text_field((string) ($t['faq_h2'] ?? $defaults['templates'][$ctx]['faq_h2']));
+                $out['templates'][$ctx]['faq_intro']        = sanitize_text_field((string) ($t['faq_intro'] ?? $defaults['templates'][$ctx]['faq_intro']));
+
+                $raw_items = $t['faq_items'] ?? [];
+                if ( is_string( $raw_items ) ) {
+                    $raw_items = json_decode( $raw_items, true ) ?? [];
+                }
+                $clean_items = [];
+                if ( is_array( $raw_items ) ) {
+                    foreach ( $raw_items as $item ) {
+                        if ( ! is_array( $item ) ) {
+                            continue;
+                        }
+                        $q = sanitize_text_field( (string) ( $item['q'] ?? '' ) );
+                        if ( $q === '' ) {
+                            continue;
+                        }
+                        $clean_items[] = [
+                            'q' => $q,
+                            'a' => wp_kses_post( (string) ( $item['a'] ?? '' ) ),
+                        ];
+                    }
+                }
+                $out['templates'][$ctx]['faq_items'] = $clean_items;
             }
         }
 
