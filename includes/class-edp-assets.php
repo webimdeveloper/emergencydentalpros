@@ -36,6 +36,18 @@ final class EDP_Assets
 
     public static function enqueue_admin(): void
     {
+        $css_path = EDP_PLUGIN_DIR . 'admin/css/edp-admin.css';
+        $css_url  = EDP_PLUGIN_URL . 'admin/css/edp-admin.css';
+
+        if (file_exists($css_path)) {
+            wp_enqueue_style(
+                'edp-admin',
+                $css_url,
+                [],
+                (string) filemtime($css_path)
+            );
+        }
+
         $asset_rel_path = 'assets/main.js';
         $asset_abs_path = EDP_PLUGIN_DIR . $asset_rel_path;
         $asset_url = EDP_PLUGIN_URL . $asset_rel_path;
