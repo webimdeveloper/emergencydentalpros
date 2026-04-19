@@ -297,20 +297,12 @@ final class EDP_Locations_List_Table extends WP_List_Table
             return '—';
         }
 
-        ob_start();
-        ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-            <?php wp_nonce_field('edp_seo_location_action', 'edp_seo_location_nonce'); ?>
-            <input type="hidden" name="action" value="edp_seo_location_action" />
-            <input type="hidden" name="edp_action" value="create_cpt" />
-            <input type="hidden" name="location_id" value="<?php echo esc_attr((string) $id); ?>" />
-            <button type="submit" class="edp-listing-btn edp-btn-create">
-                <span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>
-                <?php esc_html_e('Create', 'emergencydentalpros'); ?>
-            </button>
-        </form>
-        <?php
-        return (string) ob_get_clean();
+        return '<button type="button" class="edp-listing-btn edp-btn-create edp-create-page-btn" '
+            . 'data-location-id="' . esc_attr((string) $id) . '" '
+            . 'title="' . esc_attr__('Create static page from template', 'emergencydentalpros') . '">'
+            . '<span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>'
+            . esc_html__('Create', 'emergencydentalpros')
+            . '</button>';
     }
 
     /**

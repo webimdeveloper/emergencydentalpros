@@ -560,9 +560,9 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 <script>
 (function () {
 	var nonces = {
-		mapPost:      <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
+		mapPost:       <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
 		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
-		listingActions: null, // per-button via data-nonce
+		createPage:    <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
 	};
 
 	var errMsg = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
@@ -655,8 +655,8 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		});
 	});
 
-	/* ── Static Page — trash icon (clear override) ────── */
-	document.querySelectorAll('.edp-clear-cpt-btn').forEach(function (btn) {
+	/* ── Static Page — Create button (AJAX, no nested form) ─ */
+	function attachClearBtn(btn) {
 		btn.addEventListener('click', function () {
 			var locationId = this.dataset.locationId;
 
@@ -689,6 +689,40 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 					btn.disabled = false;
 				});
 		});
+	}
+
+	document.querySelectorAll('.edp-create-page-btn').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			var locationId = this.dataset.locationId;
+			var cell       = this.closest('td');
+			btn.disabled   = true;
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_create_location_page',
+					nonce:       nonces.createPage,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						cell.innerHTML = json.data.html;
+						cell.querySelectorAll('.edp-clear-cpt-btn').forEach(attachClearBtn);
+					} else {
+						btn.disabled = false;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					btn.disabled = false;
+				});
+		});
 	});
+
+	/* ── Static Page — wire up any trash icons already on the page ── */
+	document.querySelectorAll('.edp-clear-cpt-btn').forEach(attachClearBtn);
 })();
 </script>

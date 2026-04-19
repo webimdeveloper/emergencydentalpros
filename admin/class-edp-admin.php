@@ -39,6 +39,7 @@ final class EDP_Admin
         add_action('wp_ajax_edp_sheet_sync_v2', [self::class, 'ajax_sheet_sync_v2']);
         add_action('wp_ajax_edp_save_post_mapping', [self::class, 'ajax_save_post_mapping']);
         add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
+        add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
     }
 
     public static function menus(): void
@@ -810,6 +811,87 @@ final class EDP_Admin
             'html'  => self::build_listing_cell_html($id, 0),
             'count' => 0,
         ]);
+    }
+
+    /**
+     * AJAX: create a CPT static page for a location (Create button in Static Page column).
+     * Returns updated cell HTML so the caller can swap it without a full page reload.
+     */
+    public static function ajax_create_location_page(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_create_location_page', 'nonce');
+
+        $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($location_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        $row = EDP_Database::get_row_by_id($location_id);
+
+        if ($row === null) {
+            wp_send_json_error(['message' => esc_html__('Location not found.', 'emergencydentalpros')]);
+        }
+
+        if ((string) ($row['override_type'] ?? '') === 'cpt' && (int) ($row['custom_post_id'] ?? 0) > 0) {
+            wp_send_json_error(['message' => esc_html__('Static page already exists.', 'emergencydentalpros')]);
+        }
+
+        $settings = EDP_Settings::get_all();
+        $tpl      = $settings['templates']['city_landing'] ?? [];
+        $base     = EDP_Template_Engine::base_vars();
+        $vars     = EDP_Template_Engine::context_from_city_row($base, $row);
+        $title    = EDP_Template_Engine::replace((string) ($tpl['meta_title'] ?? ''), $vars);
+        $body     = EDP_Template_Engine::replace((string) ($tpl['body'] ?? ''), $vars);
+
+        $post_id = wp_insert_post(
+            [
+                'post_type'    => EDP_CPT::POST_TYPE,
+                'post_status'  => 'publish',
+                'post_title'   => $title,
+                'post_content' => $body,
+            ],
+            true
+        );
+
+        if (is_wp_error($post_id) || $post_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Failed to create page.', 'emergencydentalpros')]);
+        }
+
+        update_post_meta((int) $post_id, '_edp_location_id', $location_id);
+
+        global $wpdb;
+        $table = EDP_Database::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->update(
+            $table,
+            ['custom_post_id' => (int) $post_id, 'override_type' => 'cpt'],
+            ['id' => $location_id],
+            ['%d', '%s'],
+            ['%d']
+        );
+
+        $edit_url = get_edit_post_link((int) $post_id);
+        $link     = $edit_url
+            ? '<a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer" class="edp-page-link">#' . (int) $post_id . '</a>'
+            : '<span class="edp-page-link">#' . (int) $post_id . '</span>';
+
+        $cell_html = '<span class="edp-static-page-cell">'
+            . $link
+            . '<button type="button" '
+            . 'class="edp-listing-btn edp-listing-btn--danger edp-clear-cpt-btn" '
+            . 'data-location-id="' . esc_attr((string) $location_id) . '" '
+            . 'title="' . esc_attr__('Remove static page override', 'emergencydentalpros') . '">'
+            . '<span class="dashicons dashicons-trash" aria-hidden="true"></span>'
+            . '</button>'
+            . '</span>';
+
+        wp_send_json_success(['html' => $cell_html, 'post_id' => (int) $post_id]);
     }
 
     /**
