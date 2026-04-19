@@ -392,7 +392,147 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	box-shadow: 0 0 0 2px rgba(231,76,60,.15);
 }
 
-/* ── 10. Column Filter / Sort UI ──────────────────── */
+/* ── 10. SEO Column ──────────────────────────────── */
+
+/* "Check SEO" + recheck button */
+#edp-locations-wrap .edp-check-seo-btn {
+	gap: 4px;
+}
+#edp-locations-wrap .edp-seo-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	position: relative;
+}
+
+/* Status indicator — dot + score */
+#edp-locations-wrap .edp-seo-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	cursor: default;
+	border-radius: 20px;
+	padding: 3px 10px 3px 8px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1;
+	border: 1px solid transparent;
+	transition: box-shadow .15s;
+}
+#edp-locations-wrap .edp-seo-indicator:hover { box-shadow: var(--c-shadow); }
+
+#edp-locations-wrap .edp-seo-dot {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	display: inline-block;
+	flex-shrink: 0;
+}
+#edp-locations-wrap .edp-seo--ok       .edp-seo-dot { background: var(--c-ok-bd); }
+#edp-locations-wrap .edp-seo--attention .edp-seo-dot { background: #f0b429; }
+#edp-locations-wrap .edp-seo--crucial   .edp-seo-dot { background: var(--c-err-bd); }
+
+#edp-locations-wrap .edp-seo--ok       { background: var(--c-ok-bg);   border-color: var(--c-ok-bd);   color: var(--c-ok); }
+#edp-locations-wrap .edp-seo--attention { background: var(--c-warn-bg); border-color: var(--c-warn-bd); color: var(--c-warn); }
+#edp-locations-wrap .edp-seo--crucial   { background: var(--c-err-bg);  border-color: var(--c-err-bd);  color: var(--c-err); }
+
+/* Recheck button */
+#edp-locations-wrap .edp-recheck-seo-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--c-muted);
+	padding: 2px 3px;
+	border-radius: var(--r-btn);
+	line-height: 1;
+	transition: color .12s, background .12s;
+}
+#edp-locations-wrap .edp-recheck-seo-btn:hover { color: var(--c-brand); background: var(--c-surface2); }
+#edp-locations-wrap .edp-recheck-seo-btn .dashicons { font-size: 14px; width: 14px; height: 14px; }
+#edp-locations-wrap .edp-recheck-seo-btn.edp-seo-loading .dashicons { animation: edp-spin .8s linear infinite; }
+@keyframes edp-spin { to { transform: rotate(360deg); } }
+
+/* SEO score popover */
+.edp-seo-popover {
+	position: fixed;
+	z-index: 99999;
+	background: var(--c-white);
+	border: 1px solid var(--c-border);
+	border-radius: var(--r-card, 8px);
+	box-shadow: 0 6px 24px rgba(0,0,0,.14);
+	width: 260px;
+	font-family: 'Lato', sans-serif;
+	overflow: hidden;
+	pointer-events: none;
+}
+.edp-seo-popover-tabs {
+	display: flex;
+	border-bottom: 1px solid var(--c-border);
+}
+.edp-seo-tab {
+	flex: 1;
+	background: none;
+	border: none;
+	padding: 8px 0;
+	font-size: 12.64px;
+	font-family: 'Lato', sans-serif;
+	font-weight: 600;
+	color: var(--c-muted);
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	transition: color .12s, border-color .12s;
+	pointer-events: all;
+}
+.edp-seo-tab.edp-seo-tab--active { color: var(--c-brand); border-bottom-color: var(--c-brand); }
+.edp-seo-tab:hover:not(.edp-seo-tab--active) { color: var(--c-type); }
+
+.edp-seo-popover-body { padding: 12px 14px 6px; }
+
+.edp-seo-score-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.edp-seo-score-big {
+	font-size: 32px;
+	font-weight: 700;
+	line-height: 1;
+}
+.edp-seo-score-big.edp-seo--ok       { color: var(--c-ok); }
+.edp-seo-score-big.edp-seo--attention { color: var(--c-warn); }
+.edp-seo-score-big.edp-seo--crucial   { color: var(--c-err); }
+
+.edp-seo-score-label {
+	font-size: 12px;
+	color: var(--c-muted);
+	line-height: 1.3;
+}
+.edp-seo-score-label strong { display: block; font-size: 13px; color: var(--c-type); font-weight: 600; }
+
+.edp-seo-metrics-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px 12px;
+	margin-bottom: 8px;
+}
+.edp-seo-metric {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.edp-metric-label { font-size: 11px; color: var(--c-muted); text-transform: uppercase; letter-spacing: .04em; }
+.edp-metric-value { font-size: 13px; font-weight: 600; color: var(--c-type); }
+
+.edp-seo-checked-at {
+	padding: 6px 14px 10px;
+	font-size: 11px;
+	color: var(--c-muted);
+	border-top: 1px solid var(--c-border);
+}
+
+/* ── 11. Column Filter / Sort UI ──────────────────── */
 
 /* Filter icon button inside <th> */
 .edp-col-filter-btn {
@@ -1060,6 +1200,202 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				});
 		});
 	}
+
+	/* ── SEO column ──────────────────────────────────── */
+	(function () {
+		var metricLabels = { lcp: 'LCP', tbt: 'TBT', cls: 'CLS', fcp: 'FCP', si: 'Speed Index' };
+		var statusLabels = { ok: 'Good', attention: 'Needs Improvement', crucial: 'Poor' };
+		var openSeoPopover = null;
+		var seoPopoverTarget = null;
+
+		function seoStatus(score) {
+			if (score >= 90) { return 'ok'; }
+			if (score >= 50) { return 'attention'; }
+			return 'crucial';
+		}
+
+		function buildSeoPopover(indicator) {
+			var mScore   = parseInt(indicator.dataset.mobileScore,  10) || 0;
+			var dScore   = parseInt(indicator.dataset.desktopScore, 10) || 0;
+			var mMet     = safeJson(indicator.dataset.mobileMetrics);
+			var dMet     = safeJson(indicator.dataset.desktopMetrics);
+			var checkedAt = indicator.dataset.checkedAt || '';
+			var activeTab = 'mobile';
+
+			var pop = document.createElement('div');
+			pop.className = 'edp-seo-popover';
+
+			function renderBody() {
+				var score   = activeTab === 'mobile' ? mScore   : dScore;
+				var metrics = activeTab === 'mobile' ? mMet     : dMet;
+				var status  = seoStatus(score);
+				var label   = statusLabels[status] || '';
+				var grid    = '';
+
+				Object.keys(metricLabels).forEach(function (k) {
+					grid += '<div class="edp-seo-metric">'
+						+ '<span class="edp-metric-label">' + metricLabels[k] + '</span>'
+						+ '<span class="edp-metric-value">' + escHtmlStr(metrics[k] || '\u2014') + '</span>'
+						+ '</div>';
+				});
+
+				return '<div class="edp-seo-popover-body">'
+					+ '<div class="edp-seo-score-row">'
+					+ '<span class="edp-seo-score-big edp-seo--' + status + '">' + score + '</span>'
+					+ '<span class="edp-seo-score-label"><strong>' + escHtmlStr(label) + '</strong>Performance</span>'
+					+ '</div>'
+					+ '<div class="edp-seo-metrics-grid">' + grid + '</div>'
+					+ '</div>'
+					+ (checkedAt ? '<div class="edp-seo-checked-at">Checked: ' + escHtmlStr(checkedAt) + '</div>' : '');
+			}
+
+			function render() {
+				pop.innerHTML =
+					'<div class="edp-seo-popover-tabs">'
+					+ '<button class="edp-seo-tab' + (activeTab === 'mobile' ? ' edp-seo-tab--active' : '') + '" data-tab="mobile">Mobile</button>'
+					+ '<button class="edp-seo-tab' + (activeTab === 'desktop' ? ' edp-seo-tab--active' : '') + '" data-tab="desktop">Desktop</button>'
+					+ '</div>'
+					+ renderBody();
+
+				pop.querySelectorAll('.edp-seo-tab').forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						activeTab = this.dataset.tab;
+						render();
+					});
+				});
+			}
+
+			render();
+			return pop;
+		}
+
+		function safeJson(str) {
+			try { return JSON.parse(str || '{}'); } catch (e) { return {}; }
+		}
+
+		function escHtmlStr(str) {
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+
+		function positionSeoPopover(pop, indicator) {
+			var rect = indicator.getBoundingClientRect();
+			var left = rect.left;
+			var top  = rect.bottom + 6;
+			if (left + 260 > window.innerWidth - 8) { left = window.innerWidth - 268; }
+			pop.style.left = left + 'px';
+			pop.style.top  = top  + 'px';
+		}
+
+		function closeSeoPopover() {
+			if (openSeoPopover) { openSeoPopover.remove(); openSeoPopover = null; seoPopoverTarget = null; }
+		}
+
+		function attachSeoIndicator(indicator) {
+			var leaveTimer;
+
+			indicator.addEventListener('mouseenter', function () {
+				clearTimeout(leaveTimer);
+				if (openSeoPopover && seoPopoverTarget === indicator) { return; }
+				closeSeoPopover();
+				var pop = buildSeoPopover(indicator);
+				document.body.appendChild(pop);
+				positionSeoPopover(pop, indicator);
+				openSeoPopover    = pop;
+				seoPopoverTarget  = indicator;
+
+				pop.addEventListener('mouseenter', function () { clearTimeout(leaveTimer); });
+				pop.addEventListener('mouseleave', function () {
+					leaveTimer = setTimeout(closeSeoPopover, 200);
+				});
+			});
+
+			indicator.addEventListener('mouseleave', function () {
+				leaveTimer = setTimeout(closeSeoPopover, 200);
+			});
+		}
+
+		function attachSeoCheckBtn(btn) {
+			btn.addEventListener('click', function () {
+				var locationId = this.dataset.locationId;
+				var nonce      = this.dataset.nonce;
+				var cell       = this.closest('td');
+				var original   = cell.innerHTML;
+
+				btn.disabled = true;
+				btn.style.opacity = '0.55';
+
+				fetch(ajaxurl, {
+					method: 'POST',
+					body: new URLSearchParams({
+						action:      'edp_check_pagespeed',
+						nonce:       nonce,
+						location_id: locationId,
+					}),
+				})
+					.then(function (r) { return r.json(); })
+					.then(function (json) {
+						if (json.success) {
+							cell.innerHTML = json.data.html;
+							cell.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
+							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
+						} else {
+							cell.innerHTML = original;
+							// eslint-disable-next-line no-alert
+							alert((json.data && json.data.message) || errMsg);
+						}
+					})
+					.catch(function () {
+						cell.innerHTML = original;
+					});
+			});
+		}
+
+		function attachRecheckBtn(btn) {
+			btn.addEventListener('click', function () {
+				var locationId = this.dataset.locationId;
+				var nonce      = this.dataset.nonce;
+				var cell       = this.closest('td');
+				var original   = cell.innerHTML;
+				var icon       = this.querySelector('.dashicons');
+
+				closeSeoPopover();
+				btn.disabled = true;
+				btn.classList.add('edp-seo-loading');
+
+				fetch(ajaxurl, {
+					method: 'POST',
+					body: new URLSearchParams({
+						action:      'edp_check_pagespeed',
+						nonce:       nonce,
+						location_id: locationId,
+					}),
+				})
+					.then(function (r) { return r.json(); })
+					.then(function (json) {
+						if (json.success) {
+							cell.innerHTML = json.data.html;
+							cell.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
+							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
+						} else {
+							cell.innerHTML = original;
+							// eslint-disable-next-line no-alert
+							alert((json.data && json.data.message) || errMsg);
+						}
+					})
+					.catch(function () {
+						cell.innerHTML = original;
+					});
+			});
+		}
+
+		document.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
+		document.querySelectorAll('.edp-check-seo-btn').forEach(attachSeoCheckBtn);
+		document.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
+	}());
 
 	/* ── Column filter / sort UI ─────────────────────── */
 	(function () {

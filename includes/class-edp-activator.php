@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class EDP_Activator {
 
-	public const DB_VERSION        = '1.3.0';
+	public const DB_VERSION        = '1.4.0';
 	public const OPTION_DB_VERSION = 'edp_seo_db_version';
 
 	public static function activate(): void {
@@ -61,6 +61,7 @@ final class EDP_Activator {
 		dbDelta( $sql );
 
 		self::create_nearby_table();
+		self::create_pagespeed_table();
 	}
 
 	public static function create_nearby_table(): void {
@@ -88,6 +89,29 @@ final class EDP_Activator {
             PRIMARY KEY  (id),
             UNIQUE KEY loc_provider_ext (location_id, provider, external_id),
             KEY location_id (location_id)
+        ) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	public static function create_pagespeed_table(): void {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table           = $wpdb->prefix . 'seo_pagespeed_cache';
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            location_id bigint(20) unsigned NOT NULL,
+            mobile_score tinyint(3) unsigned DEFAULT NULL,
+            desktop_score tinyint(3) unsigned DEFAULT NULL,
+            mobile_metrics longtext DEFAULT NULL,
+            desktop_metrics longtext DEFAULT NULL,
+            checked_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY location_id (location_id)
         ) {$charset_collate};";
 
 		dbDelta( $sql );

@@ -480,4 +480,103 @@ final class EDP_Database
 
         return is_array($row) ? $row : null;
     }
+
+    // ── PageSpeed cache ──────────────────────────────────────────────────────
+
+    public static function pagespeed_table_name(): string
+    {
+        global $wpdb;
+
+        return $wpdb->prefix . 'seo_pagespeed_cache';
+    }
+
+    /**
+     * @return array<string, mixed>|null  Row with mobile_metrics/desktop_metrics already decoded.
+     */
+    public static function get_pagespeed_cache(int $location_id): ?array
+    {
+        global $wpdb;
+
+        $table = self::pagespeed_table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $row   = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$table} WHERE location_id = %d LIMIT 1", $location_id ),
+            ARRAY_A
+        );
+
+        if ( ! is_array( $row ) ) {
+            return null;
+        }
+
+        $row['mobile_metrics']  = ! empty( $row['mobile_metrics'] )  ? json_decode( (string) $row['mobile_metrics'],  true ) : [];
+        $row['desktop_metrics'] = ! empty( $row['desktop_metrics'] ) ? json_decode( (string) $row['desktop_metrics'], true ) : [];
+
+        return $row;
+    }
+
+    /**
+     * Batch-load pagespeed cache rows.
+     *
+     * @param  list<int>           $ids
+     * @return array<int, array<string, mixed>>  location_id => decoded row
+     */
+    public static function get_pagespeed_for_locations( array $ids ): array
+    {
+        global $wpdb;
+
+        $ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+        $map = [];
+
+        if ( $ids === [] ) {
+            return $map;
+        }
+
+        $table        = self::pagespeed_table_name();
+        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $rows = $wpdb->get_results(
+            $wpdb->prepare( "SELECT * FROM {$table} WHERE location_id IN ({$placeholders})", ...$ids ),
+            ARRAY_A
+        );
+
+        if ( ! is_array( $rows ) ) {
+            return $map;
+        }
+
+        foreach ( $rows as $row ) {
+            $lid                    = (int) $row['location_id'];
+            $row['mobile_metrics']  = ! empty( $row['mobile_metrics'] )  ? json_decode( (string) $row['mobile_metrics'],  true ) : [];
+            $row['desktop_metrics'] = ! empty( $row['desktop_metrics'] ) ? json_decode( (string) $row['desktop_metrics'], true ) : [];
+            $map[ $lid ]            = $row;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Insert or replace a pagespeed cache row.
+     *
+     * @param array{score:int, metrics:array<string,string>} $mobile
+     * @param array{score:int, metrics:array<string,string>} $desktop
+     */
+    public static function upsert_pagespeed_cache( int $location_id, array $mobile, array $desktop ): void
+    {
+        global $wpdb;
+
+        $table = self::pagespeed_table_name();
+
+        $wpdb->replace(
+            $table,
+            [
+                'location_id'     => $location_id,
+                'mobile_score'    => (int) $mobile['score'],
+                'desktop_score'   => (int) $desktop['score'],
+                'mobile_metrics'  => wp_json_encode( $mobile['metrics'] ),
+                'desktop_metrics' => wp_json_encode( $desktop['metrics'] ),
+                'checked_at'      => current_time( 'mysql' ),
+            ],
+            [ '%d', '%d', '%d', '%s', '%s', '%s' ]
+        );
+    }
 }

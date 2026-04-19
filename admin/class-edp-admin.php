@@ -42,6 +42,7 @@ final class EDP_Admin
         add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
         add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
+        add_action('wp_ajax_edp_check_pagespeed', [self::class, 'ajax_check_pagespeed']);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             add_action('wp_ajax_edp_dev_seed_csv', [self::class, 'ajax_dev_seed_csv']);
@@ -1152,5 +1153,134 @@ final class EDP_Admin
         }
 
         wp_send_json_success($result);
+    }
+
+    // ── PageSpeed ────────────────────────────────────────────────────────────
+
+    /**
+     * Build the HTML for a single row's SEO status cell.
+     * $cache is null (no data yet) or a decoded row from EDP_Database::get_pagespeed_cache().
+     *
+     * @param array<string, mixed>|null $cache
+     */
+    public static function build_seo_cell_html(int $location_id, ?array $cache): string
+    {
+        $nonce = wp_create_nonce('edp_check_pagespeed');
+
+        if ($cache === null || empty($cache['mobile_score'])) {
+            return sprintf(
+                '<button type="button" class="edp-listing-btn edp-check-seo-btn" '
+                . 'data-location-id="%1$d" data-nonce="%2$s" '
+                . 'title="%3$s">'
+                . '<span class="dashicons dashicons-performance" aria-hidden="true"></span> %4$s'
+                . '</button>',
+                $location_id,
+                esc_attr($nonce),
+                esc_attr__('Run PageSpeed Insights check', 'emergencydentalpros'),
+                esc_html__('Check SEO', 'emergencydentalpros')
+            );
+        }
+
+        $mobile_score  = (int) $cache['mobile_score'];
+        $desktop_score = (int) $cache['desktop_score'];
+        $status        = EDP_Pagespeed_Client::status($mobile_score);
+        $checked_at    = isset($cache['checked_at'])
+            ? sprintf(
+                /* translators: %s time ago string */
+                __('%s ago', 'emergencydentalpros'),
+                human_time_diff(strtotime((string) $cache['checked_at']), current_time('timestamp'))
+            )
+            : '';
+
+        $mobile_metrics  = is_array($cache['mobile_metrics'])  ? $cache['mobile_metrics']  : [];
+        $desktop_metrics = is_array($cache['desktop_metrics']) ? $cache['desktop_metrics'] : [];
+
+        return sprintf(
+            '<div class="edp-seo-cell">'
+            . '<div class="edp-seo-indicator edp-seo--%1$s" '
+            .     'data-location-id="%2$d" '
+            .     'data-mobile-score="%3$d" '
+            .     'data-desktop-score="%4$d" '
+            .     'data-mobile-metrics="%5$s" '
+            .     'data-desktop-metrics="%6$s" '
+            .     'data-checked-at="%7$s">'
+            .     '<span class="edp-seo-dot" aria-hidden="true"></span>'
+            .     '<span class="edp-seo-score">%3$d</span>'
+            . '</div>'
+            . '<button type="button" class="edp-recheck-seo-btn" '
+            .     'data-location-id="%2$d" data-nonce="%8$s" '
+            .     'title="%9$s">'
+            .     '<span class="dashicons dashicons-update" aria-hidden="true"></span>'
+            . '</button>'
+            . '</div>',
+            esc_attr($status),
+            $location_id,
+            $mobile_score,
+            $desktop_score,
+            esc_attr((string) wp_json_encode($mobile_metrics)),
+            esc_attr((string) wp_json_encode($desktop_metrics)),
+            esc_attr($checked_at),
+            esc_attr($nonce),
+            esc_attr__('Recheck PageSpeed', 'emergencydentalpros')
+        );
+    }
+
+    /**
+     * AJAX: run PageSpeed Insights (mobile + desktop) for one location and store the result.
+     */
+    public static function ajax_check_pagespeed(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_check_pagespeed', 'nonce');
+
+        $id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($id <= 0) {
+            wp_send_json_error(['message' => __('Invalid location ID.', 'emergencydentalpros')]);
+        }
+
+        $api_key = EDP_Google_Places_Config::get_api_key();
+
+        if ($api_key === '') {
+            wp_send_json_error(['message' => __('Google API key not configured. Set it on the Import settings page.', 'emergencydentalpros')]);
+        }
+
+        $row = EDP_Database::get_row_by_id($id);
+
+        if (!is_array($row)) {
+            wp_send_json_error(['message' => __('Location not found.', 'emergencydentalpros')]);
+        }
+
+        $url    = home_url(user_trailingslashit('locations/' . rawurlencode((string) $row['state_slug']) . '/' . rawurlencode((string) $row['city_slug'])));
+        $client = new EDP_Pagespeed_Client($api_key);
+
+        // Allow long execution — each PSI call takes 5–15 s.
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        @set_time_limit(180);
+
+        $mobile = $client->check($url, 'mobile');
+
+        if (is_wp_error($mobile)) {
+            wp_send_json_error(['message' => $mobile->get_error_message()]);
+        }
+
+        $desktop = $client->check($url, 'desktop');
+
+        if (is_wp_error($desktop)) {
+            wp_send_json_error(['message' => $desktop->get_error_message()]);
+        }
+
+        EDP_Database::upsert_pagespeed_cache($id, $mobile, $desktop);
+
+        $cache = EDP_Database::get_pagespeed_cache($id);
+
+        wp_send_json_success([
+            'html'           => self::build_seo_cell_html($id, $cache),
+            'mobile_score'   => $mobile['score'],
+            'desktop_score'  => $desktop['score'],
+        ]);
     }
 }
