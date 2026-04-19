@@ -41,6 +41,10 @@ final class EDP_Admin
         add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
         add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            add_action('wp_ajax_edp_dev_seed_csv', [self::class, 'ajax_dev_seed_csv']);
+        }
     }
 
     public static function menus(): void
@@ -1080,5 +1084,32 @@ final class EDP_Admin
             'api_calls' => (int) ($result['api_calls'] ?? 0),
             'messages'  => $result['messages'] ?? [],
         ]);
+    }
+
+    /**
+     * Dev-only AJAX: import locations from the bundled raw_data.csv.
+     * Only registered when WP_DEBUG is true. Used by Playwright test seed step.
+     */
+    public static function ajax_dev_seed_csv(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_dev_seed_csv', 'nonce');
+
+        $path = EDP_PLUGIN_DIR . 'raw_data.csv';
+
+        if (!is_readable($path)) {
+            wp_send_json_error(['message' => 'raw_data.csv not readable at: ' . $path]);
+        }
+
+        $result = EDP_Importer::import_from_csv_file($path);
+
+        if (!empty($result['error'])) {
+            wp_send_json_error($result);
+        }
+
+        wp_send_json_success($result);
     }
 }

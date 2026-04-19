@@ -599,6 +599,9 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
 		createPage:    <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
 		deleteRow:     <?php echo wp_json_encode(wp_create_nonce('edp_delete_location_row')); ?>,
+		<?php if (defined('WP_DEBUG') && WP_DEBUG) : ?>
+		seedCsv: <?php echo wp_json_encode(wp_create_nonce('edp_dev_seed_csv')); ?>,
+		<?php endif; ?>
 	};
 
 	var errMsg       = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
