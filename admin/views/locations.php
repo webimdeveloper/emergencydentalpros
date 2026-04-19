@@ -345,6 +345,11 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 #edp-locations-wrap .edp-btn-create {
 	gap: 4px;
 }
+#edp-locations-wrap .edp-page-link--dead {
+	color: var(--c-muted);
+	font-size: 13px;
+	font-style: italic;
+}
 
 /* Map Post wrap + clear button */
 #edp-locations-wrap .edp-map-post-wrap {

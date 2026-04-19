@@ -110,6 +110,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
         return [
             'fetch_google' => __('Fetch Google', 'emergencydentalpros'),
             'create_pages' => __('Create Pages', 'emergencydentalpros'),
+            'delete_rows'  => __('Delete Rows', 'emergencydentalpros'),
         ];
     }
 
@@ -261,10 +262,23 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function column_city($item): string
     {
         $state_slug = sanitize_title((string) ($item['state_slug'] ?? ''));
-        $city_slug = sanitize_title((string) ($item['city_slug'] ?? ''));
-        $url = home_url(user_trailingslashit('locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)));
+        $city_slug  = sanitize_title((string) ($item['city_slug'] ?? ''));
+        $url        = home_url(user_trailingslashit('locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)));
+        $id         = (int) ($item['id'] ?? 0);
 
-        return '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html((string) ($item['city_name'] ?? '')) . '</a>';
+        $city_link = '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">'
+            . esc_html((string) ($item['city_name'] ?? '')) . '</a>';
+
+        $actions = [];
+        if ($id > 0) {
+            $actions['delete'] = '<a href="#" class="edp-row-delete-btn" '
+                . 'data-location-id="' . esc_attr((string) $id) . '" '
+                . 'style="color:#b32d2e;">'
+                . esc_html__('Delete', 'emergencydentalpros')
+                . '</a>';
+        }
+
+        return $city_link . $this->row_actions($actions);
     }
 
     /**
@@ -277,20 +291,30 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $id   = (int) ($item['id'] ?? 0);
 
         if ($pid > 0 && $type === 'cpt') {
-            $edit_url = get_edit_post_link($pid);
-            $link     = $edit_url
-                ? '<a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer" class="edp-page-link">#' . esc_html((string) $pid) . '</a>'
-                : '<span class="edp-page-link">#' . esc_html((string) $pid) . '</span>';
-
-            return '<span class="edp-static-page-cell">'
-                . $link
-                . '<button type="button" '
+            $post_status = get_post_status($pid);
+            $clear_btn   = '<button type="button" '
                 . 'class="edp-listing-btn edp-listing-btn--danger edp-clear-cpt-btn" '
                 . 'data-location-id="' . esc_attr((string) $id) . '" '
                 . 'title="' . esc_attr__('Remove static page override', 'emergencydentalpros') . '">'
                 . '<span class="dashicons dashicons-trash" aria-hidden="true"></span>'
-                . '</button>'
-                . '</span>';
+                . '</button>';
+
+            if ($post_status === false) {
+                $link = '<span class="edp-page-link edp-page-link--dead">'
+                    . esc_html__('Missing', 'emergencydentalpros') . ' #' . esc_html((string) $pid)
+                    . '</span>';
+            } elseif ($post_status === 'trash') {
+                $link = '<span class="edp-page-link edp-page-link--dead">'
+                    . esc_html__('Trashed', 'emergencydentalpros') . ' #' . esc_html((string) $pid)
+                    . '</span>';
+            } else {
+                $edit_url = get_edit_post_link($pid);
+                $link     = $edit_url
+                    ? '<a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer" class="edp-page-link">#' . esc_html((string) $pid) . '</a>'
+                    : '<span class="edp-page-link">#' . esc_html((string) $pid) . '</span>';
+            }
+
+            return '<span class="edp-static-page-cell">' . $link . $clear_btn . '</span>';
         }
 
         if ($id <= 0) {
@@ -320,15 +344,22 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $type = isset($item['override_type']) ? (string) $item['override_type'] : '';
         $val  = ($type === 'mapped' && $pid > 0) ? $pid : '';
 
-        return sprintf(
-            '<input type="number" class="edp-map-post-input" '
-            . 'data-location-id="%1$d" '
-            . 'value="%2$s" '
-            . 'placeholder="%3$s" '
-            . 'min="1" />',
-            $id,
-            esc_attr((string) $val),
-            esc_attr__('Post ID', 'emergencydentalpros')
-        );
+        return '<div class="edp-map-post-wrap">'
+            . sprintf(
+                '<input type="number" class="edp-map-post-input" '
+                . 'data-location-id="%1$d" '
+                . 'value="%2$s" '
+                . 'placeholder="%3$s" '
+                . 'min="1" />',
+                $id,
+                esc_attr((string) $val),
+                esc_attr__('Post ID', 'emergencydentalpros')
+            )
+            . '<button type="button" class="edp-map-clear-btn" '
+            . 'data-location-id="' . esc_attr((string) $id) . '" '
+            . 'title="' . esc_attr__('Clear mapping', 'emergencydentalpros') . '"'
+            . ($val === '' ? ' style="display:none;"' : '')
+            . '>&times;</button>'
+            . '</div>';
     }
 }
