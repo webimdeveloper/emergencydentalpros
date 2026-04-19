@@ -346,6 +346,25 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	gap: 4px;
 }
 
+/* Map Post wrap + clear button */
+#edp-locations-wrap .edp-map-post-wrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+#edp-locations-wrap .edp-map-clear-btn {
+	background: none;
+	border: none;
+	color: var(--c-muted);
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 2px 4px;
+	border-radius: var(--r-btn);
+	transition: color .12s;
+}
+#edp-locations-wrap .edp-map-clear-btn:hover { color: var(--c-err); }
+
 /* Map Post input */
 #edp-locations-wrap .edp-map-post-input {
 	background: var(--c-surface);
@@ -391,6 +410,17 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				esc_html__('Created %1$d static page(s). Skipped %2$d (already exist or errors).', 'emergencydentalpros'),
 				(int) $_pages_created,
 				(int) $_pages_skipped
+			); ?>
+		</div>
+	<?php endif; ?>
+
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['rows_deleted'])) : ?>
+		<div class="edp-notice edp-notice-success">
+			<?php printf(
+				/* translators: %d: number of deleted rows */
+				esc_html__('Deleted %d location row(s).', 'emergencydentalpros'),
+				(int) $_GET['rows_deleted']
 			); ?>
 		</div>
 	<?php endif; ?>
@@ -563,10 +593,12 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		mapPost:       <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
 		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
 		createPage:    <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
+		deleteRow:     <?php echo wp_json_encode(wp_create_nonce('edp_delete_location_row')); ?>,
 	};
 
-	var errMsg = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
-	var confirmClear = <?php echo wp_json_encode(__('Remove static page override? The WordPress post will remain, only the link is removed.', 'emergencydentalpros')); ?>;
+	var errMsg       = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
+	var confirmClear = <?php echo wp_json_encode(__('Remove static page override? The linked WordPress post will be permanently deleted.', 'emergencydentalpros')); ?>;
+	var confirmDeleteRow = <?php echo wp_json_encode(__('Permanently delete this location row? This also removes Google data and the linked CPT post.', 'emergencydentalpros')); ?>;
 
 	/* ── Google Business listing buttons ──────────────── */
 	function attachListingBtn(btn) {
@@ -673,6 +705,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 					action:      'edp_clear_override',
 					nonce:       nonces.clearOverride,
 					location_id: locationId,
+					delete_post:  '1',
 				}),
 			})
 				.then(function (r) { return r.json(); })
@@ -724,5 +757,87 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 	/* ── Static Page — wire up any trash icons already on the page ── */
 	document.querySelectorAll('.edp-clear-cpt-btn').forEach(attachClearBtn);
+
+	/* ── Row delete (City column row action) ─────────── */
+	document.querySelectorAll('.edp-row-delete-btn').forEach(function (btn) {
+		btn.addEventListener('click', function (e) {
+			e.preventDefault();
+			var locationId = this.dataset.locationId;
+
+			// eslint-disable-next-line no-alert
+			if (!confirm(confirmDeleteRow)) {
+				return;
+			}
+
+			var row = btn.closest('tr');
+			btn.style.pointerEvents = 'none';
+			btn.style.opacity = '0.5';
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_delete_location_row',
+					nonce:       nonces.deleteRow,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						if (row) {
+							row.style.transition = 'opacity .3s';
+							row.style.opacity    = '0';
+							setTimeout(function () { row.remove(); }, 320);
+						}
+					} else {
+						btn.style.pointerEvents = '';
+						btn.style.opacity       = '';
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					btn.style.pointerEvents = '';
+					btn.style.opacity       = '';
+				});
+		});
+	});
+
+	/* ── Map Post — clear (✕) button ─────────────────── */
+	document.querySelectorAll('.edp-map-clear-btn').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			var locationId = this.dataset.locationId;
+			var wrap       = this.closest('.edp-map-post-wrap');
+			var input      = wrap ? wrap.querySelector('.edp-map-post-input') : null;
+
+			btn.disabled = true;
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_clear_override',
+					nonce:       nonces.clearOverride,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						if (input) {
+							input.value = '';
+							input.classList.remove('edp-input--error');
+						}
+						btn.style.display = 'none';
+					} else {
+						btn.disabled = false;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					btn.disabled = false;
+				});
+		});
+	});
 })();
 </script>

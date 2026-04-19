@@ -40,6 +40,7 @@ final class EDP_Admin
         add_action('wp_ajax_edp_save_post_mapping', [self::class, 'ajax_save_post_mapping']);
         add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
         add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
+        add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
     }
 
     public static function menus(): void
@@ -411,6 +412,8 @@ final class EDP_Admin
             self::bulk_fetch_google();
         } elseif ($action === 'create_pages') {
             self::bulk_create_pages();
+        } elseif ($action === 'delete_rows') {
+            self::bulk_delete_rows();
         }
     }
 
@@ -507,6 +510,47 @@ final class EDP_Admin
 
         wp_safe_redirect(add_query_arg(
             ['pages_created' => $created, 'pages_skipped' => $skipped],
+            admin_url('admin.php?page=edp-seo-locations')
+        ));
+        exit;
+    }
+
+    private static function bulk_delete_rows(): void
+    {
+        check_admin_referer('bulk-locations');
+
+        $ids = isset($_REQUEST['location'])
+            ? array_values(array_filter(array_map('intval', (array) wp_unslash($_REQUEST['location']))))
+            : [];
+
+        if ($ids === []) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&google_none=1'));
+            exit;
+        }
+
+        global $wpdb;
+        $table   = EDP_Database::table_name();
+        $deleted = 0;
+
+        foreach ($ids as $id) {
+            $row = EDP_Database::get_row_by_id($id);
+            if ($row !== null) {
+                $post_id = (int) ($row['custom_post_id'] ?? 0);
+                if ($post_id > 0 && (string) ($row['override_type'] ?? '') === 'cpt') {
+                    wp_delete_post($post_id, true);
+                }
+            }
+
+            EDP_Database::delete_nearby_for_location($id);
+            $result = $wpdb->delete($table, ['id' => $id], ['%d']);
+
+            if ($result !== false) {
+                $deleted++;
+            }
+        }
+
+        wp_safe_redirect(add_query_arg(
+            ['rows_deleted' => $deleted],
             admin_url('admin.php?page=edp-seo-locations')
         ));
         exit;
@@ -932,7 +976,8 @@ final class EDP_Admin
     }
 
     /**
-     * AJAX: clear the static page override for a location (trash icon in Static Page column).
+     * AJAX: clear the static page override for a location.
+     * Pass delete_post=1 to also permanently delete the linked WordPress post.
      */
     public static function ajax_clear_override(): void
     {
@@ -943,9 +988,20 @@ final class EDP_Admin
         check_ajax_referer('edp_clear_override', 'nonce');
 
         $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+        $delete_post = !empty($_POST['delete_post']);
 
         if ($location_id <= 0) {
             wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        if ($delete_post) {
+            $row = EDP_Database::get_row_by_id($location_id);
+            if ($row !== null) {
+                $post_id = (int) ($row['custom_post_id'] ?? 0);
+                if ($post_id > 0) {
+                    wp_delete_post($post_id, true);
+                }
+            }
         }
 
         global $wpdb;
@@ -960,6 +1016,40 @@ final class EDP_Admin
         );
 
         wp_send_json_success(['cleared' => true]);
+    }
+
+    /**
+     * AJAX: permanently delete a location row plus its Google nearby data and linked CPT post.
+     */
+    public static function ajax_delete_location_row(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_delete_location_row', 'nonce');
+
+        $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($location_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        $row = EDP_Database::get_row_by_id($location_id);
+        if ($row !== null) {
+            $post_id = (int) ($row['custom_post_id'] ?? 0);
+            if ($post_id > 0 && (string) ($row['override_type'] ?? '') === 'cpt') {
+                wp_delete_post($post_id, true);
+            }
+        }
+
+        EDP_Database::delete_nearby_for_location($location_id);
+
+        global $wpdb;
+        $table = EDP_Database::table_name();
+        $wpdb->delete($table, ['id' => $location_id], ['%d']);
+
+        wp_send_json_success(['deleted' => true, 'location_id' => $location_id]);
     }
 
     /**
