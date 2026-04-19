@@ -20,9 +20,9 @@ setup('seed location data', async ({ page }) => {
 
   console.log(`Seed: only ${rows} rows — importing from raw_data.csv…`);
 
-  // Read the seedCsv nonce injected by PHP (WP_DEBUG=true only).
+  // Read the dev nonce injected as window.edpDevSeedNonce (only present when WP_DEBUG=true).
   const seedNonce: string | null = await page.evaluate(() => {
-    return (window as unknown as { nonces?: { seedCsv?: string } }).nonces?.seedCsv ?? null;
+    return (window as unknown as { edpDevSeedNonce?: string }).edpDevSeedNonce ?? null;
   });
 
   if (!seedNonce) {

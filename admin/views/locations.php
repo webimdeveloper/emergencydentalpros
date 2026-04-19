@@ -592,6 +592,9 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	</div>
 </div>
 
+<?php if (defined('WP_DEBUG') && WP_DEBUG) : ?>
+<script>window.edpDevSeedNonce = <?php echo wp_json_encode(wp_create_nonce('edp_dev_seed_csv')); ?>;</script>
+<?php endif; ?>
 <script>
 (function () {
 	var nonces = {
@@ -599,9 +602,6 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
 		createPage:    <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
 		deleteRow:     <?php echo wp_json_encode(wp_create_nonce('edp_delete_location_row')); ?>,
-		<?php if (defined('WP_DEBUG') && WP_DEBUG) : ?>
-		seedCsv: <?php echo wp_json_encode(wp_create_nonce('edp_dev_seed_csv')); ?>,
-		<?php endif; ?>
 	};
 
 	var errMsg       = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
@@ -667,6 +667,8 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 			.then(function (json) {
 				if (json.success) {
 					input.classList.remove('edp-input--error');
+					var clearBtn = document.querySelector('.edp-map-clear-btn[data-location-id="' + locationId + '"]');
+					if (clearBtn) { clearBtn.style.display = 'inline-flex'; }
 				} else {
 					input.classList.add('edp-input--error');
 				}
