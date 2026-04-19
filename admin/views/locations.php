@@ -436,6 +436,38 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 #edp-locations-wrap .edp-seo--attention { background: var(--c-warn-bg); border-color: var(--c-warn-bd); color: var(--c-warn); }
 #edp-locations-wrap .edp-seo--crucial   { background: var(--c-err-bg);  border-color: var(--c-err-bd);  color: var(--c-err); }
 
+/* SEO progress bar */
+#edp-locations-wrap .edp-seo-progress-wrap {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	min-width: 120px;
+	padding: 2px 0;
+}
+#edp-locations-wrap .edp-seo-progress-label {
+	font-size: 11.5px;
+	color: var(--c-muted);
+	font-weight: 500;
+	letter-spacing: .01em;
+}
+#edp-locations-wrap .edp-seo-progress-track {
+	height: 5px;
+	background: var(--c-surface2);
+	border-radius: 3px;
+	overflow: hidden;
+}
+#edp-locations-wrap .edp-seo-progress-fill {
+	height: 100%;
+	width: 0;
+	background: var(--c-brand);
+	border-radius: 3px;
+	transition: width .55s ease;
+}
+#edp-locations-wrap .edp-seo-progress-fill.edp-progress--done {
+	background: var(--c-ok-bd);
+	transition: width .2s ease;
+}
+
 /* Recheck button */
 #edp-locations-wrap .edp-recheck-seo-btn {
 	background: none;
@@ -1318,85 +1350,92 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 			});
 		}
 
-		function attachSeoCheckBtn(btn) {
-			btn.addEventListener('click', function () {
-				var locationId = this.dataset.locationId;
-				var nonce      = this.dataset.nonce;
-				var cell       = this.closest('td');
-				var original   = cell.innerHTML;
+		function showSeoProgress(cell) {
+			cell.innerHTML =
+				'<div class="edp-seo-progress-wrap">'
+				+ '<span class="edp-seo-progress-label">Checking SEO\u2026</span>'
+				+ '<div class="edp-seo-progress-track">'
+				+ '<div class="edp-seo-progress-fill"></div>'
+				+ '</div>'
+				+ '</div>';
 
-				btn.disabled = true;
-				btn.style.opacity = '0.55';
+			var fill   = cell.querySelector('.edp-seo-progress-fill');
+			var timers = [];
 
-				fetch(ajaxurl, {
-					method: 'POST',
-					body: new URLSearchParams({
-						action:      'edp_check_pagespeed',
-						nonce:       nonce,
-						location_id: locationId,
-					}),
-				})
-					.then(function (r) { return r.json(); })
-					.then(function (json) {
-						if (json.success) {
+			// Simulate two-stage progress: mobile call → desktop call.
+			[[100, 6], [3500, 38], [9000, 65], [16000, 84], [23000, 92]].forEach(function (s) {
+				timers.push(setTimeout(function () {
+					if (fill && fill.parentNode) { fill.style.width = s[1] + '%'; }
+				}, s[0]));
+			});
+
+			return {
+				complete: function (onDone) {
+					timers.forEach(clearTimeout);
+					if (fill && fill.parentNode) {
+						fill.classList.add('edp-progress--done');
+						fill.style.width = '100%';
+						setTimeout(onDone, 350);
+					} else {
+						onDone();
+					}
+				},
+				cancel: function () {
+					timers.forEach(clearTimeout);
+				},
+			};
+		}
+
+		function runSeoCheck(locationId, nonce, cell, original) {
+			var progress = showSeoProgress(cell);
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_check_pagespeed',
+					nonce:       nonce,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						progress.complete(function () {
 							cell.innerHTML = json.data.html;
 							cell.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
 							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
-						} else {
-							cell.innerHTML = original;
-							var msg = (json.data && json.data.message) || errMsg;
-							if (json.data && json.data.debug) {
-								msg += '\n\nDebug:\nURL: ' + json.data.debug.url + '\nKey prefix: ' + json.data.debug.key_prefix + '\nStrategy: ' + json.data.debug.strategy;
-							}
-							// eslint-disable-next-line no-alert
-							alert(msg);
-						}
-					})
-					.catch(function () {
+						});
+					} else {
+						progress.cancel();
 						cell.innerHTML = original;
-					});
+						var msg = (json.data && json.data.message) || errMsg;
+						if (json.data && json.data.debug) {
+							msg += '\n\nDebug:\nURL: '         + json.data.debug.url
+								+ '\nKey prefix: ' + json.data.debug.key_prefix
+								+ '\nStrategy: '  + json.data.debug.strategy;
+						}
+						// eslint-disable-next-line no-alert
+						alert(msg);
+					}
+				})
+				.catch(function () {
+					progress.cancel();
+					cell.innerHTML = original;
+				});
+		}
+
+		function attachSeoCheckBtn(btn) {
+			btn.addEventListener('click', function () {
+				var cell = this.closest('td');
+				runSeoCheck(this.dataset.locationId, this.dataset.nonce, cell, cell.innerHTML);
 			});
 		}
 
 		function attachRecheckBtn(btn) {
 			btn.addEventListener('click', function () {
-				var locationId = this.dataset.locationId;
-				var nonce      = this.dataset.nonce;
-				var cell       = this.closest('td');
-				var original   = cell.innerHTML;
-				var icon       = this.querySelector('.dashicons');
-
 				closeSeoPopover();
-				btn.disabled = true;
-				btn.classList.add('edp-seo-loading');
-
-				fetch(ajaxurl, {
-					method: 'POST',
-					body: new URLSearchParams({
-						action:      'edp_check_pagespeed',
-						nonce:       nonce,
-						location_id: locationId,
-					}),
-				})
-					.then(function (r) { return r.json(); })
-					.then(function (json) {
-						if (json.success) {
-							cell.innerHTML = json.data.html;
-							cell.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
-							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
-						} else {
-							cell.innerHTML = original;
-							var msg = (json.data && json.data.message) || errMsg;
-							if (json.data && json.data.debug) {
-								msg += '\n\nDebug:\nURL: ' + json.data.debug.url + '\nKey prefix: ' + json.data.debug.key_prefix + '\nStrategy: ' + json.data.debug.strategy;
-							}
-							// eslint-disable-next-line no-alert
-							alert(msg);
-						}
-					})
-					.catch(function () {
-						cell.innerHTML = original;
-					});
+				var cell = this.closest('td');
+				runSeoCheck(this.dataset.locationId, this.dataset.nonce, cell, cell.innerHTML);
 			});
 		}
 
