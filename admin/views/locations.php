@@ -1344,8 +1344,12 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
 						} else {
 							cell.innerHTML = original;
+							var msg = (json.data && json.data.message) || errMsg;
+							if (json.data && json.data.debug) {
+								msg += '\n\nDebug:\nURL: ' + json.data.debug.url + '\nKey prefix: ' + json.data.debug.key_prefix + '\nStrategy: ' + json.data.debug.strategy;
+							}
 							// eslint-disable-next-line no-alert
-							alert((json.data && json.data.message) || errMsg);
+							alert(msg);
 						}
 					})
 					.catch(function () {
@@ -1382,8 +1386,12 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 							cell.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
 						} else {
 							cell.innerHTML = original;
+							var msg = (json.data && json.data.message) || errMsg;
+							if (json.data && json.data.debug) {
+								msg += '\n\nDebug:\nURL: ' + json.data.debug.url + '\nKey prefix: ' + json.data.debug.key_prefix + '\nStrategy: ' + json.data.debug.strategy;
+							}
 							// eslint-disable-next-line no-alert
-							alert((json.data && json.data.message) || errMsg);
+							alert(msg);
 						}
 					})
 					.catch(function () {

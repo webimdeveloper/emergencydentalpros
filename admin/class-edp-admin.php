@@ -1264,13 +1264,27 @@ final class EDP_Admin
         $mobile = $client->check($url, 'mobile');
 
         if (is_wp_error($mobile)) {
-            wp_send_json_error(['message' => $mobile->get_error_message()]);
+            wp_send_json_error([
+                'message' => $mobile->get_error_message(),
+                'debug'   => [
+                    'url'     => $url,
+                    'key_prefix' => substr($api_key, 0, 8) . '...',
+                    'strategy' => 'mobile',
+                ],
+            ]);
         }
 
         $desktop = $client->check($url, 'desktop');
 
         if (is_wp_error($desktop)) {
-            wp_send_json_error(['message' => $desktop->get_error_message()]);
+            wp_send_json_error([
+                'message' => $desktop->get_error_message(),
+                'debug'   => [
+                    'url'     => $url,
+                    'key_prefix' => substr($api_key, 0, 8) . '...',
+                    'strategy' => 'desktop',
+                ],
+            ]);
         }
 
         EDP_Database::upsert_pagespeed_cache($id, $mobile, $desktop);
