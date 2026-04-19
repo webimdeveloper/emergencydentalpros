@@ -33,7 +33,7 @@ final class EDP_Pagespeed_Client {
 	public function check( string $url, string $strategy = 'mobile' ) {
 		$endpoint = add_query_arg(
 			[
-				'url'      => rawurlencode( $url ),
+				'url'      => $url,
 				'strategy' => $strategy,
 				'key'      => $this->api_key,
 				'fields'   => implode( ',', [
