@@ -391,6 +391,178 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	border-color: var(--c-err-bd);
 	box-shadow: 0 0 0 2px rgba(231,76,60,.15);
 }
+
+/* ── 10. Column Filter / Sort UI ──────────────────── */
+
+/* Filter icon button inside <th> */
+.edp-col-filter-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 2px 3px;
+	margin-left: 4px;
+	border-radius: 3px;
+	color: var(--c-muted);
+	vertical-align: middle;
+	transition: color .15s, background .15s;
+	line-height: 1;
+}
+.edp-col-filter-btn .dashicons { font-size: 14px; width: 14px; height: 14px; }
+.edp-col-filter-btn:hover { color: var(--c-brand); background: var(--c-surface2); }
+.edp-col-filter-btn.edp-col-filter-btn--active { color: var(--c-brand); }
+
+/* Active filter chips row */
+.edp-active-filters {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 8px 20px 0;
+	font-family: 'Lato', sans-serif;
+}
+.edp-filter-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	background: var(--c-surface2);
+	border: 1px solid var(--c-brand);
+	color: var(--c-brand);
+	border-radius: 20px;
+	padding: 3px 10px 3px 12px;
+	font-size: 12.64px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+.edp-filter-chip-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--c-brand);
+	font-size: 15px;
+	line-height: 1;
+	padding: 0 0 1px;
+	opacity: .7;
+	transition: opacity .12s;
+}
+.edp-filter-chip-remove:hover { opacity: 1; }
+.edp-clear-all-filters {
+	font-size: 12.64px;
+	color: var(--c-muted);
+	text-decoration: none;
+	padding: 2px 6px;
+}
+.edp-clear-all-filters:hover { color: var(--c-err); text-decoration: underline; }
+
+/* Popover container (rendered in <body>) */
+.edp-filter-popover {
+	position: fixed;
+	z-index: 99999;
+	background: var(--c-white);
+	border: 1px solid var(--c-border);
+	border-radius: var(--r-card, 8px);
+	box-shadow: 0 4px 20px rgba(0,0,0,.15);
+	min-width: 220px;
+	max-width: 300px;
+	font-family: 'Lato', sans-serif;
+	overflow: hidden;
+}
+.edp-filter-popover-header {
+	padding: 10px 14px 8px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--c-muted);
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	border-bottom: 1px solid var(--c-border);
+}
+.edp-filter-popover-search {
+	padding: 10px 12px;
+	display: flex;
+	gap: 6px;
+	border-bottom: 1px solid var(--c-border);
+}
+.edp-filter-search-input {
+	flex: 1;
+	background: var(--c-surface);
+	border: 1px solid var(--c-border);
+	border-radius: 6px;
+	padding: 5px 10px;
+	font-size: 13px;
+	font-family: 'Lato', sans-serif;
+	color: var(--c-type);
+	outline: none;
+	transition: border-color .15s, box-shadow .15s;
+}
+.edp-filter-search-input:focus {
+	border-color: var(--c-brand);
+	box-shadow: 0 0 0 2px var(--c-brand-ring);
+}
+.edp-filter-apply-btn {
+	background: var(--c-brand);
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 5px 12px;
+	font-size: 13px;
+	font-family: 'Lato', sans-serif;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: opacity .15s;
+}
+.edp-filter-apply-btn:hover { opacity: .88; }
+
+/* Options list */
+.edp-filter-options-list {
+	list-style: none;
+	margin: 0;
+	padding: 4px 0;
+	max-height: 220px;
+	overflow-y: auto;
+}
+.edp-filter-options-list li a,
+.edp-filter-options-list li button {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 7px 14px;
+	font-size: 13.5px;
+	color: var(--c-type);
+	text-decoration: none;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-family: 'Lato', sans-serif;
+	transition: background .1s;
+	box-sizing: border-box;
+}
+.edp-filter-options-list li a:hover,
+.edp-filter-options-list li button:hover { background: var(--c-surface); }
+.edp-filter-options-list li.edp-filter-option--active a,
+.edp-filter-options-list li.edp-filter-option--active button {
+	color: var(--c-brand);
+	font-weight: 600;
+	background: rgba(110,57,203,.06);
+}
+.edp-filter-options-empty {
+	padding: 10px 14px;
+	font-size: 13px;
+	color: var(--c-muted);
+}
+
+/* Clear link at bottom of popover */
+.edp-filter-clear-link {
+	display: block;
+	padding: 8px 14px;
+	font-size: 12.64px;
+	color: var(--c-err);
+	text-decoration: none;
+	border-top: 1px solid var(--c-border);
+	text-align: center;
+}
+.edp-filter-clear-link:hover { background: var(--c-err-bg); }
 </style>
 
 <div id="edp-locations-wrap" class="wrap">
@@ -585,6 +757,14 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	<?php endif; ?>
 
 	<?php /* ── Table card ── */ ?>
+	<?php
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$edp_state_filter = isset($_GET['state_filter']) ? sanitize_text_field(wp_unslash($_GET['state_filter'])) : '';
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$edp_city_filter  = isset($_GET['city_filter']) ? sanitize_text_field(wp_unslash($_GET['city_filter'])) : '';
+	$edp_has_filters  = $edp_state_filter !== '' || $edp_city_filter !== '';
+	$edp_base_url     = admin_url('admin.php?page=edp-seo-locations');
+	?>
 	<div class="edp-table-card">
 		<div class="edp-table-header">
 			<div>
@@ -592,6 +772,31 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				<p><?php esc_html_e('Map a post ID, create a static page from templates, or fetch Google Business data.', 'emergencydentalpros'); ?></p>
 			</div>
 		</div>
+		<?php if ($edp_has_filters) : ?>
+		<div class="edp-active-filters">
+			<?php if ($edp_state_filter !== '') :
+				$edp_state_label = '';
+				foreach (EDP_Database::get_distinct_states() as $s) {
+					if ($s['state_slug'] === $edp_state_filter) { $edp_state_label = $s['state_name'] . ' (' . strtoupper($s['state_id']) . ')'; break; }
+				}
+				$edp_clear_state = esc_url(add_query_arg(['state_filter' => false, 'paged' => false], $edp_base_url));
+			?>
+			<span class="edp-filter-chip">
+				<?php esc_html_e('State:', 'emergencydentalpros'); ?> <strong><?php echo esc_html($edp_state_label ?: $edp_state_filter); ?></strong>
+				<a href="<?php echo $edp_clear_state; ?>" class="edp-filter-chip-remove" title="<?php esc_attr_e('Remove filter', 'emergencydentalpros'); ?>">&times;</a>
+			</span>
+			<?php endif; ?>
+			<?php if ($edp_city_filter !== '') :
+				$edp_clear_city = esc_url(add_query_arg(['city_filter' => false, 'paged' => false], $edp_base_url));
+			?>
+			<span class="edp-filter-chip">
+				<?php esc_html_e('City:', 'emergencydentalpros'); ?> <strong><?php echo esc_html($edp_city_filter); ?></strong>
+				<a href="<?php echo $edp_clear_city; ?>" class="edp-filter-chip-remove" title="<?php esc_attr_e('Remove filter', 'emergencydentalpros'); ?>">&times;</a>
+			</span>
+			<?php endif; ?>
+			<a href="<?php echo esc_url($edp_base_url); ?>" class="edp-clear-all-filters"><?php esc_html_e('Clear all', 'emergencydentalpros'); ?></a>
+		</div>
+		<?php endif; ?>
 		<form id="edp-locations-filter" method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
 			<?php $table->display(); ?>
 		</form>
@@ -855,6 +1060,196 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				});
 		});
 	}
+
+	/* ── Column filter / sort UI ─────────────────────── */
+	(function () {
+		var filterData = <?php echo wp_json_encode([
+			'states'       => EDP_Database::get_distinct_states(),
+			'currentState' => $edp_state_filter,
+			'currentCity'  => $edp_city_filter,
+			'baseUrl'      => admin_url('admin.php?page=edp-seo-locations'),
+		]); ?>;
+
+		var openPopover = null;
+
+		function buildUrl(extra) {
+			var params = new URLSearchParams(window.location.search);
+			params.delete('paged');
+			Object.keys(extra).forEach(function (k) {
+				if (extra[k] !== '' && extra[k] !== null && extra[k] !== undefined) {
+					params.set(k, extra[k]);
+				} else {
+					params.delete(k);
+				}
+			});
+			return filterData.baseUrl + '&' + params.toString();
+		}
+
+		function closePopover() {
+			if (openPopover) { openPopover.remove(); openPopover = null; }
+		}
+
+		function positionPopover(pop, btn) {
+			var rect = btn.getBoundingClientRect();
+			var left = rect.left;
+			var top  = rect.bottom + 4;
+			// Keep inside viewport horizontally.
+			var maxLeft = window.innerWidth - 310;
+			if (left > maxLeft) { left = maxLeft; }
+			pop.style.left = left + 'px';
+			pop.style.top  = top  + 'px';
+		}
+
+		function makeFilterBtn(isActive) {
+			var btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'edp-col-filter-btn' + (isActive ? ' edp-col-filter-btn--active' : '');
+			btn.title = isActive ? 'Filter active — click to change' : 'Filter';
+			btn.innerHTML = '<span class="dashicons dashicons-filter"></span>';
+			return btn;
+		}
+
+		/* STATE filter */
+		function openStatePopover(btn) {
+			closePopover();
+			var pop = document.createElement('div');
+			pop.className = 'edp-filter-popover';
+
+			var clearHtml = filterData.currentState
+				? '<a href="' + buildUrl({ state_filter: '', city_filter: '' }) + '" class="edp-filter-clear-link">Clear state filter</a>'
+				: '';
+
+			pop.innerHTML =
+				'<div class="edp-filter-popover-header">Filter by State</div>' +
+				'<div class="edp-filter-popover-search">' +
+					'<input type="text" class="edp-filter-search-input" placeholder="Type to search\u2026" />' +
+				'</div>' +
+				'<ul class="edp-filter-options-list"></ul>' +
+				clearHtml;
+
+			var list        = pop.querySelector('.edp-filter-options-list');
+			var searchInput = pop.querySelector('.edp-filter-search-input');
+
+			function renderList(q) {
+				var filtered = q
+					? filterData.states.filter(function (s) {
+						return s.state_name.toLowerCase().indexOf(q.toLowerCase()) === 0 ||
+							s.state_id.toLowerCase() === q.toLowerCase();
+					})
+					: filterData.states;
+
+				if (!filtered.length) {
+					list.innerHTML = '<li class="edp-filter-options-empty">No states found</li>';
+					return;
+				}
+
+				list.innerHTML = filtered.map(function (s) {
+					var active = filterData.currentState === s.state_slug ? ' edp-filter-option--active' : '';
+					return '<li class="edp-filter-option' + active + '">' +
+						'<a href="' + buildUrl({ state_filter: s.state_slug, city_filter: '', paged: '' }) + '">' +
+						escHtml(s.state_name) + ' (' + escHtml(s.state_id.toUpperCase()) + ')' +
+						'</a></li>';
+				}).join('');
+			}
+
+			renderList('');
+			searchInput.addEventListener('input', function () { renderList(this.value); });
+
+			document.body.appendChild(pop);
+			positionPopover(pop, btn);
+			openPopover = pop;
+			searchInput.focus();
+		}
+
+		/* CITY filter */
+		function openCityPopover(btn) {
+			closePopover();
+			var pop = document.createElement('div');
+			pop.className = 'edp-filter-popover';
+
+			var clearHtml = filterData.currentCity
+				? '<a href="' + buildUrl({ city_filter: '' }) + '" class="edp-filter-clear-link">Clear city filter</a>'
+				: '';
+
+			pop.innerHTML =
+				'<div class="edp-filter-popover-header">Filter by City</div>' +
+				'<div class="edp-filter-popover-search">' +
+					'<input type="text" class="edp-filter-search-input" placeholder="City name\u2026" value="' + escAttr(filterData.currentCity) + '" />' +
+					'<button type="button" class="edp-filter-apply-btn">Apply</button>' +
+				'</div>' +
+				clearHtml;
+
+			var input    = pop.querySelector('.edp-filter-search-input');
+			var applyBtn = pop.querySelector('.edp-filter-apply-btn');
+
+			function apply() {
+				var val = input.value.trim();
+				window.location.href = buildUrl({ city_filter: val, paged: '' });
+			}
+
+			applyBtn.addEventListener('click', apply);
+			input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { apply(); } });
+
+			document.body.appendChild(pop);
+			positionPopover(pop, btn);
+			openPopover = pop;
+			input.focus();
+			if (input.value) { input.select(); }
+		}
+
+		/* Utility: escape HTML for inline strings */
+		function escHtml(str) {
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+		function escAttr(str) { return escHtml(str); }
+
+		/* Inject filter buttons into column headers */
+		function initFilterButtons() {
+			var thead = document.querySelector('#edp-locations-wrap table.wp-list-table thead tr');
+			if (!thead) { return; }
+
+			// State column
+			var thState = thead.querySelector('.column-state');
+			if (thState) {
+				var stateBtn = makeFilterBtn(!!filterData.currentState);
+				stateBtn.addEventListener('click', function (e) {
+					e.stopPropagation();
+					if (openPopover) { closePopover(); return; }
+					openStatePopover(stateBtn);
+				});
+				thState.appendChild(stateBtn);
+			}
+
+			// City column
+			var thCity = thead.querySelector('.column-city');
+			if (thCity) {
+				var cityBtn = makeFilterBtn(!!filterData.currentCity);
+				cityBtn.addEventListener('click', function (e) {
+					e.stopPropagation();
+					if (openPopover) { closePopover(); return; }
+					openCityPopover(cityBtn);
+				});
+				thCity.appendChild(cityBtn);
+			}
+		}
+
+		/* Close popover when clicking outside */
+		document.addEventListener('click', function (e) {
+			if (openPopover && !openPopover.contains(e.target)) {
+				closePopover();
+			}
+		});
+
+		document.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') { closePopover(); }
+		});
+
+		initFilterButtons();
+	}());
 
 	/* ── Map Post — clear (✕) button ─────────────────── */
 	document.querySelectorAll('.edp-map-clear-btn').forEach(function (btn) {

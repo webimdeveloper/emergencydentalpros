@@ -51,7 +51,10 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     public function get_sortable_columns(): array
     {
-        return [];
+        return [
+            'google'   => ['google', false],
+            'override' => ['override', false],
+        ];
     }
 
     public function get_columns(): array
@@ -130,27 +133,82 @@ final class EDP_Locations_List_Table extends WP_List_Table
     {
         global $wpdb;
 
-        $table = EDP_Database::table_name();
-        $per_page = 20;
+        $table      = EDP_Database::table_name();
+        $near_table = EDP_Database::nearby_table_name();
+        $per_page   = 20;
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- standard WP_List_Table pagination param.
-        $paged = max( 1, absint( wp_unslash( $_GET['paged'] ?? 1 ) ) );
+        $paged  = max(1, absint(wp_unslash($_GET['paged'] ?? 1)));
         $offset = ($paged - 1) * $per_page;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        // Filters (no nonce needed — read-only display params).
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $state_filter = isset($_GET['state_filter']) ? sanitize_text_field(wp_unslash($_GET['state_filter'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $city_filter = isset($_GET['city_filter']) ? sanitize_text_field(wp_unslash($_GET['city_filter'])) : '';
 
-        $this->debug_total_count = $total;
+        // Sort (WP_List_Table standard params).
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $orderby = isset($_GET['orderby']) ? sanitize_key(wp_unslash($_GET['orderby'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $order = (isset($_GET['order']) && strtolower((string) wp_unslash($_GET['order'])) === 'asc') ? 'ASC' : 'DESC';
+
+        // Build WHERE clause.
+        $where_parts  = ['1=1'];
+        $where_values = [];
+
+        if ($state_filter !== '') {
+            $where_parts[]  = 'l.state_slug = %s';
+            $where_values[] = $state_filter;
+        }
+
+        if ($city_filter !== '') {
+            $where_parts[]  = 'l.city_name LIKE %s';
+            $where_values[] = '%' . $wpdb->esc_like($city_filter) . '%';
+        }
+
+        $where = implode(' AND ', $where_parts);
+
+        // ORDER BY clause.
+        if ($orderby === 'google') {
+            $order_sql = "COALESCE(nb.gcount, 0) {$order}, l.state_name ASC, l.city_name ASC";
+        } elseif ($orderby === 'override') {
+            $order_sql = "(CASE WHEN l.custom_post_id > 0 AND l.override_type IN ('cpt','mapped') THEN 1 ELSE 0 END) {$order}, l.state_name ASC, l.city_name ASC";
+        } else {
+            $order_sql = 'l.state_name ASC, l.city_name ASC';
+        }
+
+        // Total count (respects filters).
+        if (!empty($where_values)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $total = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} l WHERE {$where}", ...$where_values));
+        } else {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        }
+
+        $this->debug_total_count  = $total;
         $this->debug_last_db_error = (string) $wpdb->last_error;
 
-        // Use integer LIMIT/OFFSET (some drivers mis-handle placeholders here).
         $per_page = max(1, min(100, (int) $per_page));
-        $offset = max(0, (int) $offset);
+        $offset   = max(0, (int) $offset);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal; LIMIT/OFFSET are absint.
-        $sql = "SELECT id, state_id, state_name, state_slug, city_name, city_slug, zips, custom_post_id, override_type
-            FROM {$table}
-            ORDER BY state_name ASC, city_name ASC
+        // Main SELECT — LEFT JOIN brings Google count for sort; LIMIT/OFFSET are integers.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $base_sql = "SELECT l.id, l.state_id, l.state_name, l.state_slug, l.city_name, l.city_slug, l.zips, l.custom_post_id, l.override_type,
+            COALESCE(nb.gcount, 0) AS google_count
+            FROM {$table} l
+            LEFT JOIN (SELECT location_id, COUNT(*) AS gcount FROM {$near_table} GROUP BY location_id) nb ON l.id = nb.location_id
+            WHERE {$where}
+            ORDER BY {$order_sql}
             LIMIT {$per_page} OFFSET {$offset}";
+
+        if (!empty($where_values)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $sql = $wpdb->prepare($base_sql, ...$where_values);
+        } else {
+            $sql = $base_sql;
+        }
 
         $this->debug_last_sql = $sql;
 
@@ -161,7 +219,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             $this->debug_last_db_error = (string) $wpdb->last_error;
         }
 
-        $this->items = is_array($rows) ? $rows : [];
+        $this->items              = is_array($rows) ? $rows : [];
         $this->debug_rows_returned = count($this->items);
 
         $ids = [];
@@ -177,7 +235,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $this->set_pagination_args(
             [
                 'total_items' => $total,
-                'per_page' => $per_page,
+                'per_page'    => $per_page,
                 'total_pages' => (int) ceil($total / $per_page),
             ]
         );
