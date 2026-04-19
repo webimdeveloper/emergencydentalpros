@@ -31,7 +31,12 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
    ════════════════════════════════════════════════════ */
 
 /* ── 1. Design Tokens ─────────────────────────────── */
-#edp-locations-wrap {
+/*
+ * Tokens defined at :root so body-appended elements (popovers, tooltips)
+ * can access them — they are outside #edp-locations-wrap and cannot
+ * inherit variables scoped only to that selector.
+ */
+:root {
 	--c-brand:       #6E39CB;
 	--c-brand-ring:  rgba(110,57,203,.15);
 	--c-type:        #3A3541;
@@ -58,6 +63,8 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	--r-input:       8px;
 	--h-btn:         32px;
 	--h-btn-sm:      26px;
+}
+#edp-locations-wrap {
 	font-family: 'Lato', sans-serif;
 	color: var(--c-type);
 }
@@ -491,11 +498,10 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	background: var(--c-white);
 	border: 1px solid var(--c-border);
 	border-radius: var(--r-card, 8px);
-	box-shadow: 0 6px 24px rgba(0,0,0,.14);
+	box-shadow: 0 4px 20px rgba(0,0,0,.15);
 	width: 260px;
 	font-family: 'Lato', sans-serif;
 	overflow: hidden;
-	pointer-events: none;
 }
 .edp-seo-popover-tabs {
 	display: flex;
@@ -514,7 +520,6 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	border-bottom: 2px solid transparent;
 	margin-bottom: -1px;
 	transition: color .12s, border-color .12s;
-	pointer-events: all;
 }
 .edp-seo-tab.edp-seo-tab--active { color: var(--c-brand); border-bottom-color: var(--c-brand); }
 .edp-seo-tab:hover:not(.edp-seo-tab--active) { color: var(--c-type); }
