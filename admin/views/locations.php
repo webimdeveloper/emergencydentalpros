@@ -560,6 +560,12 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				<?php else : ?>
 					<a class="edp-btn edp-btn-secondary" href="<?php echo esc_url(remove_query_arg('edp_seo_debug', admin_url('admin.php?page=edp-seo-locations'))); ?>"><?php esc_html_e('Hide diagnostics', 'emergencydentalpros'); ?></a>
 				<?php endif; ?>
+				<button type="button" id="edp-delete-all-btn" class="edp-listing-btn edp-listing-btn--danger"
+					data-nonce="<?php echo esc_attr(wp_create_nonce('edp_delete_all_rows')); ?>"
+					title="<?php esc_attr_e('Permanently delete all location rows and their Google data', 'emergencydentalpros'); ?>">
+					<span class="dashicons dashicons-trash" aria-hidden="true"></span>
+					<?php esc_html_e('Delete All Rows', 'emergencydentalpros'); ?>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -812,6 +818,43 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				});
 		});
 	});
+
+	/* ── Delete All Rows button ─────────────────────── */
+	var deleteAllBtn = document.getElementById('edp-delete-all-btn');
+	if (deleteAllBtn) {
+		deleteAllBtn.addEventListener('click', function () {
+			// eslint-disable-next-line no-alert
+			if (!confirm(<?php echo wp_json_encode(__('Delete ALL location rows and their Google Places data? This cannot be undone.', 'emergencydentalpros')); ?>)) {
+				return;
+			}
+
+			deleteAllBtn.disabled = true;
+			deleteAllBtn.style.opacity = '0.5';
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action: 'edp_delete_all_rows',
+					nonce:  deleteAllBtn.dataset.nonce,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						window.location.href = <?php echo wp_json_encode(admin_url('admin.php?page=edp-seo-locations&rows_deleted=')); ?> + (json.data.deleted || 0);
+					} else {
+						deleteAllBtn.disabled = false;
+						deleteAllBtn.style.opacity = '';
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					deleteAllBtn.disabled = false;
+					deleteAllBtn.style.opacity = '';
+				});
+		});
+	}
 
 	/* ── Map Post — clear (✕) button ─────────────────── */
 	document.querySelectorAll('.edp-map-clear-btn').forEach(function (btn) {

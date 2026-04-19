@@ -41,6 +41,7 @@ final class EDP_Admin
         add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
         add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
+        add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             add_action('wp_ajax_edp_dev_seed_csv', [self::class, 'ajax_dev_seed_csv']);
@@ -559,6 +560,46 @@ final class EDP_Admin
         ));
         exit;
     }
+
+    /**
+     * AJAX: delete every row in the locations table plus linked CPT posts and Google data.
+     */
+    public static function ajax_delete_all_rows(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_delete_all_rows', 'nonce');
+
+        global $wpdb;
+        $table = EDP_Database::table_name();
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $ids = $wpdb->get_col("SELECT id FROM {$table}");
+        $deleted = 0;
+
+        foreach ($ids as $id) {
+            $id  = (int) $id;
+            $row = EDP_Database::get_row_by_id($id);
+
+            if ($row !== null) {
+                $post_id = (int) ($row['custom_post_id'] ?? 0);
+                if ($post_id > 0 && (string) ($row['override_type'] ?? '') === 'cpt') {
+                    wp_delete_post($post_id, true);
+                }
+            }
+
+            EDP_Database::delete_nearby_for_location($id);
+
+            if ($wpdb->delete($table, ['id' => $id], ['%d']) !== false) {
+                $deleted++;
+            }
+        }
+
+        wp_send_json_success(['deleted' => $deleted]);
+    }
+
 
     public static function handle_google_fetch_single(): void
     {
