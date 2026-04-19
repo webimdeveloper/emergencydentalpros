@@ -70,7 +70,24 @@ final class EDP_Settings
                     'other_cities_h2' => 'Other Cities We Serve in {state_name}',
                     'faq_h2' => 'Frequently Asked Questions in {city_name}',
                     'faq_intro' => 'Got questions about emergency dental care in {city_name}? We have answers.',
-                    'faq_items' => [],
+                    'faq_items' => [
+                        [
+                            'q' => 'Is there a 24-hour emergency dentist in {city_name}?',
+                            'a' => 'Yes. Emergency Dental Pros connects you with dentists in {city_name}, {state_name} who offer same-day and after-hours appointments, including weekends and holidays.',
+                        ],
+                        [
+                            'q' => 'What counts as a dental emergency?',
+                            'a' => 'Severe toothache, knocked-out or cracked tooth, lost filling or crown, dental abscess, and uncontrolled bleeding after an extraction all require urgent care. Call us and we\'ll match you with an available dentist right away.',
+                        ],
+                        [
+                            'q' => 'How quickly can I get an appointment in {city_name}?',
+                            'a' => 'Most patients are seen the same day, often within hours. Our network of dentists in {city_name} prioritises emergency cases to relieve your pain as fast as possible.',
+                        ],
+                        [
+                            'q' => 'Do emergency dentists in {city_name} accept insurance?',
+                            'a' => 'Many dentists in our {city_name} network accept major insurance plans including Medicaid. If you are uninsured, affordable cash-pay options are available — just ask when you call.',
+                        ],
+                    ],
                 ],
             ],
         ];
