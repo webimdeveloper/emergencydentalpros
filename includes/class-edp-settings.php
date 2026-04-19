@@ -25,7 +25,14 @@ final class EDP_Settings
             return $defaults;
         }
 
-        return array_replace_recursive($defaults, $saved);
+        $merged = array_replace_recursive($defaults, $saved);
+
+        // If faq_items ended up empty (never set or saved as []) fall back to defaults.
+        if ( empty( $merged['templates']['city_landing']['faq_items'] ) ) {
+            $merged['templates']['city_landing']['faq_items'] = $defaults['templates']['city_landing']['faq_items'];
+        }
+
+        return $merged;
     }
 
     /**
