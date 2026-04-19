@@ -50,7 +50,9 @@ final class EDP_Settings
     public static function defaults(): array
     {
         return [
-            'business_name' => get_bloginfo('name'),
+            'business_name'   => get_bloginfo('name'),
+            'og_image_url'    => '',
+            'twitter_site'    => '',
             'templates' => [
                 'states_index' => [
                     'meta_title' => 'Dental service areas by state | {site_name}',
@@ -111,6 +113,15 @@ final class EDP_Settings
 
         if (isset($data['business_name'])) {
             $out['business_name'] = sanitize_text_field((string) $data['business_name']);
+        }
+
+        if (isset($data['og_image_url'])) {
+            $out['og_image_url'] = esc_url_raw((string) $data['og_image_url']);
+        }
+
+        if (isset($data['twitter_site'])) {
+            $handle = ltrim(sanitize_text_field((string) $data['twitter_site']), '@');
+            $out['twitter_site'] = $handle !== '' ? '@' . $handle : '';
         }
 
         $contexts = ['states_index', 'state_cities', 'city_landing'];

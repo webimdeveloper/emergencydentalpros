@@ -295,6 +295,27 @@ $context_vars = [
 			</div>
 		</div>
 
+		<?php /* ---- Social / OG card ---- */ ?>
+		<div class="edp-card">
+			<div class="edp-card-header"><?php esc_html_e('Social &amp; Open Graph', 'emergencydentalpros'); ?></div>
+			<div class="edp-card-body">
+				<div class="edp-form-row">
+					<label for="edp_og_image_url"><?php esc_html_e('Default OG image URL', 'emergencydentalpros'); ?></label>
+					<input name="edp_seo[og_image_url]" type="text" id="edp_og_image_url"
+						value="<?php echo esc_attr((string) ($settings['og_image_url'] ?? '')); ?>"
+						placeholder="https://example.com/og-image.jpg" />
+					<p class="edp-hint"><?php esc_html_e('Used as og:image and twitter:card image on all location pages. Recommended: 1200×630 px.', 'emergencydentalpros'); ?></p>
+				</div>
+				<div class="edp-form-row">
+					<label for="edp_twitter_site"><?php esc_html_e('Twitter / X handle', 'emergencydentalpros'); ?></label>
+					<input name="edp_seo[twitter_site]" type="text" id="edp_twitter_site"
+						value="<?php echo esc_attr((string) ($settings['twitter_site'] ?? '')); ?>"
+						placeholder="@YourHandle" />
+					<p class="edp-hint"><?php esc_html_e('Output as twitter:site meta tag. Include or omit the @ — it will be normalised.', 'emergencydentalpros'); ?></p>
+				</div>
+			</div>
+		</div>
+
 		<?php /* ---- Tabbed template sections ---- */ ?>
 		<div class="edp-card">
 			<div class="edp-tabs-nav" role="tablist">

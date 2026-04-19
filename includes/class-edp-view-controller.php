@@ -102,10 +102,13 @@ final class EDP_View_Controller
         $wp_query->is_404 = false;
 
         add_filter('pre_get_document_title', [self::class, 'filter_document_title'], 20);
+        add_action('wp_head', [self::class, 'output_canonical'], 1);
         add_action('wp_head', [self::class, 'output_meta_description'], 1);
+        add_action('wp_head', [self::class, 'output_og_tags'], 2);
 
         if ((self::$ctx['view'] ?? '') === 'city') {
             add_action('wp_head', [self::class, 'output_city_schema'], 99);
+            add_action('wp_head', [self::class, 'output_faqpage_schema'], 99);
         }
     }
 
@@ -201,6 +204,129 @@ final class EDP_View_Controller
         }
 
         echo '<meta name="description" content="' . esc_attr($desc) . '" />' . "\n";
+    }
+
+    public static function output_canonical(): void
+    {
+        if (self::$ctx === null) {
+            return;
+        }
+
+        $view = (string) (self::$ctx['view'] ?? '');
+
+        if ($view === 'state-list') {
+            $url = home_url(user_trailingslashit('locations'));
+        } elseif ($view === 'state') {
+            $slug = (string) (self::$ctx['state_slug'] ?? '');
+            $url  = home_url(user_trailingslashit('locations/' . rawurlencode($slug)));
+        } elseif ($view === 'city') {
+            $row  = self::$ctx['row'] ?? [];
+            $url  = home_url(user_trailingslashit(
+                'locations/' . rawurlencode((string) ($row['state_slug'] ?? '')) . '/' . rawurlencode((string) ($row['city_slug'] ?? ''))
+            ));
+        } else {
+            return;
+        }
+
+        echo '<link rel="canonical" href="' . esc_url($url) . '" />' . "\n";
+    }
+
+    public static function output_og_tags(): void
+    {
+        if (self::$ctx === null) {
+            return;
+        }
+
+        $settings     = EDP_Settings::get_all();
+        $og_image     = (string) ($settings['og_image_url'] ?? '');
+        $twitter_site = (string) ($settings['twitter_site'] ?? '');
+        $view         = (string) (self::$ctx['view'] ?? '');
+
+        // Resolve title + description from the already-registered filters.
+        $title = apply_filters('pre_get_document_title', '');
+        $desc  = '';
+
+        $templates = $settings['templates'] ?? [];
+        $base      = EDP_Template_Engine::base_vars();
+
+        if ($view === 'state-list') {
+            $desc = EDP_Template_Engine::replace((string) ($templates['states_index']['meta_description'] ?? ''), $base);
+        } elseif ($view === 'state') {
+            $slug      = (string) (self::$ctx['state_slug'] ?? '');
+            $state_row = self::get_state_row_by_slug($slug);
+            if ($state_row !== null) {
+                $vars = EDP_Template_Engine::context_from_state($base, $state_row);
+                $desc = EDP_Template_Engine::replace((string) ($templates['state_cities']['meta_description'] ?? ''), $vars);
+            }
+        } elseif ($view === 'city') {
+            $row = self::$ctx['row'] ?? null;
+            if (is_array($row)) {
+                $vars = EDP_Template_Engine::context_from_city_row($base, $row);
+                $desc = EDP_Template_Engine::replace((string) ($templates['city_landing']['meta_description'] ?? ''), $vars);
+            }
+        }
+
+        $current_url = '';
+        if ($view === 'state-list') {
+            $current_url = home_url(user_trailingslashit('locations'));
+        } elseif ($view === 'state') {
+            $slug        = (string) (self::$ctx['state_slug'] ?? '');
+            $current_url = home_url(user_trailingslashit('locations/' . rawurlencode($slug)));
+        } elseif ($view === 'city') {
+            $row         = self::$ctx['row'] ?? [];
+            $current_url = home_url(user_trailingslashit(
+                'locations/' . rawurlencode((string) ($row['state_slug'] ?? '')) . '/' . rawurlencode((string) ($row['city_slug'] ?? ''))
+            ));
+        }
+
+        echo '<meta property="og:type" content="website" />' . "\n";
+
+        if ($title !== '') {
+            echo '<meta property="og:title" content="' . esc_attr($title) . '" />' . "\n";
+        }
+
+        if ($desc !== '') {
+            echo '<meta property="og:description" content="' . esc_attr($desc) . '" />' . "\n";
+        }
+
+        if ($current_url !== '') {
+            echo '<meta property="og:url" content="' . esc_url($current_url) . '" />' . "\n";
+        }
+
+        if ($og_image !== '') {
+            echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
+        }
+
+        if ($twitter_site !== '' || $og_image !== '') {
+            echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+        }
+
+        if ($twitter_site !== '') {
+            echo '<meta name="twitter:site" content="' . esc_attr($twitter_site) . '" />' . "\n";
+        }
+    }
+
+    public static function output_faqpage_schema(): void
+    {
+        if (self::$ctx === null) {
+            return;
+        }
+
+        $row = self::$ctx['row'] ?? null;
+
+        if (!is_array($row)) {
+            return;
+        }
+
+        $resolved  = EDP_Content_Resolver::resolve_city($row);
+        $faq       = $resolved['faq'] ?? [];
+        $faq_items = is_array($faq['items'] ?? null) ? $faq['items'] : [];
+
+        if (empty($faq['enabled']) || empty($faq_items)) {
+            return;
+        }
+
+        EDP_Schema::output_faqpage_schema($faq_items);
     }
 
     public static function output_city_schema(): void
