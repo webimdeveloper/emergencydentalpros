@@ -36,14 +36,6 @@ final class EDP_Pagespeed_Client {
 				'url'      => $url,
 				'strategy' => $strategy,
 				'key'      => $this->api_key,
-				'fields'   => implode( ',', [
-					'lighthouseResult.categories.performance.score',
-					'lighthouseResult.audits.largest-contentful-paint.displayValue',
-					'lighthouseResult.audits.total-blocking-time.displayValue',
-					'lighthouseResult.audits.cumulative-layout-shift.displayValue',
-					'lighthouseResult.audits.first-contentful-paint.displayValue',
-					'lighthouseResult.audits.speed-index.displayValue',
-				] ),
 			],
 			self::API_ENDPOINT
 		);
