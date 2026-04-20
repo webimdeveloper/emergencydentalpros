@@ -57,10 +57,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     public function get_sortable_columns(): array
     {
-        return [
-            'google'   => ['google', false],
-            'override' => ['override', false],
-        ];
+        return [];
     }
 
     public function get_columns(): array
