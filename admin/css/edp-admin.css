@@ -499,12 +499,60 @@
 	position: relative;
 	top: -1px;
 }
-a.edp-faq-filter-link {
-	font-weight: 600;
+/* ── Stat coverage filter toggles ── */
+a.edp-stat-filter-item {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 5px 8px;
+	margin: 0 -8px;
+	border-radius: 5px;
 	text-decoration: none;
+	color: inherit;
+	border: 1px solid transparent;
+	transition: background .12s, border-color .12s;
 }
-a.edp-faq-filter-link:hover {
-	text-decoration: underline;
+a.edp-stat-filter-item:hover {
+	background: #f0f0f1;
+	border-color: #dcdcde;
+	color: inherit;
+}
+a.edp-stat-filter-item.is-active {
+	background: #eef4fb;
+	border-color: #b3cef0;
+}
+.edp-stat-filter-icon {
+	flex-shrink: 0;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: #2271b1;
+}
+.edp-stat-filter-label {
+	flex: 1;
+	font-size: 13px;
+	color: #50575e;
+}
+a.edp-stat-filter-item.is-active .edp-stat-filter-label {
+	color: #1d2327;
+	font-weight: 500;
+}
+.edp-stat-filter-count {
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+	min-width: 20px;
+	text-align: right;
+}
+.edp-stat-filter-toggle {
+	flex-shrink: 0;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: #a7aaad;
+}
+a.edp-stat-filter-item.is-active .edp-stat-filter-toggle {
+	color: #2271b1;
 }
 #edp-locations-wrap .edp-page-link {
 	color: var(--edp-brand);

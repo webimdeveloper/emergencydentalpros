@@ -156,7 +156,11 @@ final class EDP_Locations_List_Table extends WP_List_Table
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $city_filter = isset($_GET['city_filter']) ? sanitize_text_field(wp_unslash($_GET['city_filter'])) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        $has_faq_filter = isset($_GET['has_faq']) && $_GET['has_faq'] === '1';
+        $has_faq_filter    = isset($_GET['has_faq'])    && $_GET['has_faq']    === '1';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $has_static_filter = isset($_GET['has_static']) && $_GET['has_static'] === '1';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $has_mapped_filter = isset($_GET['has_mapped']) && $_GET['has_mapped'] === '1';
 
         // Sort (WP_List_Table standard params).
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -176,6 +180,16 @@ final class EDP_Locations_List_Table extends WP_List_Table
         if ($city_filter !== '') {
             $where_parts[]  = 'l.city_name LIKE %s';
             $where_values[] = '%' . $wpdb->esc_like($city_filter) . '%';
+        }
+
+        if ($has_static_filter) {
+            $where_parts[] = "l.override_type = 'cpt'";
+            $where_parts[] = 'l.custom_post_id > 0';
+        }
+
+        if ($has_mapped_filter) {
+            $where_parts[] = "l.override_type = 'mapped'";
+            $where_parts[] = 'l.custom_post_id > 0';
         }
 
         if ($has_faq_filter) {

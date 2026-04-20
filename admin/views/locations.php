@@ -72,11 +72,27 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		</div>
 	<?php endif; ?>
 
-	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-	<?php if (isset($_GET['has_faq']) && $_GET['has_faq'] === '1') : ?>
+	<?php
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended
+	$_filter_static = isset($_GET['has_static']) && $_GET['has_static'] === '1';
+	$_filter_mapped = isset($_GET['has_mapped']) && $_GET['has_mapped'] === '1';
+	$_filter_faq    = isset($_GET['has_faq'])    && $_GET['has_faq']    === '1';
+	$_any_filter    = $_filter_static || $_filter_mapped || $_filter_faq;
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+	if ($_any_filter) :
+		$_filter_labels = [];
+		if ($_filter_static) { $_filter_labels[] = __('Static pages', 'emergencydentalpros'); }
+		if ($_filter_mapped) { $_filter_labels[] = __('Mapped post IDs', 'emergencydentalpros'); }
+		if ($_filter_faq)    { $_filter_labels[] = __('Custom FAQ', 'emergencydentalpros'); }
+	?>
 		<div class="edp-notice edp-notice-info" style="display:flex;align-items:center;gap:8px;">
 			<span class="dashicons dashicons-filter" aria-hidden="true"></span>
-			<?php esc_html_e('Showing only locations with a custom FAQ section.', 'emergencydentalpros'); ?>
+			<?php printf(
+				/* translators: %s: comma-separated filter names */
+				esc_html__('Filtered by: %s', 'emergencydentalpros'),
+				esc_html(implode(', ', $_filter_labels))
+			); ?>
 			<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-locations')); ?>" style="margin-left:auto;"><?php esc_html_e('Clear filter', 'emergencydentalpros'); ?></a>
 		</div>
 	<?php endif; ?>
@@ -128,37 +144,51 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 			<p class="edp-stat-card-title"><?php echo esc_html(number_format_i18n($location_count)); ?></p>
 			<p class="edp-stat-card-sub"><?php esc_html_e('Location rows in database', 'emergencydentalpros'); ?></p>
 			<div class="edp-stat-row-items">
-				<?php /* ── Coverage stats ── */ ?>
-				<div class="edp-stat-item">
-					<span class="dashicons dashicons-admin-page" style="color:#2271b1;"></span>
-					<div>
-						<span class="edp-stat-label"><?php esc_html_e('Static pages:', 'emergencydentalpros'); ?></span>
-						<span class="edp-stat-val"><?php echo esc_html(number_format_i18n($count_static)); ?></span>
-					</div>
-				</div>
-				<div class="edp-stat-item">
-					<span class="dashicons dashicons-admin-post" style="color:#2271b1;"></span>
-					<div>
-						<span class="edp-stat-label"><?php esc_html_e('Mapped post IDs:', 'emergencydentalpros'); ?></span>
-						<span class="edp-stat-val"><?php echo esc_html(number_format_i18n($count_mapped)); ?></span>
-					</div>
-				</div>
-				<div class="edp-stat-item">
-					<span class="dashicons dashicons-editor-help" style="color:#2271b1;"></span>
-					<div>
-						<span class="edp-stat-label"><?php esc_html_e('Custom FAQ:', 'emergencydentalpros'); ?></span>
-						<?php if ($count_custom_faq > 0) : ?>
-							<a class="edp-stat-val edp-faq-filter-link"
-							   href="<?php echo esc_url(add_query_arg(['page' => 'edp-seo-locations', 'has_faq' => '1'], admin_url('admin.php'))); ?>"
-							   title="<?php esc_attr_e('Filter table to pages with custom FAQ', 'emergencydentalpros'); ?>">
-								<?php echo esc_html(number_format_i18n($count_custom_faq)); ?>
-								<span class="dashicons dashicons-filter" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-left:2px;" aria-hidden="true"></span>
-							</a>
-						<?php else : ?>
-							<span class="edp-stat-val">0</span>
-						<?php endif; ?>
-					</div>
-				</div>
+				<?php /* ── Coverage filter toggles ── */ ?>
+				<?php
+				$_base_url = admin_url('admin.php?page=edp-seo-locations');
+
+				$_filters = [
+					[
+						'icon'    => 'dashicons-admin-page',
+						'label'   => __('Static pages', 'emergencydentalpros'),
+						'count'   => $count_static,
+						'param'   => 'has_static',
+						'active'  => $_filter_static,
+					],
+					[
+						'icon'    => 'dashicons-admin-post',
+						'label'   => __('Mapped post IDs', 'emergencydentalpros'),
+						'count'   => $count_mapped,
+						'param'   => 'has_mapped',
+						'active'  => $_filter_mapped,
+					],
+					[
+						'icon'    => 'dashicons-editor-help',
+						'label'   => __('Custom FAQ', 'emergencydentalpros'),
+						'count'   => $count_custom_faq,
+						'param'   => 'has_faq',
+						'active'  => $_filter_faq,
+					],
+				];
+
+				foreach ($_filters as $_f) :
+					$_is_active = (bool) $_f['active'];
+					$_href = $_is_active
+						? remove_query_arg($_f['param'], $_base_url)
+						: add_query_arg($_f['param'], '1', $_base_url);
+				?>
+				<a class="edp-stat-filter-item<?php echo $_is_active ? ' is-active' : ''; ?>"
+				   href="<?php echo esc_url($_href); ?>"
+				   title="<?php echo $_is_active
+				       ? esc_attr__('Remove filter', 'emergencydentalpros')
+				       : esc_attr__('Filter table', 'emergencydentalpros'); ?>">
+					<span class="dashicons <?php echo esc_attr($_f['icon']); ?> edp-stat-filter-icon" aria-hidden="true"></span>
+					<span class="edp-stat-filter-label"><?php echo esc_html($_f['label']); ?></span>
+					<span class="edp-stat-filter-count"><?php echo esc_html(number_format_i18n((int) $_f['count'])); ?></span>
+					<span class="dashicons <?php echo $_is_active ? 'dashicons-yes-alt' : 'dashicons-filter'; ?> edp-stat-filter-toggle" aria-hidden="true"></span>
+				</a>
+				<?php endforeach; ?>
 				<?php if (!empty($import_log['at'])) :
 					$import_date = esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $import_log['at']));
 					$has_err = !empty($import_log['error']) || (isset($import_log['ok']) && !$import_log['ok']);
@@ -1145,10 +1175,10 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	});
 })();
 
-/* ── has_faq auto-scroll ── */
+/* ── coverage-filter auto-scroll ── */
 (function () {
 	var params = new URLSearchParams(window.location.search);
-	if (params.get('has_faq') === '1') {
+	if (params.get('has_faq') === '1' || params.get('has_static') === '1' || params.get('has_mapped') === '1') {
 		var wrap = document.getElementById('edp-locations-wrap');
 		if (wrap) {
 			var table = wrap.querySelector('.wp-list-table');
