@@ -100,9 +100,25 @@ wp_nonce_field( 'edp_location_settings_' . $post->ID, 'edp_location_settings_non
 </div>
 
 <div class="edp-mb-row">
-    <label for="edp_communities_body"><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
-    <textarea name="edp_communities_body" id="edp_communities_body" rows="3"
-        placeholder="<?php echo esc_attr( wp_strip_all_tags( $ph_comm_body ) ); ?>"><?php echo esc_textarea( $val_comm_body ); ?></textarea>
+    <label><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
+    <?php if ( $ph_comm_body !== '' ) : ?>
+        <p class="edp-mb-hint" style="margin-bottom:6px;">
+            <?php esc_html_e( 'Template default:', 'emergencydentalpros' ); ?>
+            <em><?php echo esc_html( wp_strip_all_tags( $ph_comm_body ) ); ?></em>
+        </p>
+    <?php endif; ?>
+    <?php
+    wp_editor(
+        $val_comm_body,
+        'edp_communities_body',
+        [
+            'textarea_name' => 'edp_communities_body',
+            'media_buttons' => false,
+            'textarea_rows' => 4,
+            'teeny'         => true,
+        ]
+    );
+    ?>
 </div>
 
 <div class="edp-mb-section-title"><?php esc_html_e( 'Other cities section', 'emergencydentalpros' ); ?></div>
