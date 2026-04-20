@@ -324,7 +324,7 @@
 .edp-stat-card-sub {
   font-size: var(--edp-fs-base);
   color: var(--edp-muted);
-  margin: 0 0 16px;
+  margin-block: 12px 16px;
 }
 .edp-stat-row-items {
   display: flex;
