@@ -178,25 +178,28 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 		<?php /* Card 2 — CSV + actions */ ?>
 		<div class="edp-stat-card">
-			<p class="edp-stat-card-title"><?php esc_html_e('Data Sources', 'emergencydentalpros'); ?></p>
-			<p class="edp-stat-card-sub"><?php esc_html_e('Front-end URLs: /locations/ — state list; /locations/{state}/ — cities; /locations/{state}/{city}/ — city landing.', 'emergencydentalpros'); ?></p>
-			<div class="edp-stat-row-items">
-				<div class="edp-stat-item">
-					<span class="dashicons <?php echo $default_csv_ok ? 'dashicons-yes' : 'dashicons-warning'; ?>"></span>
-					<div>
-						<span class="edp-stat-label"><?php esc_html_e('Default CSV:', 'emergencydentalpros'); ?></span>
-						<code style="font-size:12px; word-break:break-all;"> <?php echo esc_html($default_csv); ?></code>
-						<br />
-						<?php if ($default_csv_ok) : ?>
-							<span style="color:#0a7040; font-size:12.64px;"><?php esc_html_e('readable', 'emergencydentalpros'); ?></span>
-						<?php else : ?>
-							<span class="edp-stat-err"><?php esc_html_e('not found — use Import or add raw_data.csv on the server.', 'emergencydentalpros'); ?></span>
-						<?php endif; ?>
+			<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
+			<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
+			<div class="edp-doc-links">
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=guide')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-media-document edp-doc-link-icon" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('User Guide', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Import locations, connect APIs, create static pages, map post IDs, templates, FAQ and schema setup.', 'emergencydentalpros'); ?></span>
 					</div>
-				</div>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=architecture')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-editor-code edp-doc-link-icon edp-doc-link-icon--arch" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('Architecture Reference', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Plugin class structure, virtual routing, theme integration, AJAX actions, and how to extend the plugin.', 'emergencydentalpros'); ?></span>
+					</div>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
 			</div>
 			<div class="edp-stat-card-actions">
-				<a class="edp-btn edp-btn-primary" href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-import')); ?>"><?php esc_html_e('Go to Import', 'emergencydentalpros'); ?></a>
+				<a class="edp-btn edp-btn-primary" href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-import')); ?>"><?php esc_html_e('Go to Settings', 'emergencydentalpros'); ?></a>
 				<?php if (!$edp_seo_debug) : ?>
 					<a class="edp-btn edp-btn-secondary" href="<?php echo esc_url(add_query_arg('edp_seo_debug', '1', admin_url('admin.php?page=edp-seo-locations'))); ?>"><?php esc_html_e('Show diagnostics', 'emergencydentalpros'); ?></a>
 				<?php else : ?>

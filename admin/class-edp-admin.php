@@ -91,6 +91,16 @@ final class EDP_Admin
             [self::class, 'render_import']
         );
 
+        // Hidden doc-viewer page — not in the nav, accessible via direct URL.
+        add_submenu_page(
+            null,
+            __('Plugin Documentation', 'emergencydentalpros'),
+            '',
+            'manage_options',
+            'edp-seo-doc',
+            [self::class, 'render_doc']
+        );
+
         self::$locations_screen_hook = (string) $locations_hook;
 
         // load-{hook} fires after the page is identified but before output — safe to redirect.
@@ -174,6 +184,171 @@ final class EDP_Admin
         }
 
         require EDP_PLUGIN_DIR . 'admin/views/import.php';
+    }
+
+    /**
+     * Render the inline markdown doc viewer.
+     */
+    public static function render_doc(): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $allowed = [
+            'guide'        => ['file' => 'user-guide.md',    'title' => 'User Guide'],
+            'architecture' => ['file' => 'architecture.md',  'title' => 'Architecture Reference'],
+        ];
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $key  = isset($_GET['doc']) ? sanitize_key(wp_unslash($_GET['doc'])) : 'guide';
+        $meta = $allowed[$key] ?? $allowed['guide'];
+        $path = EDP_PLUGIN_DIR . 'admin/docs/' . $meta['file'];
+
+        $raw = is_readable($path) ? (string) file_get_contents($path) : ''; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+
+        echo '<div class="wrap edp-doc-wrap">';
+        echo '<div class="edp-doc-topbar">';
+        foreach ($allowed as $k => $m) {
+            $active = ($k === $key) ? ' edp-doc-tab--active' : '';
+            $url    = esc_url(admin_url('admin.php?page=edp-seo-doc&doc=' . $k));
+            echo '<a href="' . $url . '" class="edp-doc-tab' . esc_attr($active) . '">' . esc_html($m['title']) . '</a>';
+        }
+        $back = esc_url(admin_url('admin.php?page=edp-seo-locations'));
+        echo '<a href="' . $back . '" class="edp-doc-back">← Back to Locations</a>';
+        echo '</div>';
+        echo '<div class="edp-doc-body">';
+        echo self::markdown_to_html($raw);
+        echo '</div></div>';
+    }
+
+    /**
+     * Minimal markdown → HTML converter (headings, bold, inline code, code blocks, lists, hr, tables, blockquotes).
+     */
+    private static function markdown_to_html(string $md): string
+    {
+        $lines   = explode("\n", $md);
+        $html    = '';
+        $in_list = false;
+        $in_code = false;
+        $in_table = false;
+
+        foreach ($lines as $line) {
+            // Fenced code block toggle.
+            if (strncmp($line, '```', 3) === 0) {
+                if ($in_code) {
+                    $html   .= '</code></pre>';
+                    $in_code = false;
+                } else {
+                    if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                    $html   .= '<pre><code>';
+                    $in_code = true;
+                }
+                continue;
+            }
+
+            if ($in_code) {
+                $html .= esc_html($line) . "\n";
+                continue;
+            }
+
+            // Close table on blank line.
+            if ($in_table && trim($line) === '') {
+                $html    .= '</tbody></table>';
+                $in_table = false;
+                continue;
+            }
+
+            // Table rows (lines starting with |).
+            if (str_starts_with(trim($line), '|')) {
+                $cells = array_slice(explode('|', $line), 1, -1);
+                // Separator row (|---|---|).
+                if (preg_match('/^\|[\s\-:|]+\|/', $line)) {
+                    continue;
+                }
+                if (!$in_table) {
+                    if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                    $html    .= '<table class="edp-doc-table"><thead><tr>';
+                    foreach ($cells as $c) {
+                        $html .= '<th>' . self::inline_md(trim($c)) . '</th>';
+                    }
+                    $html    .= '</tr></thead><tbody>';
+                    $in_table = true;
+                    continue;
+                }
+                $html .= '<tr>';
+                foreach ($cells as $c) {
+                    $html .= '<td>' . self::inline_md(trim($c)) . '</td>';
+                }
+                $html .= '</tr>';
+                continue;
+            }
+
+            if ($in_table) {
+                $html    .= '</tbody></table>';
+                $in_table = false;
+            }
+
+            // Headings.
+            if (preg_match('/^(#{1,3})\s+(.+)$/', $line, $m)) {
+                if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                $level = strlen($m[1]);
+                $html .= '<h' . $level . ' class="edp-doc-h' . $level . '">' . self::inline_md($m[2]) . '</h' . $level . '>';
+                continue;
+            }
+
+            // Horizontal rule.
+            if (preg_match('/^---+$/', trim($line))) {
+                if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                $html .= '<hr class="edp-doc-hr">';
+                continue;
+            }
+
+            // Blockquote.
+            if (strncmp($line, '> ', 2) === 0) {
+                if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                $html .= '<blockquote class="edp-doc-bq">' . self::inline_md(substr($line, 2)) . '</blockquote>';
+                continue;
+            }
+
+            // List item.
+            if (preg_match('/^[-*]\s+(.+)$/', $line, $m)) {
+                if (!$in_list) { $html .= '<ul class="edp-doc-list">'; $in_list = true; }
+                $html .= '<li>' . self::inline_md($m[1]) . '</li>';
+                continue;
+            }
+
+            // Blank line.
+            if (trim($line) === '') {
+                if ($in_list) { $html .= '</ul>'; $in_list = false; }
+                $html .= '<div class="edp-doc-spacer"></div>';
+                continue;
+            }
+
+            // Paragraph text.
+            if ($in_list) { $html .= '</ul>'; $in_list = false; }
+            $html .= '<p class="edp-doc-p">' . self::inline_md($line) . '</p>';
+        }
+
+        if ($in_list)  { $html .= '</ul>'; }
+        if ($in_table) { $html .= '</tbody></table>'; }
+        if ($in_code)  { $html .= '</code></pre>'; }
+
+        return $html;
+    }
+
+    /**
+     * Apply inline markdown: **bold**, `code`, and escape HTML entities.
+     */
+    private static function inline_md(string $text): string
+    {
+        $text = esc_html($text);
+        // Bold — **text** or __text__.
+        $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', (string) $text) ?? $text;
+        $text = preg_replace('/__(.+?)__/', '<strong>$1</strong>', (string) $text) ?? $text;
+        // Inline code — `text`.
+        $text = preg_replace('/`([^`]+)`/', '<code class="edp-doc-code">$1</code>', (string) $text) ?? $text;
+        return $text;
     }
 
     /**
