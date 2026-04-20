@@ -534,7 +534,10 @@ final class EDP_Admin
         $table = new EDP_Locations_List_Table($screen_hook);
         $table->prepare_items();
 
-        $location_count = EDP_Database::count_rows();
+        $location_count   = EDP_Database::count_rows();
+        $count_static     = EDP_Database::count_static_pages();
+        $count_mapped     = EDP_Database::count_mapped_posts();
+        $count_custom_faq = EDP_Database::count_with_custom_faq();
         $default_csv = EDP_PLUGIN_DIR . 'raw_data.csv';
         $default_csv_ok = is_readable($default_csv);
         $import_log = get_option(self::OPTION_IMPORT_LOG, []);

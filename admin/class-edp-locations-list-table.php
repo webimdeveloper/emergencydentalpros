@@ -155,6 +155,8 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $state_filter = isset($_GET['state_filter']) ? sanitize_text_field(wp_unslash($_GET['state_filter'])) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $city_filter = isset($_GET['city_filter']) ? sanitize_text_field(wp_unslash($_GET['city_filter'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $has_faq_filter = isset($_GET['has_faq']) && $_GET['has_faq'] === '1';
 
         // Sort (WP_List_Table standard params).
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -174,6 +176,11 @@ final class EDP_Locations_List_Table extends WP_List_Table
         if ($city_filter !== '') {
             $where_parts[]  = 'l.city_name LIKE %s';
             $where_values[] = '%' . $wpdb->esc_like($city_filter) . '%';
+        }
+
+        if ($has_faq_filter) {
+            $where_parts[] = 'l.custom_post_id > 0';
+            $where_parts[] = "EXISTS (SELECT 1 FROM {$wpdb->postmeta} pm WHERE pm.post_id = l.custom_post_id AND pm.meta_key = '_edp_faq_enabled' AND pm.meta_value = '1')";
         }
 
         $where = implode(' AND ', $where_parts);

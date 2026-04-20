@@ -276,6 +276,35 @@ final class EDP_Database
         return (int) $count;
     }
 
+    public static function count_static_pages(): int
+    {
+        global $wpdb;
+        $table = self::table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE override_type = 'cpt' AND custom_post_id > 0");
+    }
+
+    public static function count_mapped_posts(): int
+    {
+        global $wpdb;
+        $table = self::table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE override_type = 'mapped' AND custom_post_id > 0");
+    }
+
+    public static function count_with_custom_faq(): int
+    {
+        global $wpdb;
+        $table = self::table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return (int) $wpdb->get_var(
+            "SELECT COUNT(DISTINCT l.id) FROM {$table} l
+             INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = l.custom_post_id
+               AND pm.meta_key = '_edp_faq_enabled' AND pm.meta_value = '1'
+             WHERE l.custom_post_id > 0"
+        );
+    }
+
     /**
      * @return list<array<string, mixed>>
      */

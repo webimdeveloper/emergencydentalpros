@@ -72,6 +72,15 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		</div>
 	<?php endif; ?>
 
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['has_faq']) && $_GET['has_faq'] === '1') : ?>
+		<div class="edp-notice edp-notice-info" style="display:flex;align-items:center;gap:8px;">
+			<span class="dashicons dashicons-filter" aria-hidden="true"></span>
+			<?php esc_html_e('Showing only locations with a custom FAQ section.', 'emergencydentalpros'); ?>
+			<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-locations')); ?>" style="margin-left:auto;"><?php esc_html_e('Clear filter', 'emergencydentalpros'); ?></a>
+		</div>
+	<?php endif; ?>
+
 	<?php if ($edp_google_notice !== null) :
 		$proc  = (int) ($edp_google_notice['processed'] ?? 0);
 		$calls = (int) ($edp_google_notice['api_calls'] ?? 0);
@@ -119,6 +128,37 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 			<p class="edp-stat-card-title"><?php echo esc_html(number_format_i18n($location_count)); ?></p>
 			<p class="edp-stat-card-sub"><?php esc_html_e('Location rows in database', 'emergencydentalpros'); ?></p>
 			<div class="edp-stat-row-items">
+				<?php /* ── Coverage stats ── */ ?>
+				<div class="edp-stat-item">
+					<span class="dashicons dashicons-admin-page" style="color:#2271b1;"></span>
+					<div>
+						<span class="edp-stat-label"><?php esc_html_e('Static pages:', 'emergencydentalpros'); ?></span>
+						<span class="edp-stat-val"><?php echo esc_html(number_format_i18n($count_static)); ?></span>
+					</div>
+				</div>
+				<div class="edp-stat-item">
+					<span class="dashicons dashicons-admin-post" style="color:#2271b1;"></span>
+					<div>
+						<span class="edp-stat-label"><?php esc_html_e('Mapped post IDs:', 'emergencydentalpros'); ?></span>
+						<span class="edp-stat-val"><?php echo esc_html(number_format_i18n($count_mapped)); ?></span>
+					</div>
+				</div>
+				<div class="edp-stat-item">
+					<span class="dashicons dashicons-editor-help" style="color:#2271b1;"></span>
+					<div>
+						<span class="edp-stat-label"><?php esc_html_e('Custom FAQ:', 'emergencydentalpros'); ?></span>
+						<?php if ($count_custom_faq > 0) : ?>
+							<a class="edp-stat-val edp-faq-filter-link"
+							   href="<?php echo esc_url(add_query_arg(['page' => 'edp-seo-locations', 'has_faq' => '1'], admin_url('admin.php'))); ?>"
+							   title="<?php esc_attr_e('Filter table to pages with custom FAQ', 'emergencydentalpros'); ?>">
+								<?php echo esc_html(number_format_i18n($count_custom_faq)); ?>
+								<span class="dashicons dashicons-filter" style="font-size:12px;width:12px;height:12px;vertical-align:middle;margin-left:2px;" aria-hidden="true"></span>
+							</a>
+						<?php else : ?>
+							<span class="edp-stat-val">0</span>
+						<?php endif; ?>
+					</div>
+				</div>
 				<?php if (!empty($import_log['at'])) :
 					$import_date = esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $import_log['at']));
 					$has_err = !empty($import_log['error']) || (isset($import_log['ok']) && !$import_log['ok']);
@@ -1104,4 +1144,18 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		});
 	});
 })();
+
+/* ── has_faq auto-scroll ── */
+(function () {
+	var params = new URLSearchParams(window.location.search);
+	if (params.get('has_faq') === '1') {
+		var wrap = document.getElementById('edp-locations-wrap');
+		if (wrap) {
+			var table = wrap.querySelector('.wp-list-table');
+			if (table) {
+				table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}
+	}
+}());
 </script>
