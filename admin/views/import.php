@@ -66,13 +66,6 @@ if (is_array($google_test_result)) {
 	<?php if (isset($_GET['google_saved'])) : ?>
 		<div class="edp-notice edp-notice-success"><?php esc_html_e('Google Places settings saved.', 'emergencydentalpros'); ?></div>
 	<?php endif; ?>
-	<?php if (isset($_GET['google_imported'])) : ?>
-		<?php if (isset($_GET['google_error'])) : ?>
-			<div class="edp-notice edp-notice-error"><?php esc_html_e('Google Places import could not complete. See details below.', 'emergencydentalpros'); ?></div>
-		<?php else : ?>
-			<div class="edp-notice edp-notice-success"><?php esc_html_e('Google Places batch finished.', 'emergencydentalpros'); ?></div>
-		<?php endif; ?>
-	<?php endif; ?>
 	<?php if (isset($_GET['sa_saved'])) : ?>
 		<div class="edp-notice edp-notice-success"><?php esc_html_e('Service account credentials saved.', 'emergencydentalpros'); ?></div>
 	<?php endif; ?>
@@ -295,88 +288,6 @@ if (is_array($google_test_result)) {
 		</div>
 	</div>
 
-	<?php /* ------------------------------------------------------------------ */ ?>
-	<?php /* CARD 4 — Google Places Batch Import                                */ ?>
-	<?php /* ------------------------------------------------------------------ */ ?>
-	<div class="edp-card">
-		<div class="edp-card-header">
-			<?php esc_html_e('Google Places — Batch Import', 'emergencydentalpros'); ?>
-		</div>
-		<div class="edp-card-body">
-
-			<?php
-			$google_last = get_transient('edp_seo_last_google_import');
-			if (is_array($google_last)) {
-				delete_transient('edp_seo_last_google_import');
-			}
-			?>
-			<?php if (is_array($google_last)) : ?>
-				<div class="edp-import-info">
-					<strong><?php esc_html_e('Last batch result', 'emergencydentalpros'); ?></strong>
-					<p style="margin:4px 0;">
-						<?php
-						printf(
-							/* translators: 1: cities processed, 2: API calls */
-							esc_html__('Cities processed: %1$d — API calls (approx.): %2$d', 'emergencydentalpros'),
-							(int) ($google_last['processed'] ?? 0),
-							(int) ($google_last['api_calls'] ?? 0)
-						);
-						?>
-					</p>
-					<?php if (!empty($google_last['error'])) : ?>
-						<p><code><?php echo esc_html((string) $google_last['error']); ?></code></p>
-					<?php endif; ?>
-					<?php if (!empty($google_last['messages']) && is_array($google_last['messages'])) : ?>
-						<ul>
-							<?php foreach (array_slice($google_last['messages'], 0, 20) as $msg) : ?>
-								<li><code><?php echo esc_html((string) $msg); ?></code></li>
-							<?php endforeach; ?>
-						</ul>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
-
-			<form id="edp-google-import-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-				<?php wp_nonce_field('edp_seo_google_import', 'edp_seo_google_import_nonce'); ?>
-				<input type="hidden" name="action" value="edp_seo_google_import" />
-
-				<div class="edp-form-row-grid">
-					<div class="edp-form-row" style="margin-bottom:0;">
-						<label for="google_offset"><?php esc_html_e('City offset', 'emergencydentalpros'); ?></label>
-						<input name="google_offset" type="number" id="google_offset" min="0" step="1" value="0" />
-						<p class="edp-hint"><?php esc_html_e('Row offset in the locations table (order by id). Increase after each batch to continue where you left off.', 'emergencydentalpros'); ?></p>
-					</div>
-					<div class="edp-form-row" style="margin-bottom:0;">
-						<label for="google_limit"><?php esc_html_e('Cities in this batch', 'emergencydentalpros'); ?></label>
-						<input name="google_limit" type="number" id="google_limit" min="1" max="300" step="1" value="25" />
-						<p class="edp-hint"><?php esc_html_e('Max 300 per batch. Each city = 1 Text Search call + up to 5 Details calls if hours are enabled.', 'emergencydentalpros'); ?></p>
-					</div>
-				</div>
-
-				<div class="edp-form-row" style="margin-top:16px;">
-					<label class="edp-checkbox-label">
-						<input name="google_fetch_details" type="checkbox" value="1" <?php checked(EDP_Google_Places_Config::should_fetch_details()); ?> />
-						<?php esc_html_e('Fetch opening hours + phone (more API calls per city)', 'emergencydentalpros'); ?>
-					</label>
-				</div>
-
-				<div class="edp-btn-row">
-					<button type="submit" id="edp-google-import-submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Run Google Places batch import', 'emergencydentalpros'); ?></button>
-				</div>
-			</form>
-
-			<div id="edp-google-progress" class="edp-progress-wrap">
-				<div class="edp-progress-bar-track">
-					<div id="edp-google-bar" class="edp-progress-bar-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-				</div>
-				<p id="edp-google-status" class="edp-progress-status"></p>
-				<div id="edp-google-error-wrap" class="edp-error-box" style="margin-top:8px;">
-					<strong><?php esc_html_e('Warnings', 'emergencydentalpros'); ?></strong>
-					<ul id="edp-google-errors" style="margin:4px 0 0; padding-left:1.25em;"></ul>
-				</div>
-			</div>
-		</div>
-	</div>
 
 	<script>
 	(function () {
@@ -438,102 +349,6 @@ if (is_array($google_test_result)) {
 			});
 		}
 
-		/* ---- Batch import ---- */
-		var form    = document.getElementById('edp-google-import-form');
-		var impBtn  = document.getElementById('edp-google-import-submit');
-		var impWrap = document.getElementById('edp-google-progress');
-		var bar     = document.getElementById('edp-google-bar');
-		var impSt   = document.getElementById('edp-google-status');
-		var errWr   = document.getElementById('edp-google-error-wrap');
-		var errLst  = document.getElementById('edp-google-errors');
-
-		if (form && impBtn) {
-			var impNonce   = <?php echo wp_json_encode(wp_create_nonce('edp_google_import_step')); ?>;
-			var impAjaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
-
-			function escH(str) {
-				return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-			}
-
-			function setBar(pct) {
-				bar.style.width = pct + '%';
-				bar.setAttribute('aria-valuenow', pct);
-			}
-
-			form.addEventListener('submit', function (e) {
-				e.preventDefault();
-
-				var fd      = new FormData(form);
-				var offset  = parseInt(fd.get('google_offset'), 10) || 0;
-				var total   = Math.min(300, Math.max(1, parseInt(fd.get('google_limit'), 10) || 25));
-				var details = fd.has('google_fetch_details') ? '1' : '';
-
-				impBtn.disabled        = true;
-				impWrap.style.display  = 'block';
-				errWr.style.display    = 'none';
-				errLst.innerHTML       = '';
-				setBar(0);
-
-				var step          = 0;
-				var totalApiCalls = 0;
-				var allMessages   = [];
-
-				function processNext() {
-					if (step >= total) {
-						finish();
-						return;
-					}
-
-					impSt.textContent = <?php echo wp_json_encode(__('City', 'emergencydentalpros')); ?> + ' ' + (step + 1) + ' / ' + total + '…';
-					setBar(Math.round((step / total) * 100));
-
-					var body = new URLSearchParams({
-						action:        'edp_google_import_step',
-						nonce:         impNonce,
-						offset:        offset,
-						step:          step,
-						total:         total,
-						fetch_details: details,
-					});
-
-					fetch(impAjaxUrl, { method: 'POST', body: body })
-						.then(function (r) { return r.json(); })
-						.then(function (json) {
-							if (!json.success) {
-								impSt.textContent = 'Error: ' + escH((json.data && json.data.message) ? json.data.message : 'Unknown');
-								impBtn.disabled = false;
-								return;
-							}
-							totalApiCalls += (json.data.api_calls || 0);
-							if (json.data.messages && json.data.messages.length) {
-								allMessages = allMessages.concat(json.data.messages);
-							}
-							step = json.data.step;
-							if (json.data.done) {
-								finish();
-							} else {
-								processNext();
-							}
-						})
-						.catch(function (err) {
-							impSt.textContent = 'Network error: ' + escH(err.message || err);
-							impBtn.disabled = false;
-						});
-				}
-
-				function finish() {
-					setBar(100);
-					impSt.textContent = <?php echo wp_json_encode(__('Done', 'emergencydentalpros')); ?> + ' — ' + step + ' <?php esc_html_e('cities processed', 'emergencydentalpros'); ?>, ~' + totalApiCalls + ' <?php esc_html_e('API calls', 'emergencydentalpros'); ?>';
-					impBtn.disabled = false;
-					if (allMessages.length) {
-						errLst.innerHTML    = allMessages.map(function (m) { return '<li><code>' + escH(m) + '</code></li>'; }).join('');
-						errWr.style.display = 'block';
-					}
-				}
-
-				processNext();
-			});
-		}
-	})();
+})();
 	</script>
 </div>
