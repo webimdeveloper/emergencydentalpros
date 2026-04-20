@@ -13,3 +13,13 @@ vendor/
 # Keep compiled plugin assets committed (simple server deploys without CI build step).
 # Remove the !assets/ exception if you switch to building only in CI.
 !assets/
+
+# Planning/reference HTML files
+content_quality_scorer.html
+local_seo_plugin_features_DEEP.html
+
+# Test artifacts
+test-results/
+
+# PHP dependencies
+vendor/
