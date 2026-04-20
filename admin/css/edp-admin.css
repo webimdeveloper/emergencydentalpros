@@ -719,6 +719,12 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
   color: var(--edp-brand);
   transform: translateX(2px);
 }
+.edp-col-arrow {
+  transform: rotate(90deg);
+  margin-left: 4px;
+  vertical-align: middle;
+  opacity: .5;
+}
 a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   color: var(--edp-brand);
 }
