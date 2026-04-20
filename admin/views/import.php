@@ -102,48 +102,77 @@ if (is_array($google_test_result)) {
 	<?php endif; ?>
 
 	<?php /* ------------------------------------------------------------------ */ ?>
-	<?php /* CARD 1 — Service Account                                           */ ?>
+	<?php /* ROW — Plugin Documentation (left) + Service Account (right)       */ ?>
 	<?php /* ------------------------------------------------------------------ */ ?>
-	<div class="edp-card">
-		<div class="edp-card-header">
-			<?php esc_html_e('Google Sheets — Service Account', 'emergencydentalpros'); ?>
-			<?php if ($sa_configured) : ?>
-				<span class="edp-card-header-badge edp-badge-ok">&#10003; <?php esc_html_e('Connected', 'emergencydentalpros'); ?></span>
-			<?php else : ?>
-				<span class="edp-card-header-badge"><?php esc_html_e('Not configured', 'emergencydentalpros'); ?></span>
-			<?php endif; ?>
-		</div>
-		<div class="edp-card-body">
-			<p class="edp-desc">
-				<?php esc_html_e('Required for the two-way sync. Upload the JSON key file you downloaded from Google Cloud Console after creating the service account. The sheet must be shared with the service account email as Editor.', 'emergencydentalpros'); ?>
-			</p>
+	<div class="edp-stat-row">
 
-			<?php if ($sa_configured) : ?>
-				<div class="edp-connected-row">
-					<span class="dashicons dashicons-yes"></span>
-					<strong><?php esc_html_e('Connected:', 'emergencydentalpros'); ?></strong>
-					<code><?php echo esc_html($sa_email); ?></code>
-				</div>
-				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-					<?php wp_nonce_field('edp_sheet_sa_clear', 'edp_sheet_sa_clear_nonce'); ?>
-					<input type="hidden" name="action" value="edp_sheet_sa_clear" />
-					<button type="submit" class="edp-btn edp-btn-danger"><?php esc_html_e('Remove credentials', 'emergencydentalpros'); ?></button>
-				</form>
-			<?php else : ?>
-				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
-					<?php wp_nonce_field('edp_sheet_sa_save', 'edp_sheet_sa_nonce'); ?>
-					<input type="hidden" name="action" value="edp_sheet_sa_save" />
-					<div class="edp-form-row">
-						<label for="edp_sa_json"><?php esc_html_e('Service account JSON key', 'emergencydentalpros'); ?></label>
-						<input name="edp_sa_json" type="file" id="edp_sa_json" accept=".json,application/json" required />
-						<p class="edp-hint"><?php esc_html_e('Google Cloud Console → IAM & Admin → Service Accounts → your account → Keys → Add Key → JSON.', 'emergencydentalpros'); ?></p>
+		<?php /* Plugin Documentation */ ?>
+		<div class="edp-stat-card">
+			<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
+			<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
+			<div class="edp-doc-links">
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=guide')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-media-document edp-doc-link-icon" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('User Guide', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Import locations, connect APIs, create static pages, map post IDs, templates, FAQ and schema setup.', 'emergencydentalpros'); ?></span>
 					</div>
-					<div class="edp-btn-row">
-						<button type="submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Upload & save credentials', 'emergencydentalpros'); ?></button>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=architecture')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-editor-code edp-doc-link-icon edp-doc-link-icon--arch" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('Architecture Reference', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Plugin class structure, virtual routing, theme integration, AJAX actions, and how to extend the plugin.', 'emergencydentalpros'); ?></span>
 					</div>
-				</form>
-			<?php endif; ?>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
+			</div>
 		</div>
+
+		<?php /* CARD 1 — Service Account */ ?>
+		<div class="edp-card" style="margin-bottom:0;">
+			<div class="edp-card-header">
+				<?php esc_html_e('Google Sheets — Service Account', 'emergencydentalpros'); ?>
+				<?php if ($sa_configured) : ?>
+					<span class="edp-card-header-badge edp-badge-ok">&#10003; <?php esc_html_e('Connected', 'emergencydentalpros'); ?></span>
+				<?php else : ?>
+					<span class="edp-card-header-badge"><?php esc_html_e('Not configured', 'emergencydentalpros'); ?></span>
+				<?php endif; ?>
+			</div>
+			<div class="edp-card-body">
+				<p class="edp-desc">
+					<?php esc_html_e('Required for the two-way sync. Upload the JSON key file you downloaded from Google Cloud Console after creating the service account. The sheet must be shared with the service account email as Editor.', 'emergencydentalpros'); ?>
+				</p>
+
+				<?php if ($sa_configured) : ?>
+					<div class="edp-connected-row">
+						<span class="dashicons dashicons-yes"></span>
+						<strong><?php esc_html_e('Connected:', 'emergencydentalpros'); ?></strong>
+						<code><?php echo esc_html($sa_email); ?></code>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('edp_sheet_sa_clear', 'edp_sheet_sa_clear_nonce'); ?>
+						<input type="hidden" name="action" value="edp_sheet_sa_clear" />
+						<button type="submit" class="edp-btn edp-btn-danger"><?php esc_html_e('Remove credentials', 'emergencydentalpros'); ?></button>
+					</form>
+				<?php else : ?>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+						<?php wp_nonce_field('edp_sheet_sa_save', 'edp_sheet_sa_nonce'); ?>
+						<input type="hidden" name="action" value="edp_sheet_sa_save" />
+						<div class="edp-form-row">
+							<label for="edp_sa_json"><?php esc_html_e('Service account JSON key', 'emergencydentalpros'); ?></label>
+							<input name="edp_sa_json" type="file" id="edp_sa_json" accept=".json,application/json" required />
+							<p class="edp-hint"><?php esc_html_e('Google Cloud Console → IAM & Admin → Service Accounts → your account → Keys → Add Key → JSON.', 'emergencydentalpros'); ?></p>
+						</div>
+						<div class="edp-btn-row">
+							<button type="submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Upload & save credentials', 'emergencydentalpros'); ?></button>
+						</div>
+					</form>
+				<?php endif; ?>
+			</div>
+		</div>
+
 	</div>
 
 	<?php /* ------------------------------------------------------------------ */ ?>

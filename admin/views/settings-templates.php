@@ -38,30 +38,56 @@ $context_vars = [
 		<?php wp_nonce_field('edp_seo_save_settings', 'edp_seo_nonce'); ?>
 		<input type="hidden" name="action" value="edp_seo_save_settings" />
 
-		<?php /* ---- Settings card (business + social) ---- */ ?>
-		<div class="edp-card">
-			<div class="edp-card-header"><?php esc_html_e('Settings', 'emergencydentalpros'); ?></div>
-			<div class="edp-card-body">
-				<div class="edp-form-row">
-					<label for="edp_business_name"><?php esc_html_e('Business name', 'emergencydentalpros'); ?></label>
-					<input name="edp_seo[business_name]" type="text" id="edp_business_name"
-						value="<?php echo esc_attr((string) ($settings['business_name'] ?? '')); ?>" />
-					<p class="edp-hint"><?php esc_html_e('Used in LocalBusiness / Dentist JSON-LD schema output on every city page.', 'emergencydentalpros'); ?></p>
+		<?php /* ---- Settings + Docs row ---- */ ?>
+		<div class="edp-stat-row">
+			<div class="edp-card" style="margin-bottom:0;">
+				<div class="edp-card-header"><?php esc_html_e('Settings', 'emergencydentalpros'); ?></div>
+				<div class="edp-card-body">
+					<div class="edp-form-row">
+						<label for="edp_business_name"><?php esc_html_e('Business name', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[business_name]" type="text" id="edp_business_name"
+							value="<?php echo esc_attr((string) ($settings['business_name'] ?? '')); ?>" />
+						<p class="edp-hint"><?php esc_html_e('Used in LocalBusiness / Dentist JSON-LD schema output on every city page.', 'emergencydentalpros'); ?></p>
+					</div>
+					<hr class="edp-divider" />
+					<div class="edp-form-row">
+						<label for="edp_og_image_url"><?php esc_html_e('Default OG image URL', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[og_image_url]" type="text" id="edp_og_image_url"
+							value="<?php echo esc_attr((string) ($settings['og_image_url'] ?? '')); ?>"
+							placeholder="https://example.com/og-image.jpg" />
+						<p class="edp-hint"><?php esc_html_e('Output as og:image and twitter:card image on all location pages. Recommended: 1200×630 px.', 'emergencydentalpros'); ?></p>
+					</div>
+					<div class="edp-form-row">
+						<label for="edp_twitter_site"><?php esc_html_e('Twitter / X handle', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[twitter_site]" type="text" id="edp_twitter_site"
+							value="<?php echo esc_attr((string) ($settings['twitter_site'] ?? '')); ?>"
+							placeholder="@YourHandle" />
+						<p class="edp-hint"><?php esc_html_e('Output as twitter:site meta tag. Include or omit the @ — it will be normalised.', 'emergencydentalpros'); ?></p>
+					</div>
 				</div>
-				<hr class="edp-divider" />
-				<div class="edp-form-row">
-					<label for="edp_og_image_url"><?php esc_html_e('Default OG image URL', 'emergencydentalpros'); ?></label>
-					<input name="edp_seo[og_image_url]" type="text" id="edp_og_image_url"
-						value="<?php echo esc_attr((string) ($settings['og_image_url'] ?? '')); ?>"
-						placeholder="https://example.com/og-image.jpg" />
-					<p class="edp-hint"><?php esc_html_e('Output as og:image and twitter:card image on all location pages. Recommended: 1200×630 px.', 'emergencydentalpros'); ?></p>
-				</div>
-				<div class="edp-form-row">
-					<label for="edp_twitter_site"><?php esc_html_e('Twitter / X handle', 'emergencydentalpros'); ?></label>
-					<input name="edp_seo[twitter_site]" type="text" id="edp_twitter_site"
-						value="<?php echo esc_attr((string) ($settings['twitter_site'] ?? '')); ?>"
-						placeholder="@YourHandle" />
-					<p class="edp-hint"><?php esc_html_e('Output as twitter:site meta tag. Include or omit the @ — it will be normalised.', 'emergencydentalpros'); ?></p>
+			</div>
+
+			<?php /* Plugin Documentation */ ?>
+			<div class="edp-stat-card">
+				<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
+				<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
+				<div class="edp-doc-links">
+					<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=guide')); ?>" class="edp-doc-link-row">
+						<span class="dashicons dashicons-media-document edp-doc-link-icon" aria-hidden="true"></span>
+						<div class="edp-doc-link-text">
+							<strong><?php esc_html_e('User Guide', 'emergencydentalpros'); ?></strong>
+							<span><?php esc_html_e('Import locations, connect APIs, create static pages, map post IDs, templates, FAQ and schema setup.', 'emergencydentalpros'); ?></span>
+						</div>
+						<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+					</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=architecture')); ?>" class="edp-doc-link-row">
+						<span class="dashicons dashicons-editor-code edp-doc-link-icon edp-doc-link-icon--arch" aria-hidden="true"></span>
+						<div class="edp-doc-link-text">
+							<strong><?php esc_html_e('Architecture Reference', 'emergencydentalpros'); ?></strong>
+							<span><?php esc_html_e('Plugin class structure, virtual routing, theme integration, AJAX actions, and how to extend the plugin.', 'emergencydentalpros'); ?></span>
+						</div>
+						<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+					</a>
 				</div>
 			</div>
 		</div>
