@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -A 20 'if \\($view === '\\\\''state'\\\\''\\)' /Users/webim/Documents/Projects/emergencydentalpros/includes/class-edp-view-controller.php)"
+      "Bash(grep -A 20 'if \\($view === '\\\\''state'\\\\''\\)' /Users/webim/Documents/Projects/emergencydentalpros/includes/class-edp-view-controller.php)",
+      "Bash(git switch *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(gh run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
