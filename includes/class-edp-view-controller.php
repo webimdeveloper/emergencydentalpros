@@ -194,8 +194,8 @@ final class EDP_View_Controller
             $row = self::$ctx['row'] ?? null;
 
             if (is_array($row)) {
-                $vars = EDP_Template_Engine::context_from_city_row($base, $row);
-                $desc = EDP_Template_Engine::replace((string) ($templates['city_landing']['meta_description'] ?? ''), $vars);
+                $resolved = EDP_Content_Resolver::resolve_city($row);
+                $desc = $resolved['meta_description'];
             }
         }
 
@@ -261,8 +261,8 @@ final class EDP_View_Controller
         } elseif ($view === 'city') {
             $row = self::$ctx['row'] ?? null;
             if (is_array($row)) {
-                $vars = EDP_Template_Engine::context_from_city_row($base, $row);
-                $desc = EDP_Template_Engine::replace((string) ($templates['city_landing']['meta_description'] ?? ''), $vars);
+                $resolved = EDP_Content_Resolver::resolve_city($row);
+                $desc = $resolved['meta_description'];
             }
         }
 
@@ -522,8 +522,6 @@ final class EDP_View_Controller
                 $other_cities = array_slice($other_cities, 0, 12);
             }
 
-            $t_city = $templates['city_landing'] ?? [];
-
             return [
                 'h1'               => $resolved['h1'],
                 'body'             => $resolved['html'],
@@ -532,9 +530,9 @@ final class EDP_View_Controller
                 'source'           => $resolved['source'],
                 'nearby_businesses' => $nearby,
                 'other_cities'     => $other_cities,
-                'communities_h2'   => EDP_Template_Engine::replace((string) ($t_city['communities_h2'] ?? ''), $vars),
-                'communities_body' => EDP_Template_Engine::replace((string) ($t_city['communities_body'] ?? ''), $vars),
-                'other_cities_h2'  => EDP_Template_Engine::replace((string) ($t_city['other_cities_h2'] ?? ''), $vars),
+                'communities_h2'   => $resolved['communities_h2'],
+                'communities_body' => $resolved['communities_body'],
+                'other_cities_h2'  => $resolved['other_cities_h2'],
                 'faq'              => $resolved['faq'] ?? ['enabled' => false, 'h2' => '', 'intro' => '', 'items' => []],
             ];
         }

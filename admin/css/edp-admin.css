@@ -695,7 +695,119 @@
 .edp-import-info ul { margin: 6px 0 0; padding-left: 1.25em; }
 
 /* ══════════════════════════════════════════════
-   15. Map Post cell (Locations page)
+   15. CPT Metaboxes (city-settings + city-faq)
+   ══════════════════════════════════════════════ */
+.edp-mb-page-link {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--edp-surface);
+	border: 1px solid var(--edp-border);
+	border-radius: var(--edp-r-input);
+	padding: 8px 12px;
+	margin-bottom: 14px;
+	font-size: 13px;
+	word-break: break-all;
+}
+.edp-mb-page-link .dashicons { color: var(--edp-brand); flex-shrink: 0; font-size: 16px; width: 16px; height: 16px; }
+.edp-mb-page-link a { color: var(--edp-brand); text-decoration: none; }
+.edp-mb-page-link a:hover { text-decoration: underline; }
+
+.edp-mb-global-note {
+	font-size: 12px;
+	color: var(--edp-muted);
+	margin: 0 0 14px;
+	font-style: italic;
+}
+.edp-mb-section-title {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--edp-muted);
+	text-transform: uppercase;
+	letter-spacing: .05em;
+	margin: 18px 0 10px;
+	padding-bottom: 5px;
+	border-bottom: 1px solid var(--edp-border);
+}
+.edp-mb-row { margin-bottom: 12px; }
+.edp-mb-row label {
+	display: block;
+	font-weight: 600;
+	font-size: 13px;
+	margin-bottom: 4px;
+	color: var(--edp-type);
+}
+.edp-mb-row input[type="text"],
+.edp-mb-row textarea {
+	width: 100%;
+	background: var(--edp-surface);
+	border: 1px solid var(--edp-border);
+	border-radius: 6px;
+	padding: 7px 10px;
+	font-size: 13.5px;
+	font-family: var(--edp-font);
+	color: var(--edp-type);
+	box-sizing: border-box;
+}
+.edp-mb-row input[type="text"]::placeholder,
+.edp-mb-row textarea::placeholder { color: var(--edp-muted); }
+.edp-mb-row input[type="text"]:focus,
+.edp-mb-row textarea:focus {
+	outline: none;
+	border-color: var(--edp-brand);
+	box-shadow: 0 0 0 2px var(--edp-brand-ring);
+}
+.edp-mb-row textarea { resize: vertical; }
+.edp-mb-hint { font-size: 12px; color: var(--edp-muted); margin-top: 3px; }
+
+/* Toggle (used in FAQ metabox) */
+.edp-toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.edp-toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+.edp-toggle input { opacity: 0; width: 0; height: 0; }
+.edp-toggle-slider {
+	position: absolute;
+	inset: 0;
+	background: var(--edp-border);
+	border-radius: 22px;
+	cursor: pointer;
+	transition: background .2s;
+}
+.edp-toggle-slider::before {
+	content: '';
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	left: 3px;
+	top: 3px;
+	background: var(--edp-white);
+	border-radius: 50%;
+	transition: transform .2s;
+}
+.edp-toggle input:checked + .edp-toggle-slider { background: var(--edp-brand); }
+.edp-toggle input:checked + .edp-toggle-slider::before { transform: translateX(18px); }
+.edp-toggle-label { font-size: 13.5px; font-weight: 600; color: var(--edp-type); }
+
+.edp-faq-body { transition: opacity .15s; }
+.edp-faq-body.is-hidden { opacity: .35; pointer-events: none; }
+
+.edp-faq-add-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: var(--edp-white);
+	border: 1px solid var(--edp-border);
+	border-radius: var(--edp-r-btn);
+	padding: 5px 12px;
+	font-size: var(--edp-fs-sm);
+	font-family: var(--edp-font);
+	cursor: pointer;
+	color: var(--edp-type);
+	transition: border-color .12s, color .12s;
+}
+.edp-faq-add-btn:hover { border-color: var(--edp-brand); color: var(--edp-brand); }
+
+/* ══════════════════════════════════════════════
+   16. Map Post cell (Locations page)
    ══════════════════════════════════════════════ */
 #edp-locations-wrap .edp-map-post-wrap {
 	display: inline-flex;

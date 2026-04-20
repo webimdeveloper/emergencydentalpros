@@ -31,64 +31,6 @@ if ( $faq_items_raw !== '' ) {
 
 wp_nonce_field( 'edp_faq_metabox_' . $post->ID, 'edp_faq_metabox_nonce' );
 ?>
-<style>
-.edp-mb-row { margin-bottom: 14px; }
-.edp-mb-row label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #3A3541; }
-.edp-mb-row input[type="text"] {
-	width: 100%; background: #F4F5F9; border: 1px solid #DBDCDE; border-radius: 6px;
-	padding: 7px 10px; font-size: 13.5px; box-sizing: border-box; font-family: inherit; color: #3A3541;
-}
-.edp-mb-row input[type="text"]:focus { outline: none; border-color: #6E39CB; box-shadow: 0 0 0 2px rgba(110,57,203,.15); }
-.edp-mb-hint { font-size: 12px; color: #89868D; margin-top: 3px; }
-
-/* Toggle */
-.edp-toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.edp-toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
-.edp-toggle input { opacity: 0; width: 0; height: 0; }
-.edp-toggle-slider {
-	position: absolute; inset: 0; background: #DBDCDE; border-radius: 22px; cursor: pointer;
-	transition: background .2s;
-}
-.edp-toggle-slider::before {
-	content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
-	background: #fff; border-radius: 50%; transition: transform .2s;
-}
-.edp-toggle input:checked + .edp-toggle-slider { background: #6E39CB; }
-.edp-toggle input:checked + .edp-toggle-slider::before { transform: translateX(18px); }
-.edp-toggle-label { font-size: 13.5px; font-weight: 600; color: #3A3541; }
-
-/* Repeater */
-.edp-faq-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.edp-faq-item {
-	display: flex; gap: 8px; align-items: flex-start;
-	background: #F4F5F9; border: 1px solid #DBDCDE; border-radius: 6px; padding: 10px;
-}
-.edp-faq-item-fields { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.edp-faq-item-fields input[type="text"],
-.edp-faq-item-fields textarea {
-	width: 100%; background: #fff; border: 1px solid #DBDCDE; border-radius: 5px;
-	padding: 6px 9px; font-size: 13px; font-family: inherit; color: #3A3541; box-sizing: border-box;
-}
-.edp-faq-item-fields input[type="text"]:focus,
-.edp-faq-item-fields textarea:focus { outline: none; border-color: #6E39CB; box-shadow: 0 0 0 2px rgba(110,57,203,.15); }
-.edp-faq-item-fields textarea { resize: vertical; }
-.edp-faq-delete-btn {
-	flex-shrink: 0; background: none; border: none; cursor: pointer;
-	color: #89868D; font-size: 15px; padding: 3px 5px; border-radius: 4px;
-	transition: color .12s, background .12s;
-}
-.edp-faq-delete-btn:hover { color: #b32d2e; background: #fff5f5; }
-.edp-faq-add-btn {
-	display: inline-flex; align-items: center; gap: 4px;
-	background: #fff; border: 1px solid #DBDCDE; border-radius: 4px;
-	padding: 5px 12px; font-size: 12.64px; font-family: inherit; cursor: pointer;
-	color: #3A3541; transition: border-color .12s, color .12s;
-}
-.edp-faq-add-btn:hover { border-color: #6E39CB; color: #6E39CB; }
-.edp-faq-body { transition: opacity .15s; }
-.edp-faq-body.is-hidden { opacity: .35; pointer-events: none; }
-</style>
-
 <div>
 	<?php /* Enable / disable toggle */ ?>
 	<div class="edp-toggle-row">
