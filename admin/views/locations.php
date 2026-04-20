@@ -150,25 +150,28 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 				$_filters = [
 					[
-						'icon'    => 'dashicons-admin-page',
-						'label'   => __('Static pages', 'emergencydentalpros'),
-						'count'   => $count_static,
-						'param'   => 'has_static',
-						'active'  => $_filter_static,
+						'icon'     => 'dashicons-admin-page',
+						'label'    => __('Static pages', 'emergencydentalpros'),
+						'sub'      => __('Dedicated CPT page created for this location.', 'emergencydentalpros'),
+						'count'    => $count_static,
+						'param'    => 'has_static',
+						'active'   => $_filter_static,
 					],
 					[
-						'icon'    => 'dashicons-admin-post',
-						'label'   => __('Mapped post IDs', 'emergencydentalpros'),
-						'count'   => $count_mapped,
-						'param'   => 'has_mapped',
-						'active'  => $_filter_mapped,
+						'icon'     => 'dashicons-admin-post',
+						'label'    => __('Mapped post IDs', 'emergencydentalpros'),
+						'sub'      => __('Location linked to an existing WordPress post.', 'emergencydentalpros'),
+						'count'    => $count_mapped,
+						'param'    => 'has_mapped',
+						'active'   => $_filter_mapped,
 					],
 					[
-						'icon'    => 'dashicons-editor-help',
-						'label'   => __('Custom FAQ', 'emergencydentalpros'),
-						'count'   => $count_custom_faq,
-						'param'   => 'has_faq',
-						'active'  => $_filter_faq,
+						'icon'     => 'dashicons-editor-help',
+						'label'    => __('Custom FAQ', 'emergencydentalpros'),
+						'sub'      => __('Static page has a custom FAQ section enabled.', 'emergencydentalpros'),
+						'count'    => $count_custom_faq,
+						'param'    => 'has_faq',
+						'active'   => $_filter_faq,
 					],
 				];
 
@@ -179,14 +182,14 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 						: add_query_arg($_f['param'], '1', $_base_url);
 				?>
 				<a class="edp-stat-filter-item<?php echo $_is_active ? ' is-active' : ''; ?>"
-				   href="<?php echo esc_url($_href); ?>"
-				   title="<?php echo $_is_active
-				       ? esc_attr__('Remove filter', 'emergencydentalpros')
-				       : esc_attr__('Filter table', 'emergencydentalpros'); ?>">
+				   href="<?php echo esc_url($_href); ?>">
 					<span class="dashicons <?php echo esc_attr($_f['icon']); ?> edp-stat-filter-icon" aria-hidden="true"></span>
-					<span class="edp-stat-filter-label"><?php echo esc_html($_f['label']); ?></span>
+					<span class="edp-stat-filter-text">
+						<strong><?php echo esc_html($_f['label']); ?></strong>
+						<span><?php echo esc_html($_f['sub']); ?></span>
+					</span>
 					<span class="edp-stat-filter-count"><?php echo esc_html(number_format_i18n((int) $_f['count'])); ?></span>
-					<span class="dashicons <?php echo $_is_active ? 'dashicons-yes-alt' : 'dashicons-filter'; ?> edp-stat-filter-toggle" aria-hidden="true"></span>
+					<span class="dashicons <?php echo $_is_active ? 'dashicons-yes-alt' : 'dashicons-arrow-right-alt2'; ?> edp-stat-filter-arrow" aria-hidden="true"></span>
 				</a>
 				<?php endforeach; ?>
 				<?php if (!empty($import_log['at'])) :
