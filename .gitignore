@@ -5,3 +5,13 @@ node_modules/
 # Keep built plugin assets committed for simple server deploys.
 # If you later switch to building only in CI, remove this ignore exception.
 !assets/
+
+# Planning/reference HTML files
+content_quality_scorer.html
+local_seo_plugin_features_DEEP.html
+
+# Test artifacts
+test-results/
+
+# PHP dependencies
+vendor/
