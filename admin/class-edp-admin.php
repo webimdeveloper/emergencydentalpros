@@ -59,7 +59,7 @@ final class EDP_Admin
             'manage_options',
             'edp-seo',
             [self::class, 'render_settings'],
-            'dashicons-medical',
+            'dashicons-location-alt',
             58
         );
 
@@ -72,15 +72,6 @@ final class EDP_Admin
             [self::class, 'render_settings']
         );
 
-        add_submenu_page(
-            'edp-seo',
-            __('Import', 'emergencydentalpros'),
-            __('Import', 'emergencydentalpros'),
-            'manage_options',
-            'edp-seo-import',
-            [self::class, 'render_import']
-        );
-
         $locations_hook = add_submenu_page(
             'edp-seo',
             __('Locations', 'emergencydentalpros'),
@@ -88,6 +79,15 @@ final class EDP_Admin
             'manage_options',
             'edp-seo-locations',
             [self::class, 'render_locations']
+        );
+
+        add_submenu_page(
+            'edp-seo',
+            __('Settings', 'emergencydentalpros'),
+            __('Settings', 'emergencydentalpros'),
+            'manage_options',
+            'edp-seo-import',
+            [self::class, 'render_import']
         );
 
         self::$locations_screen_hook = (string) $locations_hook;
