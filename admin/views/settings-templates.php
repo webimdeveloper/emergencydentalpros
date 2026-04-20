@@ -67,6 +67,8 @@ $context_vars = [
 		</div>
 
 		<?php /* ---- Tabbed template sections ---- */ ?>
+		<div class="edp-tpl-layout">
+		<div class="edp-tpl-main">
 		<div class="edp-card">
 			<div class="edp-tabs-nav" role="tablist">
 				<?php foreach ($contexts as $key => $label) : ?>
@@ -218,7 +220,30 @@ $context_vars = [
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
-		</div>
+		</div><!-- /.edp-card -->
+		</div><!-- /.edp-tpl-main -->
+
+		<?php /* ---- Aside: per-tab analytics / info panel (reserved for future content) ---- */ ?>
+		<aside class="edp-tpl-aside" aria-label="<?php esc_attr_e('Template analytics', 'emergencydentalpros'); ?>">
+			<?php foreach ($contexts as $key => $label) : ?>
+			<div class="edp-tpl-aside-panel<?php echo $key === 'states_index' ? ' is-active' : ''; ?>"
+				id="edp-aside-<?php echo esc_attr($key); ?>"
+				data-aside="<?php echo esc_attr($key); ?>">
+				<div class="edp-tpl-aside-header">
+					<span class="edp-tpl-aside-title"><?php echo esc_html($label); ?></span>
+					<span class="edp-tpl-aside-badge"><?php esc_html_e('Analytics', 'emergencydentalpros'); ?></span>
+				</div>
+				<div class="edp-tpl-aside-body">
+					<p class="edp-tpl-aside-empty">
+						<span class="dashicons dashicons-chart-area" aria-hidden="true"></span>
+						<?php esc_html_e('Analytics and insights for this template will appear here.', 'emergencydentalpros'); ?>
+					</p>
+				</div>
+			</div>
+			<?php endforeach; ?>
+		</aside>
+
+		</div><!-- /.edp-tpl-layout -->
 
 		<div class="edp-btn-row">
 			<button type="submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Save', 'emergencydentalpros'); ?></button>
@@ -228,8 +253,9 @@ $context_vars = [
 
 <script>
 (function () {
-	var tabs   = document.querySelectorAll('#edp-tpl-wrap .edp-tab-btn');
-	var panels = document.querySelectorAll('#edp-tpl-wrap .edp-tab-panel');
+	var tabs        = document.querySelectorAll('#edp-tpl-wrap .edp-tab-btn');
+	var panels      = document.querySelectorAll('#edp-tpl-wrap .edp-tab-panel');
+	var asidePanels = document.querySelectorAll('#edp-tpl-wrap .edp-tpl-aside-panel');
 
 	tabs.forEach(function (tab) {
 		tab.addEventListener('click', function () {
@@ -239,9 +265,8 @@ $context_vars = [
 				t.classList.remove('is-active');
 				t.setAttribute('aria-selected', 'false');
 			});
-			panels.forEach(function (p) {
-				p.classList.remove('is-active');
-			});
+			panels.forEach(function (p) { p.classList.remove('is-active'); });
+			asidePanels.forEach(function (p) { p.classList.remove('is-active'); });
 
 			tab.classList.add('is-active');
 			tab.setAttribute('aria-selected', 'true');
@@ -249,6 +274,9 @@ $context_vars = [
 			var panel = document.getElementById('edp-panel-' + target);
 			if (panel) {
 				panel.classList.add('is-active');
+
+			var aside = document.getElementById('edp-aside-' + target);
+			if (aside) { aside.classList.add('is-active'); }
 
 				/* Re-init any TinyMCE editors in this panel so they render correctly */
 				if (typeof tinymce !== 'undefined') {

@@ -1499,3 +1499,74 @@
 	vertical-align: top;
 }
 .edp-doc-table tr:nth-child(even) td { background: var(--edp-surface); }
+
+/* ══════════════════════════════════════════════
+   21. Templates page — 3/4 + 1/4 layout
+   ══════════════════════════════════════════════ */
+.edp-tpl-layout {
+	display: grid;
+	grid-template-columns: 3fr 1fr;
+	gap: 20px;
+	align-items: start;
+}
+@media (max-width: 1100px) {
+	.edp-tpl-layout { grid-template-columns: 1fr; }
+	.edp-tpl-aside  { order: -1; }
+}
+
+/* Aside panel */
+.edp-tpl-aside {
+	position: sticky;
+	top: 32px;
+}
+.edp-tpl-aside-panel {
+	display: none;
+	background: var(--edp-white);
+	border-radius: var(--edp-r-card);
+	box-shadow: var(--edp-shadow);
+	overflow: hidden;
+}
+.edp-tpl-aside-panel.is-active { display: block; }
+.edp-tpl-aside-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px 12px;
+	border-bottom: 1px solid var(--edp-border);
+}
+.edp-tpl-aside-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--edp-type);
+}
+.edp-tpl-aside-badge {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--edp-surface2);
+	color: var(--edp-muted);
+	letter-spacing: .03em;
+	text-transform: uppercase;
+}
+.edp-tpl-aside-body {
+	padding: 16px;
+	min-height: 180px;
+}
+.edp-tpl-aside-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 24px 0;
+	text-align: center;
+	color: var(--edp-muted);
+	font-size: 12.5px;
+	line-height: 1.5;
+}
+.edp-tpl-aside-empty .dashicons {
+	font-size: 32px;
+	width: 32px;
+	height: 32px;
+	color: var(--edp-border);
+}
