@@ -797,8 +797,8 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 			}[grade] || '#888';
 
 			var catsHtml = '';
-			CAT_KEYS.forEach(function (key, i) {
-				var cat  = CATS[i];
+			CAT_KEYS.forEach(function (key) {
+				var cat  = CATS[key];
 				var data = breakdown[key] || { earned: 0, max: cat.max, checks: [] };
 				var pct  = cat.max > 0 ? Math.round((data.earned / cat.max) * 100) : 0;
 				var checksHtml = '';
