@@ -489,6 +489,16 @@
 
 /* Static Page cell */
 #edp-locations-wrap .edp-static-page-cell { display: inline-flex; align-items: center; gap: 8px; }
+#edp-locations-wrap .edp-city-globe {
+	font-size: 13px;
+	width: 13px;
+	height: 13px;
+	vertical-align: middle;
+	margin-right: 4px;
+	opacity: .55;
+	position: relative;
+	top: -1px;
+}
 #edp-locations-wrap .edp-page-link {
 	color: var(--edp-brand);
 	font-weight: 500;

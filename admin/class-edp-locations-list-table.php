@@ -336,18 +336,11 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $id         = (int) ($item['id'] ?? 0);
 
         $city_link = '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">'
-            . esc_html((string) ($item['city_name'] ?? '')) . '</a>';
+            . '<span class="dashicons dashicons-admin-site-alt3 edp-city-globe" aria-hidden="true"></span>'
+            . esc_html((string) ($item['city_name'] ?? ''))
+            . '</a>';
 
-        $actions = [];
-        if ($id > 0) {
-            $actions['delete'] = '<a href="#" class="edp-row-delete-btn" '
-                . 'data-location-id="' . esc_attr((string) $id) . '" '
-                . 'style="color:#b32d2e;">'
-                . esc_html__('Delete', 'emergencydentalpros')
-                . '</a>';
-        }
-
-        return $city_link . $this->row_actions($actions);
+        return $city_link;
     }
 
     /**

@@ -449,51 +449,6 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	/* ── Static Page — wire up any trash icons already on the page ── */
 	document.querySelectorAll('.edp-clear-cpt-btn').forEach(attachClearBtn);
 
-	/* ── Row delete (City column row action) ─────────── */
-	document.querySelectorAll('.edp-row-delete-btn').forEach(function (btn) {
-		btn.addEventListener('click', function (e) {
-			e.preventDefault();
-			var locationId = this.dataset.locationId;
-
-			// eslint-disable-next-line no-alert
-			if (!confirm(confirmDeleteRow)) {
-				return;
-			}
-
-			var row = btn.closest('tr');
-			btn.style.pointerEvents = 'none';
-			btn.style.opacity = '0.5';
-
-			fetch(ajaxurl, {
-				method: 'POST',
-				body: new URLSearchParams({
-					action:      'edp_delete_location_row',
-					nonce:       nonces.deleteRow,
-					location_id: locationId,
-				}),
-			})
-				.then(function (r) { return r.json(); })
-				.then(function (json) {
-					if (json.success) {
-						if (row) {
-							row.style.transition = 'opacity .3s';
-							row.style.opacity    = '0';
-							setTimeout(function () { row.remove(); }, 320);
-						}
-					} else {
-						btn.style.pointerEvents = '';
-						btn.style.opacity       = '';
-						// eslint-disable-next-line no-alert
-						alert((json.data && json.data.message) || errMsg);
-					}
-				})
-				.catch(function () {
-					btn.style.pointerEvents = '';
-					btn.style.opacity       = '';
-				});
-		});
-	});
-
 	/* ── Delete All Rows button ─────────────────────── */
 	var deleteAllBtn = document.getElementById('edp-delete-all-btn');
 	if (deleteAllBtn) {
