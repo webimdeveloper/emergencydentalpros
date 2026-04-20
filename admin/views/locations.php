@@ -51,6 +51,17 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	<?php endif; ?>
 
 	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['cqs_analyzed'])) : ?>
+		<div class="edp-notice edp-notice-success">
+			<?php printf(
+				/* translators: %d: number of analyzed locations */
+				esc_html__('Content quality score computed for %d location(s).', 'emergencydentalpros'),
+				(int) $_GET['cqs_analyzed']
+			); ?>
+		</div>
+	<?php endif; ?>
+
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 	<?php if (isset($_GET['rows_deleted'])) : ?>
 		<div class="edp-notice edp-notice-success">
 			<?php printf(
@@ -729,6 +740,183 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		document.querySelectorAll('.edp-seo-indicator').forEach(attachSeoIndicator);
 		document.querySelectorAll('.edp-check-seo-btn').forEach(attachSeoCheckBtn);
 		document.querySelectorAll('.edp-recheck-seo-btn').forEach(attachRecheckBtn);
+	}());
+
+	/* ── CQS column ─────────────────────────────────────── */
+	(function () {
+		var CATS = <?php echo wp_json_encode(
+			array_map(
+				static function ( array $def ): array {
+					return [ 'name' => $def['name'], 'color' => $def['color'], 'max' => $def['max'] ];
+				},
+				EDP_Cqs_Scorer::CATEGORIES
+			)
+		); ?>;
+
+		var CAT_KEYS = <?php echo wp_json_encode( array_keys( EDP_Cqs_Scorer::CATEGORIES ) ); ?>;
+
+		var GRADE_LABELS = {
+			perfect: 'Perfect',
+			great:   'Great',
+			good:    'Good',
+			average: 'Average',
+			poor:    'Needs Work',
+		};
+
+		var openCqsPopover   = null;
+		var cqsPopoverTarget = null;
+
+		function cqsGrade(score) {
+			if (score >= 95) { return 'perfect'; }
+			if (score >= 85) { return 'great'; }
+			if (score >= 75) { return 'good'; }
+			if (score >= 50) { return 'average'; }
+			return 'poor';
+		}
+
+		function escHtml(s) {
+			return String(s)
+				.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+				.replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+		}
+
+		function buildCqsPopover(indicator) {
+			var score      = parseInt(indicator.dataset.score, 10) || 0;
+			var grade      = indicator.dataset.grade || cqsGrade(score);
+			var analyzedAt = indicator.dataset.analyzedAt || '';
+			var breakdown  = {};
+			try { breakdown = JSON.parse(indicator.dataset.breakdown || '{}'); } catch(e) {}
+
+			var pop = document.createElement('div');
+			pop.className = 'edp-cqs-popover';
+
+			var gradeLabel = GRADE_LABELS[grade] || '';
+			var scoreColor = {
+				perfect:'#7c3aed', great:'#3b82f6', good:'#10b981',
+				average:'#f59e0b', poor:'#ef4444'
+			}[grade] || '#888';
+
+			var catsHtml = '';
+			CAT_KEYS.forEach(function (key, i) {
+				var cat  = CATS[i];
+				var data = breakdown[key] || { earned: 0, max: cat.max, checks: [] };
+				var pct  = cat.max > 0 ? Math.round((data.earned / cat.max) * 100) : 0;
+				var checksHtml = '';
+				(data.checks || []).forEach(function (c) {
+					checksHtml +=
+						'<div class="edp-cqs-check' + (c.pass ? ' edp-cqs-check--pass' : '') + '">'
+						+ '<span class="edp-cqs-check-icon">' + (c.pass ? '✓' : '○') + '</span>'
+						+ '<span class="edp-cqs-check-text">' + escHtml(c.text) + '</span>'
+						+ '<span class="edp-cqs-check-pts">+' + c.pts + '</span>'
+						+ '</div>';
+				});
+				catsHtml +=
+					'<div class="edp-cqs-cat">'
+					+ '<div class="edp-cqs-cat-header">'
+					+ '<span class="edp-cqs-cat-dot" style="background:' + cat.color + '"></span>'
+					+ '<span class="edp-cqs-cat-name">' + escHtml(cat.name) + '</span>'
+					+ '<span class="edp-cqs-cat-pts">' + data.earned + '/' + cat.max + '</span>'
+					+ '<div class="edp-cqs-cat-bar"><div class="edp-cqs-cat-bar-fill" style="width:' + pct + '%;background:' + cat.color + '"></div></div>'
+					+ '</div>'
+					+ (checksHtml ? '<div class="edp-cqs-checks">' + checksHtml + '</div>' : '')
+					+ '</div>';
+			});
+
+			pop.innerHTML =
+				'<div class="edp-cqs-popover-head">'
+				+ '<span class="edp-cqs-score-big" style="color:' + scoreColor + '">' + score + '</span>'
+				+ '<div class="edp-cqs-score-meta">'
+				+ '<strong>' + escHtml(gradeLabel) + '</strong>'
+				+ '<span>Content Quality Score</span>'
+				+ '</div>'
+				+ '</div>'
+				+ '<div class="edp-cqs-cats">' + catsHtml + '</div>'
+				+ (analyzedAt ? '<div class="edp-cqs-footer">Analyzed: ' + escHtml(analyzedAt) + '</div>' : '');
+
+			return pop;
+		}
+
+		function positionCqsPopover(pop, indicator) {
+			var rect = indicator.getBoundingClientRect();
+			var left = rect.left;
+			var top  = rect.bottom + 6;
+			if (left + 300 > window.innerWidth - 8) { left = window.innerWidth - 308; }
+			pop.style.left = left + 'px';
+			pop.style.top  = top  + 'px';
+		}
+
+		function closeCqsPopover() {
+			if (openCqsPopover) { openCqsPopover.remove(); openCqsPopover = null; cqsPopoverTarget = null; }
+		}
+
+		function attachCqsIndicator(indicator) {
+			var leaveTimer;
+			indicator.addEventListener('mouseenter', function () {
+				clearTimeout(leaveTimer);
+				if (openCqsPopover && cqsPopoverTarget === indicator) { return; }
+				closeCqsPopover();
+				var pop = buildCqsPopover(indicator);
+				document.body.appendChild(pop);
+				positionCqsPopover(pop, indicator);
+				openCqsPopover   = pop;
+				cqsPopoverTarget = indicator;
+				pop.addEventListener('mouseenter', function () { clearTimeout(leaveTimer); });
+				pop.addEventListener('mouseleave', function () { leaveTimer = setTimeout(closeCqsPopover, 200); });
+			});
+			indicator.addEventListener('mouseleave', function () {
+				leaveTimer = setTimeout(closeCqsPopover, 200);
+			});
+		}
+
+		function runCqsAnalyze(locationId, nonce, cell) {
+			var original = cell.innerHTML;
+			cell.innerHTML = '<span class="edp-cqs-analyzing">Analyzing\u2026</span>';
+
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: new URLSearchParams({
+					action:      'edp_analyze_cqs',
+					nonce:       nonce,
+					location_id: locationId,
+				}),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						cell.innerHTML = json.data.html;
+						cell.querySelectorAll('.edp-cqs-indicator').forEach(attachCqsIndicator);
+						cell.querySelectorAll('.edp-reanalyze-cqs-btn').forEach(attachReanalyzeCqsBtn);
+					} else {
+						cell.innerHTML = original;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || <?php echo wp_json_encode(__('Analysis failed.', 'emergencydentalpros')); ?>);
+					}
+				})
+				.catch(function () { cell.innerHTML = original; });
+		}
+
+		function attachAnalyzeCqsBtn(btn) {
+			btn.addEventListener('click', function () {
+				runCqsAnalyze(this.dataset.locationId, this.dataset.nonce, this.closest('td'));
+			});
+		}
+
+		function attachReanalyzeCqsBtn(btn) {
+			btn.addEventListener('click', function () {
+				closeCqsPopover();
+				runCqsAnalyze(this.dataset.locationId, this.dataset.nonce, this.closest('td'));
+			});
+		}
+
+		document.querySelectorAll('.edp-cqs-indicator').forEach(attachCqsIndicator);
+		document.querySelectorAll('.edp-analyze-cqs-btn').forEach(attachAnalyzeCqsBtn);
+		document.querySelectorAll('.edp-reanalyze-cqs-btn').forEach(attachReanalyzeCqsBtn);
+
+		document.addEventListener('click', function (e) {
+			if (openCqsPopover && !openCqsPopover.contains(e.target) && !e.target.closest('.edp-cqs-indicator')) {
+				closeCqsPopover();
+			}
+		});
 	}());
 
 	/* ── Column filter / sort UI ─────────────────────── */

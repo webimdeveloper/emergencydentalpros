@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class EDP_Activator {
 
-	public const DB_VERSION        = '1.4.0';
+	public const DB_VERSION        = '1.5.0';
 	public const OPTION_DB_VERSION = 'edp_seo_db_version';
 
 	public static function activate(): void {
@@ -62,6 +62,7 @@ final class EDP_Activator {
 
 		self::create_nearby_table();
 		self::create_pagespeed_table();
+		self::create_cqs_table();
 	}
 
 	public static function create_nearby_table(): void {
@@ -110,6 +111,27 @@ final class EDP_Activator {
             mobile_metrics longtext DEFAULT NULL,
             desktop_metrics longtext DEFAULT NULL,
             checked_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY location_id (location_id)
+        ) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	public static function create_cqs_table(): void {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table           = $wpdb->prefix . 'edp_cqs_cache';
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            location_id bigint(20) unsigned NOT NULL,
+            score tinyint(3) unsigned NOT NULL DEFAULT 0,
+            breakdown longtext DEFAULT NULL,
+            analyzed_at datetime DEFAULT NULL,
             PRIMARY KEY  (id),
             UNIQUE KEY location_id (location_id)
         ) {$charset_collate};";

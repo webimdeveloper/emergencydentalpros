@@ -35,6 +35,7 @@ require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-config.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-client.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-google-places-importer.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-pagespeed-client.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-cqs-scorer.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-view-controller.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-assets.php';
 require_once EDP_PLUGIN_DIR . 'admin/class-edp-admin.php';

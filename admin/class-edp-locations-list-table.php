@@ -33,6 +33,9 @@ final class EDP_Locations_List_Table extends WP_List_Table
     /** @var array<int, array<string, mixed>> location id => pagespeed cache row */
     public $pagespeed_map = [];
 
+    /** @var array<int, array<string, mixed>> location id => CQS cache row */
+    public $cqs_map = [];
+
     /**
      * @param string $screen_hook Return value of add_submenu_page for this screen (required so
      *                            get_column_headers() and manage_{$screen->id}_columns work).
@@ -70,6 +73,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             'google'      => __('Google Business', 'emergencydentalpros'),
             'override'    => __('Static Page', 'emergencydentalpros'),
             'seo'         => __('SEO', 'emergencydentalpros'),
+            'cqs'         => __('CQS', 'emergencydentalpros'),
             'edp_actions' => __('Map Post', 'emergencydentalpros'),
         ];
     }
@@ -115,9 +119,10 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function get_bulk_actions(): array
     {
         return [
-            'fetch_google' => __('Fetch Google', 'emergencydentalpros'),
-            'create_pages' => __('Create Pages', 'emergencydentalpros'),
-            'delete_rows'  => __('Delete Rows', 'emergencydentalpros'),
+            'fetch_google'    => __('Fetch Google', 'emergencydentalpros'),
+            'create_pages'    => __('Create Pages', 'emergencydentalpros'),
+            'analyze_content' => __('Analyze Content', 'emergencydentalpros'),
+            'delete_rows'     => __('Delete Rows', 'emergencydentalpros'),
         ];
     }
 
@@ -236,6 +241,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
         $this->nearby_status_map = EDP_Database::get_nearby_status_for_locations($ids);
         $this->pagespeed_map     = EDP_Database::get_pagespeed_for_locations($ids);
+        $this->cqs_map           = EDP_Database::get_cqs_for_locations($ids);
 
         $this->set_pagination_args(
             [
@@ -406,6 +412,22 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $cache = isset($this->pagespeed_map[$id]) ? $this->pagespeed_map[$id] : null;
 
         return EDP_Admin::build_seo_cell_html($id, $cache);
+    }
+
+    /**
+     * CQS column: "Analyze" button or score indicator with re-analyze button.
+     */
+    public function column_cqs($item): string
+    {
+        $id = (int) ($item['id'] ?? 0);
+
+        if ($id <= 0) {
+            return '';
+        }
+
+        $cache = isset($this->cqs_map[$id]) ? $this->cqs_map[$id] : null;
+
+        return EDP_Admin::build_cqs_cell_html($id, $cache);
     }
 
     /**

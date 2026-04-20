@@ -579,4 +579,90 @@ final class EDP_Database
             [ '%d', '%d', '%d', '%s', '%s', '%s' ]
         );
     }
+
+    // ── CQS Cache ────────────────────────────────────────────────────────────
+
+    public static function cqs_table_name(): string
+    {
+        global $wpdb;
+        return $wpdb->prefix . 'edp_cqs_cache';
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function get_cqs_cache( int $location_id ): ?array
+    {
+        global $wpdb;
+
+        $table = self::cqs_table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $row = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$table} WHERE location_id = %d LIMIT 1", $location_id ),
+            ARRAY_A
+        );
+
+        if ( ! is_array( $row ) ) {
+            return null;
+        }
+
+        $row['breakdown'] = ! empty( $row['breakdown'] )
+            ? json_decode( (string) $row['breakdown'], true )
+            : [];
+
+        return $row;
+    }
+
+    /**
+     * @param  list<int>                        $ids
+     * @return array<int, array<string, mixed>>  location_id => decoded row
+     */
+    public static function get_cqs_for_locations( array $ids ): array
+    {
+        global $wpdb;
+
+        $ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+        $map = [];
+
+        if ( $ids === [] ) {
+            return $map;
+        }
+
+        $table        = self::cqs_table_name();
+        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $rows = $wpdb->get_results(
+            $wpdb->prepare( "SELECT * FROM {$table} WHERE location_id IN ({$placeholders})", ...$ids ),
+            ARRAY_A
+        );
+
+        if ( ! is_array( $rows ) ) {
+            return $map;
+        }
+
+        foreach ( $rows as $row ) {
+            $lid              = (int) $row['location_id'];
+            $row['breakdown'] = ! empty( $row['breakdown'] )
+                ? json_decode( (string) $row['breakdown'], true )
+                : [];
+            $map[ $lid ]      = $row;
+        }
+
+        return $map;
+    }
+
+    public static function upsert_cqs_cache( int $location_id, int $score, array $breakdown ): void
+    {
+        global $wpdb;
+
+        $wpdb->replace(
+            self::cqs_table_name(),
+            [
+                'location_id' => $location_id,
+                'score'       => $score,
+                'breakdown'   => wp_json_encode( $breakdown ),
+                'analyzed_at' => current_time( 'mysql' ),
+            ],
+            [ '%d', '%d', '%s', '%s' ]
+        );
+    }
 }

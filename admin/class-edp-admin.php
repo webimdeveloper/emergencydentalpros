@@ -43,6 +43,7 @@ final class EDP_Admin
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
         add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
         add_action('wp_ajax_edp_check_pagespeed', [self::class, 'ajax_check_pagespeed']);
+        add_action('wp_ajax_edp_analyze_cqs',    [self::class, 'ajax_analyze_cqs']);
         add_action('add_meta_boxes', [self::class, 'register_faq_metabox']);
         add_action('save_post_' . EDP_CPT::POST_TYPE, [self::class, 'save_faq_metabox'], 10, 1);
 
@@ -427,6 +428,8 @@ final class EDP_Admin
             self::bulk_fetch_google();
         } elseif ($action === 'create_pages') {
             self::bulk_create_pages();
+        } elseif ($action === 'analyze_content') {
+            self::bulk_analyze_content();
         } elseif ($action === 'delete_rows') {
             self::bulk_delete_rows();
         }
@@ -1305,6 +1308,136 @@ final class EDP_Admin
             'mobile_score'   => $mobile['score'],
             'desktop_score'  => $desktop['score'],
         ]);
+    }
+
+    // ── CQS column ────────────────────────────────────────────────────────────
+
+    public static function build_cqs_cell_html(int $location_id, ?array $cache): string
+    {
+        $nonce = wp_create_nonce('edp_analyze_cqs');
+
+        if ($cache === null) {
+            return sprintf(
+                '<button type="button" class="edp-listing-btn edp-analyze-cqs-btn" '
+                . 'data-location-id="%1$d" data-nonce="%2$s" '
+                . 'title="%3$s">'
+                . '<span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> %4$s'
+                . '</button>',
+                $location_id,
+                esc_attr($nonce),
+                esc_attr__('Analyze content quality', 'emergencydentalpros'),
+                esc_html__('Analyze', 'emergencydentalpros')
+            );
+        }
+
+        $score = (int) $cache['score'];
+        $grade = EDP_Cqs_Scorer::grade($score);
+        $label = EDP_Cqs_Scorer::grade_label($grade);
+        $analyzed_at = isset($cache['analyzed_at'])
+            ? sprintf(
+                /* translators: %s time ago string */
+                __('%s ago', 'emergencydentalpros'),
+                human_time_diff(strtotime((string) $cache['analyzed_at']), current_time('timestamp'))
+            )
+            : '';
+
+        return sprintf(
+            '<div class="edp-cqs-cell">'
+            . '<div class="edp-cqs-indicator edp-cqs--%1$s" '
+            .     'data-location-id="%2$d" '
+            .     'data-score="%3$d" '
+            .     'data-grade="%1$s" '
+            .     'data-breakdown="%4$s" '
+            .     'data-analyzed-at="%5$s">'
+            .     '<span class="edp-cqs-dot" aria-hidden="true"></span>'
+            .     '<span class="edp-cqs-score">%3$d</span>'
+            . '</div>'
+            . '<button type="button" class="edp-reanalyze-cqs-btn" '
+            .     'data-location-id="%2$d" data-nonce="%6$s" '
+            .     'title="%7$s">'
+            .     '<span class="dashicons dashicons-update" aria-hidden="true"></span>'
+            . '</button>'
+            . '</div>',
+            esc_attr($grade),
+            $location_id,
+            $score,
+            esc_attr((string) wp_json_encode($cache['breakdown'] ?? [])),
+            esc_attr($analyzed_at),
+            esc_attr($nonce),
+            esc_attr__('Re-analyze content quality', 'emergencydentalpros')
+        );
+    }
+
+    /**
+     * AJAX: compute CQS for one location and store the result.
+     */
+    public static function ajax_analyze_cqs(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        check_ajax_referer('edp_analyze_cqs', 'nonce');
+
+        $id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($id <= 0) {
+            wp_send_json_error(['message' => __('Invalid location ID.', 'emergencydentalpros')]);
+        }
+
+        $row = EDP_Database::get_row_by_id($id);
+
+        if (!is_array($row)) {
+            wp_send_json_error(['message' => __('Location not found.', 'emergencydentalpros')]);
+        }
+
+        // Attach google_count from nearby table.
+        $nearby_map = EDP_Database::get_nearby_status_for_locations([$id]);
+        $row['google_count'] = (int) ($nearby_map[$id] ?? 0);
+
+        $result = EDP_Cqs_Scorer::compute($id, $row);
+        EDP_Database::upsert_cqs_cache($id, $result['score'], $result['breakdown']);
+
+        $cache = EDP_Database::get_cqs_cache($id);
+
+        wp_send_json_success(['html' => self::build_cqs_cell_html($id, $cache)]);
+    }
+
+    /**
+     * Bulk: compute CQS for multiple locations synchronously.
+     */
+    private static function bulk_analyze_content(): void
+    {
+        check_admin_referer('bulk-locations');
+
+        $ids = isset($_REQUEST['location'])
+            ? array_values(array_filter(array_map('intval', (array) wp_unslash($_REQUEST['location']))))
+            : [];
+
+        if ($ids === []) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations'));
+            exit;
+        }
+
+        $nearby_map = EDP_Database::get_nearby_status_for_locations($ids);
+        $done = 0;
+
+        foreach ($ids as $id) {
+            $row = EDP_Database::get_row_by_id($id);
+            if (!is_array($row)) {
+                continue;
+            }
+            $row['google_count'] = (int) ($nearby_map[$id] ?? 0);
+            $result = EDP_Cqs_Scorer::compute($id, $row);
+            EDP_Database::upsert_cqs_cache($id, $result['score'], $result['breakdown']);
+            $done++;
+        }
+
+        wp_safe_redirect(add_query_arg(
+            ['cqs_analyzed' => $done],
+            admin_url('admin.php?page=edp-seo-locations')
+        ));
+        exit;
     }
 
     // ── CPT FAQ metabox ────────────────────────────────────────────────────────
