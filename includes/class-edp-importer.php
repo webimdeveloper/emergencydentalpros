@@ -372,6 +372,7 @@ final class EDP_Importer
             'city_slug'        => $city_slug,
             'city_name'        => $city_name,
             'zips'             => (string) wp_json_encode($zips),
+            'main_zip'         => $zips[0] ?? '',
             'county_fips'      => (string) ($group['county_fips'] ?? ''),
             'county_name'      => (string) ($group['county_name'] ?? ''),
             'county_names_all' => (string) ($group['county_names_all'] ?? ''),
@@ -395,14 +396,15 @@ final class EDP_Importer
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
             "INSERT INTO {$table}
-            (state_slug, state_name, state_id, city_slug, city_name, zips,
+            (state_slug, state_name, state_id, city_slug, city_name, zips, main_zip,
              county_fips, county_name, county_names_all, county_fips_all, updated_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON DUPLICATE KEY UPDATE
             state_slug        = VALUES(state_slug),
             state_name        = VALUES(state_name),
             city_name         = VALUES(city_name),
             zips              = VALUES(zips),
+            main_zip          = VALUES(main_zip),
             county_fips       = VALUES(county_fips),
             county_name       = VALUES(county_name),
             county_names_all  = VALUES(county_names_all),
@@ -414,6 +416,7 @@ final class EDP_Importer
             $row['city_slug'],
             $row['city_name'],
             $row['zips'],
+            $row['main_zip'],
             $row['county_fips'],
             $row['county_name'],
             $row['county_names_all'],
@@ -445,13 +448,14 @@ final class EDP_Importer
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $sql = $wpdb->prepare(
             "INSERT INTO {$table}
-            (state_slug, state_name, state_id, city_slug, city_name, zips,
+            (state_slug, state_name, state_id, city_slug, city_name, zips, main_zip,
              county_fips, county_name, county_names_all, county_fips_all, updated_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON DUPLICATE KEY UPDATE
             state_slug        = VALUES(state_slug),
             state_name        = VALUES(state_name),
             zips              = VALUES(zips),
+            main_zip          = VALUES(main_zip),
             county_fips       = VALUES(county_fips),
             county_name       = VALUES(county_name),
             county_names_all  = VALUES(county_names_all),
@@ -463,6 +467,7 @@ final class EDP_Importer
             $row['city_slug'],
             $row['city_name'],
             $row['zips'],
+            $row['main_zip'],
             $row['county_fips'],
             $row['county_name'],
             $row['county_names_all'],
