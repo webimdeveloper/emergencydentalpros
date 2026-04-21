@@ -50,7 +50,6 @@ final class EDP_Settings
     public static function defaults(): array
     {
         return [
-            'business_name'   => get_bloginfo('name'),
             'og_image_url'    => '',
             'twitter_site'    => '',
             'templates' => [
@@ -110,10 +109,6 @@ final class EDP_Settings
     {
         $defaults = self::defaults();
         $out = $defaults;
-
-        if (isset($data['business_name'])) {
-            $out['business_name'] = sanitize_text_field((string) $data['business_name']);
-        }
 
         if (isset($data['og_image_url'])) {
             $out['og_image_url'] = esc_url_raw((string) $data['og_image_url']);

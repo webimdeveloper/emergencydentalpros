@@ -137,7 +137,6 @@ final class EDP_Admin
         }
 
         $merged = EDP_Settings::get_all();
-        $merged['business_name'] = isset($raw['business_name']) ? sanitize_text_field((string) $raw['business_name']) : '';
         $merged['og_image_url']  = isset($raw['og_image_url'])  ? esc_url_raw((string) $raw['og_image_url'])          : '';
         $handle = ltrim(sanitize_text_field((string) ($raw['twitter_site'] ?? '')), '@');
         $merged['twitter_site']  = $handle !== '' ? '@' . $handle : '';

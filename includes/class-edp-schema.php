@@ -18,7 +18,7 @@ final class EDP_Schema
     public static function output_city_schema(array $row, string $page_title): void
     {
         $settings = EDP_Settings::get_all();
-        $business = isset($settings['business_name']) ? (string) $settings['business_name'] : get_bloginfo('name');
+        $business = get_bloginfo('name');
 
         $zips = [];
         if (!empty($row['zips'])) {

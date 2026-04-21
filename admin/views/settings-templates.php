@@ -44,13 +44,6 @@ $context_vars = [
 				<div class="edp-card-header"><?php esc_html_e('Settings', 'emergencydentalpros'); ?></div>
 				<div class="edp-card-body">
 					<div class="edp-form-row">
-						<label for="edp_business_name"><?php esc_html_e('Business name', 'emergencydentalpros'); ?></label>
-						<input name="edp_seo[business_name]" type="text" id="edp_business_name"
-							value="<?php echo esc_attr((string) ($settings['business_name'] ?? '')); ?>" />
-						<p class="edp-hint"><?php esc_html_e('Used in LocalBusiness / Dentist JSON-LD schema output on every city page.', 'emergencydentalpros'); ?></p>
-					</div>
-					<hr class="edp-divider" />
-					<div class="edp-form-row">
 						<label for="edp_og_image_url"><?php esc_html_e('Default OG image URL', 'emergencydentalpros'); ?></label>
 						<input name="edp_seo[og_image_url]" type="text" id="edp_og_image_url"
 							value="<?php echo esc_attr((string) ($settings['og_image_url'] ?? '')); ?>"
