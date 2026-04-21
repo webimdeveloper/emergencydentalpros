@@ -63,7 +63,7 @@ final class EDP_Content_Resolver
                 if ($allowed) {
                     $is_cpt = $post->post_type === EDP_CPT::POST_TYPE;
 
-                    $title = get_the_title($post);
+                    $title = $is_cpt ? $default_title : get_the_title($post);
                     $html  = apply_filters('the_content', $post->post_content);
                     $h1    = $is_cpt ? $default_h1 : $title;
                     $faq   = $is_cpt
