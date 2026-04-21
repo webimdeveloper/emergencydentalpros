@@ -730,9 +730,9 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
 }
 #edp-locations-wrap th.column-google a,
 #edp-locations-wrap th.column-override a {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
   color: var(--edp-type);
   text-decoration: none;
 }
