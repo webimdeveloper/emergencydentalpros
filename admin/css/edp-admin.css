@@ -719,7 +719,11 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
   color: var(--edp-brand);
   transform: translateX(2px);
 }
-/* Hide WP's native sort indicator — we use the column text link itself */
+/* Strip all WP sort chrome from Google Business and Static Page headers */
+#edp-locations-wrap th.column-google,
+#edp-locations-wrap th.column-override {
+  background: none !important;
+}
 #edp-locations-wrap th.column-google .sorting-indicator,
 #edp-locations-wrap th.column-override .sorting-indicator {
   display: none;
@@ -729,27 +733,15 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
   color: var(--edp-type);
   text-decoration: none;
 }
-#edp-locations-wrap th.column-google a::after,
-#edp-locations-wrap th.column-override a::after {
-  font-family: dashicons;
-  content: '\f139';
-  font-size: 14px;
+.edp-col-arrow {
+  transform: rotate(90deg);
   margin-left: 4px;
-  color: var(--edp-muted);
   vertical-align: middle;
-  opacity: .7;
-}
-#edp-locations-wrap th.column-google.asc a::after,
-#edp-locations-wrap th.column-override.asc a::after {
-  content: '\f142';
-  color: var(--edp-brand);
-  opacity: 1;
-}
-#edp-locations-wrap th.column-google.desc a::after,
-#edp-locations-wrap th.column-override.desc a::after {
-  content: '\f140';
-  color: var(--edp-brand);
-  opacity: 1;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--edp-muted);
+  opacity: .6;
 }
 a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   color: var(--edp-brand);
