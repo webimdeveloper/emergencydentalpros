@@ -524,6 +524,7 @@ final class EDP_View_Controller
 
             return [
                 'h1'               => $resolved['h1'],
+                'subtitle'         => $resolved['subtitle'] ?? '',
                 'body'             => $resolved['html'],
                 'zips'             => $zips,
                 'row'              => $row,

@@ -44,6 +44,7 @@ final class EDP_Content_Resolver
         // Global template defaults (variables resolved).
         $default_title       = EDP_Template_Engine::replace((string) ($templates['meta_title']      ?? ''), $vars);
         $default_h1          = EDP_Template_Engine::replace((string) ($templates['h1']              ?? ''), $vars);
+        $default_subtitle    = EDP_Template_Engine::replace((string) ($templates['subtitle']        ?? ''), $vars);
         $default_body        = EDP_Template_Engine::replace((string) ($templates['body']            ?? ''), $vars);
         $default_meta_desc   = EDP_Template_Engine::replace((string) ($templates['meta_description']?? ''), $vars);
         $default_comm_h2     = EDP_Template_Engine::replace((string) ($templates['communities_h2']  ?? ''), $vars);
@@ -103,6 +104,7 @@ final class EDP_Content_Resolver
                     $result = [
                         'title'            => $title,
                         'h1'               => $h1,
+                        'subtitle'         => $default_subtitle,
                         'html'             => $html,
                         'meta_description' => $meta_desc,
                         'communities_h2'   => $comm_h2,
@@ -124,6 +126,7 @@ final class EDP_Content_Resolver
         $result = [
             'title'            => $default_title,
             'h1'               => $default_h1,
+            'subtitle'         => $default_subtitle,
             'html'             => $default_body,
             'meta_description' => $default_meta_desc,
             'communities_h2'   => $default_comm_h2,
