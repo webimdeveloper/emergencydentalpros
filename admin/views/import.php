@@ -89,46 +89,10 @@ if (is_array($google_test_result)) {
 	<?php endif; ?>
 	<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
-	<?php if (!empty($persisted['at'])) : ?>
-		<div class="edp-notice edp-notice-info">
-			<?php
-			printf(
-				/* translators: 1: datetime */
-				esc_html__('Last saved import log: %s', 'emergencydentalpros'),
-				esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $persisted['at']))
-			);
-			?>
-		</div>
-	<?php endif; ?>
-
 	<?php /* ------------------------------------------------------------------ */ ?>
-	<?php /* ROW — Plugin Documentation (left) + Service Account (right)       */ ?>
+	<?php /* ROW — Service Account (left) + Plugin Documentation (right)       */ ?>
 	<?php /* ------------------------------------------------------------------ */ ?>
 	<div class="edp-stat-row">
-
-		<?php /* Plugin Documentation */ ?>
-		<div class="edp-stat-card">
-			<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
-			<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
-			<div class="edp-doc-links">
-				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=guide')); ?>" class="edp-doc-link-row">
-					<span class="dashicons dashicons-media-document edp-doc-link-icon" aria-hidden="true"></span>
-					<div class="edp-doc-link-text">
-						<strong><?php esc_html_e('User Guide', 'emergencydentalpros'); ?></strong>
-						<span><?php esc_html_e('Import locations, connect APIs, create static pages, map post IDs, templates, FAQ and schema setup.', 'emergencydentalpros'); ?></span>
-					</div>
-					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
-				</a>
-				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=architecture')); ?>" class="edp-doc-link-row">
-					<span class="dashicons dashicons-editor-code edp-doc-link-icon edp-doc-link-icon--arch" aria-hidden="true"></span>
-					<div class="edp-doc-link-text">
-						<strong><?php esc_html_e('Architecture Reference', 'emergencydentalpros'); ?></strong>
-						<span><?php esc_html_e('Plugin class structure, virtual routing, theme integration, AJAX actions, and how to extend the plugin.', 'emergencydentalpros'); ?></span>
-					</div>
-					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
-				</a>
-			</div>
-		</div>
 
 		<?php /* CARD 1 — Service Account */ ?>
 		<div class="edp-card" style="margin-bottom:0;">
@@ -171,6 +135,72 @@ if (is_array($google_test_result)) {
 					</form>
 				<?php endif; ?>
 			</div>
+		</div>
+
+		<?php /* Plugin Documentation */ ?>
+		<div class="edp-stat-card">
+			<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
+			<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
+			<div class="edp-doc-links">
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=guide')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-media-document edp-doc-link-icon" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('User Guide', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Import locations, connect APIs, create static pages, map post IDs, templates, FAQ and schema setup.', 'emergencydentalpros'); ?></span>
+					</div>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
+				<a href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-doc&doc=architecture')); ?>" class="edp-doc-link-row">
+					<span class="dashicons dashicons-editor-code edp-doc-link-icon edp-doc-link-icon--arch" aria-hidden="true"></span>
+					<div class="edp-doc-link-text">
+						<strong><?php esc_html_e('Architecture Reference', 'emergencydentalpros'); ?></strong>
+						<span><?php esc_html_e('Plugin class structure, virtual routing, theme integration, AJAX actions, and how to extend the plugin.', 'emergencydentalpros'); ?></span>
+					</div>
+					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
+				</a>
+			</div>
+
+			<?php /* ── Last import stat ── */ ?>
+			<?php if (!empty($persisted['at'])) :
+				$_imp_date    = esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $persisted['at']));
+				$_imp_has_err = !empty($persisted['error']) || (isset($persisted['ok']) && !$persisted['ok']);
+				$_imp_err_code = isset($persisted['error']) ? (string) $persisted['error'] : '';
+				$_imp_err_msgs = [
+					'file_not_readable'        => __('CSV could not be read (wrong path or permissions).', 'emergencydentalpros'),
+					'fopen_failed'             => __('Could not open CSV file.', 'emergencydentalpros'),
+					'empty_or_invalid_csv'     => __('CSV was empty or invalid.', 'emergencydentalpros'),
+					'missing_columns'          => __('CSV is missing required columns (zip, city, state_id, state_name).', 'emergencydentalpros'),
+					'custom_path_not_readable' => __('The custom CSV path was not readable.', 'emergencydentalpros'),
+				];
+			?>
+			<div style="border-top:1px solid var(--edp-border); margin-top:16px; padding-top:14px;">
+				<div class="edp-stat-item">
+					<div>
+						<span class="edp-stat-label"><?php esc_html_e('Last import:', 'emergencydentalpros'); ?></span>
+						<span class="edp-stat-val"> <?php echo $_imp_date; ?></span>
+						<br />
+						<span style="font-size:12.64px; color:#89868D;">
+							<?php printf(
+								/* translators: 1: rows, 2: skipped, 3: groups */
+								esc_html__('rows %1$d, skipped %2$d, city groups %3$d', 'emergencydentalpros'),
+								(int) ($persisted['rows'] ?? 0),
+								(int) ($persisted['skipped'] ?? 0),
+								(int) ($persisted['groups'] ?? 0)
+							); ?>
+						</span>
+						<?php if ($_imp_has_err) : ?>
+							<br /><span class="edp-stat-err"><?php echo esc_html($_imp_err_msgs[$_imp_err_code] ?? __('Import reported an error.', 'emergencydentalpros')); ?></span>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+			<?php else : ?>
+			<div style="border-top:1px solid var(--edp-border); margin-top:16px; padding-top:14px;">
+				<div class="edp-stat-item">
+					<span class="edp-stat-label"><?php esc_html_e('No import log yet.', 'emergencydentalpros'); ?></span>
+				</div>
+			</div>
+			<?php endif; ?>
 		</div>
 
 	</div>

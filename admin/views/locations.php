@@ -192,60 +192,6 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 					<span class="dashicons <?php echo $_is_active ? 'dashicons-yes-alt' : 'dashicons-arrow-right-alt2'; ?> edp-stat-filter-arrow" aria-hidden="true"></span>
 				</a>
 				<?php endforeach; ?>
-				<?php if (!empty($import_log['at'])) :
-					$import_date = esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $import_log['at']));
-					$has_err = !empty($import_log['error']) || (isset($import_log['ok']) && !$import_log['ok']);
-				?>
-					<div class="edp-stat-item">
-						<span class="dashicons <?php echo $has_err ? 'dashicons-warning' : 'dashicons-yes'; ?>"></span>
-						<div>
-							<span class="edp-stat-label"><?php esc_html_e('Last import:', 'emergencydentalpros'); ?></span>
-							<span class="edp-stat-val"> <?php echo esc_html($import_date); ?></span>
-							<br />
-							<span style="font-size:12.64px; color:#89868D;">
-								<?php
-								printf(
-									/* translators: 1: rows, 2: skipped, 3: groups */
-									esc_html__('rows %1$d, skipped %2$d, city groups %3$d', 'emergencydentalpros'),
-									(int) ($import_log['rows'] ?? 0),
-									(int) ($import_log['skipped'] ?? 0),
-									(int) ($import_log['groups'] ?? 0)
-								);
-								?>
-							</span>
-							<?php if (!empty($import_log['path'])) : ?>
-								<br /><code style="font-size:11px;"><?php echo esc_html((string) $import_log['path']); ?></code>
-							<?php endif; ?>
-							<?php if ($has_err) :
-								$err_code = isset($import_log['error']) ? (string) $import_log['error'] : '';
-								$err_msgs = [
-									'file_not_readable'        => __('CSV could not be read (wrong path or permissions).', 'emergencydentalpros'),
-									'fopen_failed'             => __('Could not open CSV file.', 'emergencydentalpros'),
-									'empty_or_invalid_csv'     => __('CSV was empty or invalid.', 'emergencydentalpros'),
-									'missing_columns'          => __('CSV is missing required columns (zip, city, state_id, state_name).', 'emergencydentalpros'),
-									'custom_path_not_readable' => __('The custom CSV path was not readable.', 'emergencydentalpros'),
-								];
-							?>
-								<br /><span class="edp-stat-err"><?php echo esc_html($err_msgs[$err_code] ?? __('Import reported an error. Check the path and try again.', 'emergencydentalpros')); ?></span>
-							<?php endif; ?>
-						</div>
-					</div>
-				<?php else : ?>
-					<div class="edp-stat-item">
-						<span class="dashicons dashicons-info"></span>
-						<span class="edp-stat-label"><?php esc_html_e('No import log yet.', 'emergencydentalpros'); ?></span>
-					</div>
-				<?php endif; ?>
-
-				<?php
-				$rows_read = (int) ($import_log['rows'] ?? 0);
-				$groups    = (int) ($import_log['groups'] ?? 0);
-				if ($location_count === 0 && $rows_read > 0 && $groups === 0 && empty($import_log['error'])) : ?>
-					<div class="edp-stat-item">
-						<span class="dashicons dashicons-warning"></span>
-						<span style="font-size:13px; color:#7a5200;"><?php esc_html_e('Last import read rows but produced zero city groups. Confirm your CSV contains US rows.', 'emergencydentalpros'); ?></span>
-					</div>
-				<?php endif; ?>
 			</div>
 		</div>
 
@@ -271,6 +217,49 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 					<span class="dashicons dashicons-arrow-right-alt2 edp-doc-link-arrow" aria-hidden="true"></span>
 				</a>
 			</div>
+
+			<?php /* ── Last import stat ── */ ?>
+			<?php if (!empty($import_log['at'])) :
+				$_doc_import_date = esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $import_log['at']));
+				$_doc_has_err = !empty($import_log['error']) || (isset($import_log['ok']) && !$import_log['ok']);
+				$_doc_err_code = isset($import_log['error']) ? (string) $import_log['error'] : '';
+				$_doc_err_msgs = [
+					'file_not_readable'        => __('CSV could not be read (wrong path or permissions).', 'emergencydentalpros'),
+					'fopen_failed'             => __('Could not open CSV file.', 'emergencydentalpros'),
+					'empty_or_invalid_csv'     => __('CSV was empty or invalid.', 'emergencydentalpros'),
+					'missing_columns'          => __('CSV is missing required columns (zip, city, state_id, state_name).', 'emergencydentalpros'),
+					'custom_path_not_readable' => __('The custom CSV path was not readable.', 'emergencydentalpros'),
+				];
+			?>
+			<div style="border-top:1px solid var(--edp-border); margin-top:16px; padding-top:14px;">
+				<div class="edp-stat-item">
+					<div>
+						<span class="edp-stat-label"><?php esc_html_e('Last import:', 'emergencydentalpros'); ?></span>
+						<span class="edp-stat-val"> <?php echo $_doc_import_date; ?></span>
+						<br />
+						<span style="font-size:12.64px; color:#89868D;">
+							<?php printf(
+								/* translators: 1: rows, 2: skipped, 3: groups */
+								esc_html__('rows %1$d, skipped %2$d, city groups %3$d', 'emergencydentalpros'),
+								(int) ($import_log['rows'] ?? 0),
+								(int) ($import_log['skipped'] ?? 0),
+								(int) ($import_log['groups'] ?? 0)
+							); ?>
+						</span>
+						<?php if ($_doc_has_err) : ?>
+							<br /><span class="edp-stat-err"><?php echo esc_html($_doc_err_msgs[$_doc_err_code] ?? __('Import reported an error.', 'emergencydentalpros')); ?></span>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+			<?php else : ?>
+			<div style="border-top:1px solid var(--edp-border); margin-top:16px; padding-top:14px;">
+				<div class="edp-stat-item">
+					<span class="edp-stat-label"><?php esc_html_e('No import log yet.', 'emergencydentalpros'); ?></span>
+				</div>
+			</div>
+			<?php endif; ?>
+
 			<div class="edp-stat-card-actions">
 				<a class="edp-btn edp-btn-primary" href="<?php echo esc_url(admin_url('admin.php?page=edp-seo-import')); ?>"><?php esc_html_e('Go to Settings', 'emergencydentalpros'); ?></a>
 				<?php if (!$edp_seo_debug) : ?>
