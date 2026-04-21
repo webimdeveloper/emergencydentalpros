@@ -318,9 +318,9 @@ if (is_array($google_test_result)) {
 					</div>
 					<div class="edp-form-row" style="margin-bottom:0;">
 						<label for="edp_google_limit"><?php esc_html_e('Max businesses per city', 'emergencydentalpros'); ?></label>
-						<input name="edp_google[limit]" type="number" id="edp_google_limit" min="1" max="5" step="1"
+						<input name="edp_google[limit]" type="number" id="edp_google_limit" min="1" step="1"
 							value="<?php echo esc_attr((string) (int) ($google['limit'] ?? 5)); ?>" />
-						<p class="edp-hint"><?php esc_html_e('Maximum 5.', 'emergencydentalpros'); ?></p>
+						<p class="edp-hint"><?php esc_html_e('5 recommended.', 'emergencydentalpros'); ?></p>
 					</div>
 				</div>
 
