@@ -45,7 +45,7 @@ final class EDP_Content_Resolver
         $default_title       = EDP_Template_Engine::replace((string) ($templates['meta_title']      ?? ''), $vars);
         $default_h1          = EDP_Template_Engine::replace((string) ($templates['h1']              ?? ''), $vars);
         $default_subtitle    = EDP_Template_Engine::replace((string) ($templates['subtitle']        ?? ''), $vars);
-        $default_body        = EDP_Template_Engine::replace((string) ($templates['body']            ?? ''), $vars);
+        $default_body        = wpautop(EDP_Template_Engine::replace((string) ($templates['body'] ?? ''), $vars));
         $default_meta_desc   = EDP_Template_Engine::replace((string) ($templates['meta_description']?? ''), $vars);
         $default_comm_h2     = EDP_Template_Engine::replace((string) ($templates['communities_h2']  ?? ''), $vars);
         $default_comm_body   = EDP_Template_Engine::replace((string) ($templates['communities_body']?? ''), $vars);
