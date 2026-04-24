@@ -68,7 +68,7 @@ final class EDP_Content_Resolver
                     $html  = apply_filters('the_content', $post->post_content);
                     $h1    = $is_cpt ? $default_h1 : $title;
                     $faq   = $is_cpt
-                        ? self::resolve_cpt_faq($post->ID, $global_faq)
+                        ? self::resolve_cpt_faq($post->ID, $global_faq, $vars)
                         : $global_faq;
 
                     // CPT per-page overrides — empty meta falls back to template default.
@@ -150,9 +150,16 @@ final class EDP_Content_Resolver
      */
     private static function build_global_faq(array $templates, array $vars): array
     {
-        $items = isset($templates['faq_items']) && is_array($templates['faq_items'])
+        $raw_items = isset($templates['faq_items']) && is_array($templates['faq_items'])
             ? $templates['faq_items']
             : [];
+
+        $items = array_map(function (array $item) use ($vars): array {
+            return [
+                'q' => EDP_Template_Engine::replace((string) ($item['q'] ?? ''), $vars),
+                'a' => EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars),
+            ];
+        }, $raw_items);
 
         return [
             'enabled' => count($items) > 0,
@@ -163,10 +170,11 @@ final class EDP_Content_Resolver
     }
 
     /**
-     * @param array<string, mixed> $global_faq
+     * @param array<string, mixed>  $global_faq
+     * @param array<string, string> $vars
      * @return array<string, mixed>
      */
-    private static function resolve_cpt_faq(int $post_id, array $global_faq): array
+    private static function resolve_cpt_faq(int $post_id, array $global_faq, array $vars): array
     {
         $enabled_meta = get_post_meta($post_id, '_edp_faq_enabled', true);
         $enabled = ($enabled_meta === '') ? true : (bool) (int) $enabled_meta;
@@ -183,14 +191,19 @@ final class EDP_Content_Resolver
         if ($items_raw !== '') {
             $decoded = json_decode($items_raw, true);
             if (is_array($decoded) && count($decoded) > 0) {
-                $items = $decoded;
+                $items = array_map(function (array $item) use ($vars): array {
+                    return [
+                        'q' => EDP_Template_Engine::replace((string) ($item['q'] ?? ''), $vars),
+                        'a' => EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars),
+                    ];
+                }, $decoded);
             }
         }
 
         return [
             'enabled' => true,
-            'h2'      => $h2    !== '' ? $h2    : $global_faq['h2'],
-            'intro'   => $intro !== '' ? $intro : $global_faq['intro'],
+            'h2'      => $h2    !== '' ? EDP_Template_Engine::replace($h2, $vars)    : $global_faq['h2'],
+            'intro'   => $intro !== '' ? EDP_Template_Engine::replace($intro, $vars) : $global_faq['intro'],
             'items'   => count($items) > 0 ? $items : $global_faq['items'],
         ];
     }
