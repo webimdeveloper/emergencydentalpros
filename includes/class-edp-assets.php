@@ -36,6 +36,11 @@ final class EDP_Assets
 
     public static function enqueue_admin(): void
     {
+        $screen = get_current_screen();
+        if ($screen && str_contains((string) $screen->id, 'edp-seo')) {
+            wp_enqueue_media();
+        }
+
         $css_path = EDP_PLUGIN_DIR . 'admin/css/edp-admin.css';
         $css_url  = EDP_PLUGIN_URL . 'admin/css/edp-admin.css';
 

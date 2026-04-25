@@ -141,6 +141,20 @@ final class EDP_Admin
         $handle = ltrim(sanitize_text_field((string) ($raw['twitter_site'] ?? '')), '@');
         $merged['twitter_site']  = $handle !== '' ? '@' . $handle : '';
 
+        // Global variables panel
+        $gs = is_array($raw['global_settings'] ?? null) ? $raw['global_settings'] : [];
+        $merged['global_settings']['biz_name']        = sanitize_text_field((string) ($gs['biz_name'] ?? ''));
+        $merged['global_settings']['phone_text']       = sanitize_text_field((string) ($gs['phone_text'] ?? '(855) 407-7377'));
+        $merged['global_settings']['phone_href']       = esc_url_raw((string) ($gs['phone_href'] ?? 'tel:8554077377'));
+        $merged['global_settings']['featured_img_url'] = esc_url_raw((string) ($gs['featured_img_url'] ?? ''));
+        $merged['global_settings']['opening_hours']    = sanitize_textarea_field((string) ($gs['opening_hours'] ?? '24/7'));
+        $score = min(5.0, max(0.0, (float) ($gs['rating_score'] ?? 4.9)));
+        $merged['global_settings']['rating_score']     = number_format($score, 1);
+        $merged['global_settings']['rating_count']     = (string) absint($gs['rating_count'] ?? 127);
+        $merged['global_settings']['rating_avatar_1']  = esc_url_raw((string) ($gs['rating_avatar_1'] ?? ''));
+        $merged['global_settings']['rating_avatar_2']  = esc_url_raw((string) ($gs['rating_avatar_2'] ?? ''));
+        $merged['global_settings']['rating_avatar_3']  = esc_url_raw((string) ($gs['rating_avatar_3'] ?? ''));
+
         foreach (['states_index', 'state_cities', 'city_landing'] as $ctx) {
             if (!isset($raw['templates'][$ctx]) || !is_array($raw['templates'][$ctx])) {
                 continue;
