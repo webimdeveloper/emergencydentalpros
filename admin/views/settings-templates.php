@@ -327,35 +327,20 @@ $gs = isset($settings['global_settings']) && is_array($settings['global_settings
 						</div>
 					</div>
 
-					<?php
-					$avatar_fields = [
-						'rating_avatar_1' => __('Avatar 1', 'emergencydentalpros'),
-						'rating_avatar_2' => __('Avatar 2', 'emergencydentalpros'),
-						'rating_avatar_3' => __('Avatar 3', 'emergencydentalpros'),
-					];
-					?>
-					<div class="edp-avatar-grid">
-						<?php foreach ($avatar_fields as $av_key => $av_label): ?>
-							<div class="edp-avatar-cell">
-								<label><?php echo esc_html($av_label); ?></label>
-								<?php $av_val = (string) ($gs[$av_key] ?? ''); ?>
-								<?php if ($av_val !== ''): ?>
-									<img class="edp-avatar-preview" src="<?php echo esc_url($av_val); ?>" alt="">
-								<?php else: ?>
-									<div class="edp-avatar-placeholder" aria-hidden="true"></div>
-								<?php endif; ?>
-								<div class="edp-media-row">
-									<input name="edp_seo[global_settings][<?php echo esc_attr($av_key); ?>]"
-										type="text" id="edp_gs_<?php echo esc_attr($av_key); ?>"
-										placeholder="https://…"
-										value="<?php echo esc_attr($av_val); ?>" />
-									<button type="button" class="edp-media-btn button"
-										data-target="edp_gs_<?php echo esc_attr($av_key); ?>">
-										<?php esc_html_e('Choose', 'emergencydentalpros'); ?>
-									</button>
-								</div>
-							</div>
-						<?php endforeach; ?>
+					<div class="edp-form-row">
+						<label for="edp_gs_avatars_url"><?php esc_html_e('Avatars image', 'emergencydentalpros'); ?></label>
+						<div class="edp-media-row">
+							<input name="edp_seo[global_settings][rating_avatars_url]" type="text" id="edp_gs_avatars_url"
+								placeholder="https://…"
+								value="<?php echo esc_attr((string) ($gs['rating_avatars_url'] ?? '')); ?>" />
+							<button type="button" class="edp-media-btn button" data-target="edp_gs_avatars_url">
+								<?php esc_html_e('Choose', 'emergencydentalpros'); ?>
+							</button>
+						</div>
+						<?php if (!empty($gs['rating_avatars_url'])): ?>
+							<img class="edp-media-preview" src="<?php echo esc_url($gs['rating_avatars_url']); ?>" alt="">
+						<?php endif; ?>
+						<p class="edp-hint"><?php esc_html_e('Single collage image shown alongside the star rating.', 'emergencydentalpros'); ?></p>
 					</div>
 
 				</div><!-- /.edp-global-aside__body -->

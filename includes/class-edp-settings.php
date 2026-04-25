@@ -60,9 +60,7 @@ final class EDP_Settings
                 'opening_hours'    => '24/7',
                 'rating_score'     => '4.9',
                 'rating_count'     => '127',
-                'rating_avatar_1'  => '',
-                'rating_avatar_2'  => '',
-                'rating_avatar_3'  => '',
+                'rating_avatars_url' => '',
             ],
             'templates' => [
                 'states_index' => [
@@ -135,9 +133,7 @@ final class EDP_Settings
             $out['global_settings']['opening_hours']     = sanitize_textarea_field((string) ($gs['opening_hours'] ?? '24/7'));
             $out['global_settings']['rating_score']      = number_format(min(5.0, max(0.0, (float) ($gs['rating_score'] ?? 4.9))), 1);
             $out['global_settings']['rating_count']      = (string) absint($gs['rating_count'] ?? 127);
-            $out['global_settings']['rating_avatar_1']   = esc_url_raw((string) ($gs['rating_avatar_1'] ?? ''));
-            $out['global_settings']['rating_avatar_2']   = esc_url_raw((string) ($gs['rating_avatar_2'] ?? ''));
-            $out['global_settings']['rating_avatar_3']   = esc_url_raw((string) ($gs['rating_avatar_3'] ?? ''));
+            $out['global_settings']['rating_avatars_url'] = esc_url_raw((string) ($gs['rating_avatars_url'] ?? ''));
         }
 
         if (isset($data['twitter_site'])) {

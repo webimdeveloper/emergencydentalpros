@@ -151,9 +151,7 @@ final class EDP_Admin
         $score = min(5.0, max(0.0, (float) ($gs['rating_score'] ?? 4.9)));
         $merged['global_settings']['rating_score']     = number_format($score, 1);
         $merged['global_settings']['rating_count']     = (string) absint($gs['rating_count'] ?? 127);
-        $merged['global_settings']['rating_avatar_1']  = esc_url_raw((string) ($gs['rating_avatar_1'] ?? ''));
-        $merged['global_settings']['rating_avatar_2']  = esc_url_raw((string) ($gs['rating_avatar_2'] ?? ''));
-        $merged['global_settings']['rating_avatar_3']  = esc_url_raw((string) ($gs['rating_avatar_3'] ?? ''));
+        $merged['global_settings']['rating_avatars_url'] = esc_url_raw((string) ($gs['rating_avatars_url'] ?? ''));
 
         foreach (['states_index', 'state_cities', 'city_landing'] as $ctx) {
             if (!isset($raw['templates'][$ctx]) || !is_array($raw['templates'][$ctx])) {
