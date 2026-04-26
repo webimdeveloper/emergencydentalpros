@@ -19,12 +19,10 @@ $contexts = [
 ];
 
 $context_vars = [
-	'states_index' => '{site_name}, {phone_number}, {ws_featured_img}, {opening_hours}',
-	'state_cities' => '{state_name}, {state_short}, {state_slug}, {site_name}, {phone_number}, {ws_featured_img}, {opening_hours}',
-	'city_landing' => '{city_name}, {state_name}, {state_short}, {county_name}, {main_zip}, {list_of_related_zips}, {site_name}, {phone_number}, {ws_featured_img}, {opening_hours}',
+	'states_index' => '{site_name}',
+	'state_cities' => '{state_name}, {state_short}, {state_slug}, {site_name}',
+	'city_landing' => '{city_name}, {state_name}, {state_short}, {county_name}, {main_zip}, {list_of_related_zips}, {site_name}',
 ];
-
-$gs = isset($settings['global_settings']) && is_array($settings['global_settings']) ? $settings['global_settings'] : [];
 
 ?>
 <div id="edp-tpl-wrap" class="wrap">
@@ -236,8 +234,8 @@ $gs = isset($settings['global_settings']) && is_array($settings['global_settings
 		</div><!-- /.edp-card -->
 		</div><!-- /.edp-tpl-main -->
 
-		<?php /* ---- Aside: analytics panel (disabled) ---- */ ?>
-		<aside class="edp-tpl-aside" aria-label="<?php esc_attr_e('Template analytics', 'emergencydentalpros'); ?>" hidden>
+		<?php /* ---- Aside: per-tab analytics / info panel (reserved for future content) ---- */ ?>
+		<aside class="edp-tpl-aside" aria-label="<?php esc_attr_e('Template analytics', 'emergencydentalpros'); ?>">
 			<?php foreach ($contexts as $key => $label) : ?>
 			<div class="edp-tpl-aside-panel<?php echo $key === 'states_index' ? ' is-active' : ''; ?>"
 				id="edp-aside-<?php echo esc_attr($key); ?>"
@@ -254,97 +252,6 @@ $gs = isset($settings['global_settings']) && is_array($settings['global_settings
 				</div>
 			</div>
 			<?php endforeach; ?>
-		</aside>
-
-		<?php /* ---- Aside: Global settings & template variables ---- */ ?>
-		<aside class="edp-global-aside" aria-label="<?php esc_attr_e('Global settings', 'emergencydentalpros'); ?>">
-			<div class="edp-global-aside__card">
-
-				<div class="edp-global-aside__header">
-					<span class="edp-global-aside__title"><?php esc_html_e('Global Variables', 'emergencydentalpros'); ?></span>
-					<span class="edp-global-aside__badge"><?php esc_html_e('All templates', 'emergencydentalpros'); ?></span>
-				</div>
-
-				<div class="edp-global-aside__body">
-
-					<div class="edp-form-row">
-						<label for="edp_gs_biz_name"><?php esc_html_e('Business name', 'emergencydentalpros'); ?></label>
-						<input name="edp_seo[global_settings][biz_name]" type="text" id="edp_gs_biz_name"
-							value="<?php echo esc_attr((string) ($gs['biz_name'] ?? '')); ?>"
-							placeholder="<?php esc_attr_e('Emergency Dental Pros', 'emergencydentalpros'); ?>" />
-					</div>
-
-					<div class="edp-form-row">
-						<label><?php esc_html_e('{phone_number}', 'emergencydentalpros'); ?></label>
-						<div class="edp-global-aside__phone-pair">
-							<input name="edp_seo[global_settings][phone_text]" type="text" id="edp_gs_phone_text"
-								placeholder="(855) 407-7377"
-								value="<?php echo esc_attr((string) ($gs['phone_text'] ?? '')); ?>" />
-							<input name="edp_seo[global_settings][phone_href]" type="text" id="edp_gs_phone_href"
-								placeholder="tel:8554077377"
-								value="<?php echo esc_attr((string) ($gs['phone_href'] ?? '')); ?>" />
-						</div>
-						<p class="edp-hint"><?php esc_html_e('Display text · href value (tel:…)', 'emergencydentalpros'); ?></p>
-					</div>
-
-					<div class="edp-form-row">
-						<label for="edp_gs_feat_url"><?php esc_html_e('{ws_featured_img}', 'emergencydentalpros'); ?></label>
-						<div class="edp-media-row">
-							<input name="edp_seo[global_settings][featured_img_url]" type="text" id="edp_gs_feat_url"
-								placeholder="https://…"
-								value="<?php echo esc_attr((string) ($gs['featured_img_url'] ?? '')); ?>" />
-							<button type="button" class="edp-media-btn button" data-target="edp_gs_feat_url">
-								<?php esc_html_e('Choose', 'emergencydentalpros'); ?>
-							</button>
-						</div>
-						<?php if (!empty($gs['featured_img_url'])): ?>
-							<img class="edp-media-preview" src="<?php echo esc_url($gs['featured_img_url']); ?>" alt="">
-						<?php endif; ?>
-					</div>
-
-					<div class="edp-form-row">
-						<label for="edp_gs_hours"><?php esc_html_e('{opening_hours}', 'emergencydentalpros'); ?></label>
-						<textarea name="edp_seo[global_settings][opening_hours]" rows="2" id="edp_gs_hours"
-							placeholder="24/7"><?php echo esc_textarea((string) ($gs['opening_hours'] ?? '')); ?></textarea>
-					</div>
-
-					<hr class="edp-divider" />
-
-					<p class="edp-global-aside__section-label"><?php esc_html_e('Rating block (ws_biz__rating__main)', 'emergencydentalpros'); ?></p>
-
-					<div class="edp-global-aside__rating-row">
-						<div class="edp-form-row edp-form-row--half">
-							<label for="edp_gs_rating_score"><?php esc_html_e('Score', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[global_settings][rating_score]" type="number" id="edp_gs_rating_score"
-								step="0.1" min="0" max="5"
-								value="<?php echo esc_attr((string) ($gs['rating_score'] ?? '4.9')); ?>" />
-						</div>
-						<div class="edp-form-row edp-form-row--half">
-							<label for="edp_gs_rating_count"><?php esc_html_e('Review count', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[global_settings][rating_count]" type="number" id="edp_gs_rating_count"
-								min="0"
-								value="<?php echo esc_attr((string) ($gs['rating_count'] ?? '127')); ?>" />
-						</div>
-					</div>
-
-					<div class="edp-form-row">
-						<label for="edp_gs_avatars_url"><?php esc_html_e('Avatars image', 'emergencydentalpros'); ?></label>
-						<div class="edp-media-row">
-							<input name="edp_seo[global_settings][rating_avatars_url]" type="text" id="edp_gs_avatars_url"
-								placeholder="https://…"
-								value="<?php echo esc_attr((string) ($gs['rating_avatars_url'] ?? '')); ?>" />
-							<button type="button" class="edp-media-btn button" data-target="edp_gs_avatars_url">
-								<?php esc_html_e('Choose', 'emergencydentalpros'); ?>
-							</button>
-						</div>
-						<?php if (!empty($gs['rating_avatars_url'])): ?>
-							<img class="edp-media-preview" src="<?php echo esc_url($gs['rating_avatars_url']); ?>" alt="">
-						<?php endif; ?>
-						<p class="edp-hint"><?php esc_html_e('Single collage image shown alongside the star rating.', 'emergencydentalpros'); ?></p>
-					</div>
-
-				</div><!-- /.edp-global-aside__body -->
-			</div><!-- /.edp-global-aside__card -->
 		</aside>
 
 		</div><!-- /.edp-tpl-layout -->
@@ -396,38 +303,46 @@ $gs = isset($settings['global_settings']) && is_array($settings['global_settings
 	});
 })();
 
-/* ── Media picker (global aside) ── */
-(function () {
-	if (typeof wp === 'undefined' || !wp.media) { return; }
-
+/* ── Media picker ── */
+document.addEventListener('DOMContentLoaded', function () {
 	document.querySelectorAll('.edp-media-btn').forEach(function (btn) {
+		var frame = null;
+
 		btn.addEventListener('click', function () {
+			if (typeof wp === 'undefined' || typeof wp.media !== 'function') {
+				alert('WordPress media library is not available. Reload the page and try again.');
+				return;
+			}
+
+			if (frame) { frame.open(); return; }
+
 			var targetId = btn.dataset.target;
 			var input    = document.getElementById(targetId);
-			var frame    = wp.media({ title: 'Choose image', multiple: false });
+
+			frame = wp.media({ title: 'Choose image', library: { type: 'image' }, multiple: false });
 
 			frame.on('select', function () {
 				var att = frame.state().get('selection').first().toJSON();
 				if (input) { input.value = att.url; }
 
-				/* Update adjacent preview */
-				var preview = input ? input.closest('.edp-form-row, .edp-avatar-cell').querySelector('.edp-media-preview, .edp-avatar-preview') : null;
+				var row = btn.closest('.edp-form-row');
+				if (!row) { return; }
+				var preview = row.querySelector('.edp-media-preview');
 				if (preview) {
 					preview.src = att.url;
 				} else {
-					/* create preview */
-					var img = document.createElement('img');
-					img.className = input.closest('.edp-avatar-cell') ? 'edp-avatar-preview' : 'edp-media-preview';
-					img.src = att.url;
-					img.alt = '';
-					input.closest('.edp-form-row, .edp-avatar-cell').insertBefore(img, input.closest('.edp-media-row'));
+					var img      = document.createElement('img');
+					img.className = 'edp-media-preview';
+					img.src      = att.url;
+					img.alt      = '';
+					row.insertBefore(img, btn.closest('.edp-media-row'));
 				}
 			});
 
 			frame.open();
 		});
 	});
-})();
+});
 
 /* ── FAQ repeater (settings page) ── */
 (function () {

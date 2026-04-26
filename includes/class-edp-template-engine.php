@@ -86,10 +86,10 @@ final class EDP_Template_Engine
         $hours      = isset($gs['opening_hours']) && $gs['opening_hours'] !== '' ? $gs['opening_hours'] : '24/7';
 
         return [
-            'site_name'      => get_bloginfo('name'),
-            'phone_number'   => '<a href="' . esc_url($phone_href) . '" class="ws_inner__cta_link">' . esc_html($phone_text) . '</a>',
+            'site_name'       => get_bloginfo('name'),
+            'phone_number'    => '<a href="' . esc_url($phone_href) . '" class="ws_inner__cta_link">' . esc_html($phone_text) . '</a>',
             'ws_featured_img' => $feat_url !== '' ? '<img src="' . esc_url($feat_url) . '" alt="" loading="lazy" decoding="async">' : '',
-            'opening_hours'  => esc_html($hours),
+            'opening_hours'   => esc_html($hours),
         ];
     }
 }

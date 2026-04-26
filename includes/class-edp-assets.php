@@ -34,10 +34,10 @@ final class EDP_Assets
         }
     }
 
-    public static function enqueue_admin(): void
+    public static function enqueue_admin(string $hook): void
     {
-        $screen = get_current_screen();
-        if ($screen && str_contains((string) $screen->id, 'edp-seo')) {
+        /* Load media picker scripts on any plugin admin page */
+        if (strpos($hook, 'edp') !== false || strpos($hook, 'toplevel_page_edp') !== false) {
             wp_enqueue_media();
         }
 
