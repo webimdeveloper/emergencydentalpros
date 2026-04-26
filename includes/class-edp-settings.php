@@ -52,6 +52,16 @@ final class EDP_Settings
         return [
             'og_image_url'    => '',
             'twitter_site'    => '',
+            'global_settings' => [
+                'biz_name'          => '',
+                'phone_text'        => '(855) 407-7377',
+                'phone_href'        => 'tel:8554077377',
+                'featured_img_url'  => '',
+                'opening_hours'     => '24/7',
+                'rating_score'      => '4.9',
+                'rating_count'      => '127',
+                'rating_avatars_url' => '',
+            ],
             'templates' => [
                 'states_index' => [
                     'meta_title' => 'Dental service areas by state | {site_name}',
@@ -117,6 +127,18 @@ final class EDP_Settings
         if (isset($data['twitter_site'])) {
             $handle = ltrim(sanitize_text_field((string) $data['twitter_site']), '@');
             $out['twitter_site'] = $handle !== '' ? '@' . $handle : '';
+        }
+
+        if (isset($data['global_settings']) && is_array($data['global_settings'])) {
+            $gs = $data['global_settings'];
+            $out['global_settings']['biz_name']          = sanitize_text_field((string) ($gs['biz_name'] ?? ''));
+            $out['global_settings']['phone_text']         = sanitize_text_field((string) ($gs['phone_text'] ?? '(855) 407-7377'));
+            $out['global_settings']['phone_href']         = esc_url_raw((string) ($gs['phone_href'] ?? 'tel:8554077377'));
+            $out['global_settings']['featured_img_url']   = esc_url_raw((string) ($gs['featured_img_url'] ?? ''));
+            $out['global_settings']['opening_hours']      = sanitize_textarea_field((string) ($gs['opening_hours'] ?? '24/7'));
+            $out['global_settings']['rating_score']       = number_format(min(5.0, max(0.0, (float) ($gs['rating_score'] ?? 4.9))), 1);
+            $out['global_settings']['rating_count']       = (string) absint($gs['rating_count'] ?? 127);
+            $out['global_settings']['rating_avatars_url'] = esc_url_raw((string) ($gs['rating_avatars_url'] ?? ''));
         }
 
         $contexts = ['states_index', 'state_cities', 'city_landing'];

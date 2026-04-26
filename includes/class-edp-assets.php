@@ -34,8 +34,13 @@ final class EDP_Assets
         }
     }
 
-    public static function enqueue_admin(): void
+    public static function enqueue_admin(string $hook): void
     {
+        /* Load media picker scripts on any plugin admin page */
+        if (strpos($hook, 'edp') !== false || strpos($hook, 'toplevel_page_edp') !== false) {
+            wp_enqueue_media();
+        }
+
         $css_path = EDP_PLUGIN_DIR . 'admin/css/edp-admin.css';
         $css_url  = EDP_PLUGIN_URL . 'admin/css/edp-admin.css';
 

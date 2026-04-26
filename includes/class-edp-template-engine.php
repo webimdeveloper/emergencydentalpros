@@ -75,8 +75,21 @@ final class EDP_Template_Engine
      */
     public static function base_vars(): array
     {
+        $settings = EDP_Settings::get_all();
+        $gs       = isset($settings['global_settings']) && is_array($settings['global_settings'])
+            ? $settings['global_settings']
+            : [];
+
+        $phone_text = isset($gs['phone_text']) && $gs['phone_text'] !== '' ? $gs['phone_text'] : '(855) 407-7377';
+        $phone_href = isset($gs['phone_href']) && $gs['phone_href'] !== '' ? $gs['phone_href'] : 'tel:8554077377';
+        $feat_url   = isset($gs['featured_img_url']) && $gs['featured_img_url'] !== '' ? $gs['featured_img_url'] : '';
+        $hours      = isset($gs['opening_hours']) && $gs['opening_hours'] !== '' ? $gs['opening_hours'] : '24/7';
+
         return [
-            'site_name' => get_bloginfo('name'),
+            'site_name'       => get_bloginfo('name'),
+            'phone_number'    => '<a href="' . esc_url($phone_href) . '" class="ws_inner__cta_link">' . esc_html($phone_text) . '</a>',
+            'ws_featured_img' => $feat_url !== '' ? '<img src="' . esc_url($feat_url) . '" alt="" loading="lazy" decoding="async">' : '',
+            'opening_hours'   => esc_html($hours),
         ];
     }
 }

@@ -303,6 +303,47 @@ $context_vars = [
 	});
 })();
 
+/* ── Media picker ── */
+document.addEventListener('DOMContentLoaded', function () {
+	document.querySelectorAll('.edp-media-btn').forEach(function (btn) {
+		var frame = null;
+
+		btn.addEventListener('click', function () {
+			if (typeof wp === 'undefined' || typeof wp.media !== 'function') {
+				alert('WordPress media library is not available. Reload the page and try again.');
+				return;
+			}
+
+			if (frame) { frame.open(); return; }
+
+			var targetId = btn.dataset.target;
+			var input    = document.getElementById(targetId);
+
+			frame = wp.media({ title: 'Choose image', library: { type: 'image' }, multiple: false });
+
+			frame.on('select', function () {
+				var att = frame.state().get('selection').first().toJSON();
+				if (input) { input.value = att.url; }
+
+				var row = btn.closest('.edp-form-row');
+				if (!row) { return; }
+				var preview = row.querySelector('.edp-media-preview');
+				if (preview) {
+					preview.src = att.url;
+				} else {
+					var img      = document.createElement('img');
+					img.className = 'edp-media-preview';
+					img.src      = att.url;
+					img.alt      = '';
+					row.insertBefore(img, btn.closest('.edp-media-row'));
+				}
+			});
+
+			frame.open();
+		});
+	});
+});
+
 /* ── FAQ repeater (settings page) ── */
 (function () {
 	var list    = document.getElementById('edp-faq-items-list');
