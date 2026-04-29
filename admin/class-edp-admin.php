@@ -176,7 +176,15 @@ final class EDP_Admin
             }
         }
 
+        // Page cache settings
+        $pc = is_array($raw['page_cache'] ?? null) ? $raw['page_cache'] : [];
+        $merged['page_cache']['enabled'] = ! empty($pc['enabled']);
+        $merged['page_cache']['ttl']     = max(1, (int) ($pc['ttl'] ?? 24));
+
         EDP_Settings::save($merged);
+
+        // Invalidate any cached city pages whenever settings change.
+        EDP_Cache::clear_all();
 
         wp_safe_redirect(
             add_query_arg(

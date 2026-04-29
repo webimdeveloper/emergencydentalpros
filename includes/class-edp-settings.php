@@ -52,6 +52,10 @@ final class EDP_Settings
         return [
             'og_image_url'    => '',
             'twitter_site'    => '',
+            'page_cache'      => [
+                'enabled' => false,
+                'ttl'     => 24,
+            ],
             'global_settings' => [
                 'biz_name'          => '',
                 'phone_text'        => '(855) 407-7377',
@@ -122,6 +126,12 @@ final class EDP_Settings
 
         if (isset($data['og_image_url'])) {
             $out['og_image_url'] = esc_url_raw((string) $data['og_image_url']);
+        }
+
+        if (isset($data['page_cache']) && is_array($data['page_cache'])) {
+            $pc = $data['page_cache'];
+            $out['page_cache']['enabled'] = ! empty($pc['enabled']);
+            $out['page_cache']['ttl']     = max(1, (int) ($pc['ttl'] ?? 24));
         }
 
         if (isset($data['twitter_site'])) {
