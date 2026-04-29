@@ -67,13 +67,20 @@ final class EDP_Cache {
         $our_level = ob_get_level();
 
         add_action( 'shutdown', static function () use ( $key, $ttl, $uri, $our_level ): void {
+            $pre_level = ob_get_level();
             // Flush any buffers opened after ours so their content flows into ours.
             while ( ob_get_level() > $our_level ) {
                 ob_end_flush();
             }
-            $html = ob_get_clean();
-            if ( $html === false || strlen( trim( $html ) ) < 500 ) {
-                // Nothing useful to cache — flush as-is.
+            $html    = ob_get_clean();
+            $trimmed = $html === false ? '' : trim( $html );
+            $len     = strlen( $trimmed );
+            $debug   = "pre={$pre_level},our={$our_level},len={$len}";
+
+            if ( $html === false || $len < 500 ) {
+                if ( ! headers_sent() ) {
+                    header( "X-EDP-Cache: SKIP,{$debug}" );
+                }
                 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                 echo (string) $html;
                 return;
@@ -84,6 +91,9 @@ final class EDP_Cache {
                 'size' => strlen( $html ),
                 'html' => $html,
             ], $ttl );
+            if ( ! headers_sent() ) {
+                header( "X-EDP-Cache: MISS,{$debug}" );
+            }
             // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             echo $html;
         }, 0 );
