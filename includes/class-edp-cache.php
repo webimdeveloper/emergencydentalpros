@@ -52,21 +52,34 @@ final class EDP_Cache {
             exit;
         }
 
-        /* Buffer the page output and store it once rendering is complete. */
+        /*
+         * Buffer the page output and store it on shutdown.
+         *
+         * We use a shutdown action at priority 0 (before WP's wp_ob_end_flush_all
+         * at priority 1) rather than an ob_start callback, because ob_start
+         * callbacks can be unreliable inside WP's nested buffering stack.
+         */
+        ob_start();
         $ttl = self::ttl_seconds();
-        ob_start( static function ( string $html ) use ( $key, $ttl ): string {
-            /* Don't cache on error responses or trivially small output. */
-            if ( http_response_code() === 200 && strlen( trim( $html ) ) > 500 ) {
-                $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
-                set_transient( $key, [
-                    'url'  => strtok( $uri, '?' ),
-                    'time' => time(),
-                    'size' => strlen( $html ),
-                    'html' => $html,
-                ], $ttl );
+        $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+
+        add_action( 'shutdown', static function () use ( $key, $ttl, $uri ): void {
+            $html = ob_get_clean();
+            if ( $html === false || strlen( trim( $html ) ) < 500 ) {
+                // Nothing useful to cache — flush as-is.
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                echo (string) $html;
+                return;
             }
-            return $html;
-        } );
+            set_transient( $key, [
+                'url'  => strtok( $uri, '?' ),
+                'time' => time(),
+                'size' => strlen( $html ),
+                'html' => $html,
+            ], $ttl );
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            echo $html;
+        }, 0 );
     }
 
     /* ── Cache management ── */
@@ -196,11 +209,13 @@ final class EDP_Cache {
         if ( ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) !== 'GET' ) {
             return false;
         }
-        /* Skip requests with query strings — they may carry user-specific params. */
-        if ( ! empty( $_SERVER['QUERY_STRING'] ) ) {
+        $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+        /* Skip requests with query strings — they may carry user-specific params.
+         * We check REQUEST_URI directly because WP's rewrite system always populates
+         * $_SERVER['QUERY_STRING'] with internal vars even on clean pretty-permalink URLs. */
+        if ( strpos( $uri, '?' ) !== false ) {
             return false;
         }
-        $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
         return (bool) preg_match( '#^/locations/[a-z0-9-]+/[a-z0-9-]+/?$#', $uri );
     }
 
