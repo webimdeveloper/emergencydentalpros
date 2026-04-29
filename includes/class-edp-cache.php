@@ -28,7 +28,12 @@ final class EDP_Cache {
     /* ── Hooks ── */
 
     public static function register(): void {
-        add_action( 'template_redirect',                   [ self::class, 'maybe_serve'      ], 1 );
+        /*
+         * Priority 0 — must run before EDP_View_Controller::render() at priority 1,
+         * which exits after rendering. We start ob_start() here so the shutdown hook
+         * captures the full output that render() produces.
+         */
+        add_action( 'template_redirect', [ self::class, 'maybe_serve' ], 0 );
         add_action( 'admin_post_edp_clear_page_cache',     [ self::class, 'handle_clear_all' ] );
         add_action( 'admin_post_edp_clear_page_cache_one', [ self::class, 'handle_clear_one' ] );
         // Auto-clear a page's cache when it is saved/updated in the WP editor.
