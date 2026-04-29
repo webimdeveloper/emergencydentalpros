@@ -135,7 +135,7 @@ final class EDP_Settings
             $out['global_settings']['phone_text']         = sanitize_text_field((string) ($gs['phone_text'] ?? '(855) 407-7377'));
             $out['global_settings']['phone_href']         = esc_url_raw((string) ($gs['phone_href'] ?? 'tel:8554077377'));
             $out['global_settings']['featured_img_url']   = esc_url_raw((string) ($gs['featured_img_url'] ?? ''));
-            $out['global_settings']['opening_hours']      = sanitize_textarea_field((string) ($gs['opening_hours'] ?? '24/7'));
+            $out['global_settings']['opening_hours']      = wp_kses_post((string) ($gs['opening_hours'] ?? '24/7'));
             $out['global_settings']['rating_score']       = number_format(min(5.0, max(0.0, (float) ($gs['rating_score'] ?? 4.9))), 1);
             $out['global_settings']['rating_count']       = (string) absint($gs['rating_count'] ?? 127);
             $out['global_settings']['rating_avatars_url'] = esc_url_raw((string) ($gs['rating_avatars_url'] ?? ''));
