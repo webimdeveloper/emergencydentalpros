@@ -2128,6 +2128,10 @@ a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
+.edp-tpl-aside-badge.edp-badge--green {
+  background: #d1fae5;
+  color: #065f46;
+}
 .edp-tpl-aside-body {
   padding: 16px;
   min-height: 180px;

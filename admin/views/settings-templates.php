@@ -234,24 +234,99 @@ $context_vars = [
 		</div><!-- /.edp-card -->
 		</div><!-- /.edp-tpl-main -->
 
-		<?php /* ---- Aside: per-tab analytics / info panel (reserved for future content) ---- */ ?>
-		<aside class="edp-tpl-aside" aria-label="<?php esc_attr_e('Template analytics', 'emergencydentalpros'); ?>">
-			<?php foreach ($contexts as $key => $label) : ?>
-			<div class="edp-tpl-aside-panel<?php echo $key === 'states_index' ? ' is-active' : ''; ?>"
-				id="edp-aside-<?php echo esc_attr($key); ?>"
-				data-aside="<?php echo esc_attr($key); ?>">
+		<?php /* ---- Aside: Business listing settings ---- */ ?>
+		<?php
+		$gs = isset($settings['global_settings']) && is_array($settings['global_settings']) ? $settings['global_settings'] : [];
+		?>
+		<aside class="edp-tpl-aside" aria-label="<?php esc_attr_e('Business listing settings', 'emergencydentalpros'); ?>">
+			<div class="edp-tpl-aside-panel is-active" id="edp-aside-biz">
 				<div class="edp-tpl-aside-header">
-					<span class="edp-tpl-aside-title"><?php echo esc_html($label); ?></span>
-					<span class="edp-tpl-aside-badge"><?php esc_html_e('Analytics', 'emergencydentalpros'); ?></span>
+					<span class="edp-tpl-aside-title"><?php esc_html_e('Business Listing', 'emergencydentalpros'); ?></span>
+					<span class="edp-tpl-aside-badge edp-badge--green"><?php esc_html_e('Google', 'emergencydentalpros'); ?></span>
 				</div>
 				<div class="edp-tpl-aside-body">
-					<p class="edp-tpl-aside-empty">
-						<span class="dashicons dashicons-chart-area" aria-hidden="true"></span>
-						<?php esc_html_e('Analytics and insights for this template will appear here.', 'emergencydentalpros'); ?>
-					</p>
+
+					<div class="edp-form-row">
+						<label for="edp_biz_name"><?php esc_html_e('Business name', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][biz_name]" type="text" id="edp_biz_name"
+							value="<?php echo esc_attr((string) ($gs['biz_name'] ?? '')); ?>"
+							placeholder="Emergency Dental Pros" />
+						<p class="edp-hint"><?php esc_html_e('Shown as the pinned first item in the city page business list.', 'emergencydentalpros'); ?></p>
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_phone_text"><?php esc_html_e('Phone (display)', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][phone_text]" type="text" id="edp_phone_text"
+							value="<?php echo esc_attr((string) ($gs['phone_text'] ?? '(855) 407-7377')); ?>"
+							placeholder="(855) 407-7377" />
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_phone_href"><?php esc_html_e('Phone (href)', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][phone_href]" type="text" id="edp_phone_href"
+							value="<?php echo esc_attr((string) ($gs['phone_href'] ?? 'tel:8554077377')); ?>"
+							placeholder="tel:8554077377" />
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_opening_hours"><?php esc_html_e('Opening hours', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][opening_hours]" type="text" id="edp_opening_hours"
+							value="<?php echo esc_attr((string) ($gs['opening_hours'] ?? '24/7')); ?>"
+							placeholder="24/7" />
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_rating_score"><?php esc_html_e('Rating score (0–5)', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][rating_score]" type="text" id="edp_rating_score"
+							value="<?php echo esc_attr((string) ($gs['rating_score'] ?? '4.9')); ?>"
+							placeholder="4.9" style="max-width:80px;" />
+					</div>
+
+					<div class="edp-form-row">
+						<label for="edp_rating_count"><?php esc_html_e('Review count', 'emergencydentalpros'); ?></label>
+						<input name="edp_seo[global_settings][rating_count]" type="text" id="edp_rating_count"
+							value="<?php echo esc_attr((string) ($gs['rating_count'] ?? '127')); ?>"
+							placeholder="127" style="max-width:80px;" />
+					</div>
+
+					<div class="edp-form-row">
+						<label><?php esc_html_e('Featured image', 'emergencydentalpros'); ?></label>
+						<?php $feat_url = (string) ($gs['featured_img_url'] ?? ''); ?>
+						<?php if ($feat_url !== '') : ?>
+							<img class="edp-media-preview" src="<?php echo esc_url($feat_url); ?>" alt="" />
+						<?php endif; ?>
+						<div class="edp-media-row">
+							<input name="edp_seo[global_settings][featured_img_url]" type="text"
+								id="edp_featured_img_url"
+								value="<?php echo esc_attr($feat_url); ?>"
+								placeholder="https://..." />
+							<button type="button" class="edp-media-btn button" data-target="edp_featured_img_url">
+								<?php esc_html_e('Choose image', 'emergencydentalpros'); ?>
+							</button>
+						</div>
+						<p class="edp-hint"><?php esc_html_e('Logo or photo shown in the pinned business card.', 'emergencydentalpros'); ?></p>
+					</div>
+
+					<div class="edp-form-row">
+						<label><?php esc_html_e('Rating avatars (collage)', 'emergencydentalpros'); ?></label>
+						<?php $avatars_url = (string) ($gs['rating_avatars_url'] ?? ''); ?>
+						<?php if ($avatars_url !== '') : ?>
+							<img class="edp-media-preview" src="<?php echo esc_url($avatars_url); ?>" alt="" />
+						<?php endif; ?>
+						<div class="edp-media-row">
+							<input name="edp_seo[global_settings][rating_avatars_url]" type="text"
+								id="edp_rating_avatars_url"
+								value="<?php echo esc_attr($avatars_url); ?>"
+								placeholder="https://..." />
+							<button type="button" class="edp-media-btn button" data-target="edp_rating_avatars_url">
+								<?php esc_html_e('Choose image', 'emergencydentalpros'); ?>
+							</button>
+						</div>
+						<p class="edp-hint"><?php esc_html_e('Single collage image shown below the star rating.', 'emergencydentalpros'); ?></p>
+					</div>
+
 				</div>
 			</div>
-			<?php endforeach; ?>
 		</aside>
 
 		</div><!-- /.edp-tpl-layout -->
@@ -264,9 +339,8 @@ $context_vars = [
 
 <script>
 (function () {
-	var tabs        = document.querySelectorAll('#edp-tpl-wrap .edp-tab-btn');
-	var panels      = document.querySelectorAll('#edp-tpl-wrap .edp-tab-panel');
-	var asidePanels = document.querySelectorAll('#edp-tpl-wrap .edp-tpl-aside-panel');
+	var tabs   = document.querySelectorAll('#edp-tpl-wrap .edp-tab-btn');
+	var panels = document.querySelectorAll('#edp-tpl-wrap .edp-tab-panel');
 
 	tabs.forEach(function (tab) {
 		tab.addEventListener('click', function () {
@@ -277,7 +351,6 @@ $context_vars = [
 				t.setAttribute('aria-selected', 'false');
 			});
 			panels.forEach(function (p) { p.classList.remove('is-active'); });
-			asidePanels.forEach(function (p) { p.classList.remove('is-active'); });
 
 			tab.classList.add('is-active');
 			tab.setAttribute('aria-selected', 'true');
@@ -285,9 +358,6 @@ $context_vars = [
 			var panel = document.getElementById('edp-panel-' + target);
 			if (panel) {
 				panel.classList.add('is-active');
-
-			var aside = document.getElementById('edp-aside-' + target);
-			if (aside) { aside.classList.add('is-active'); }
 
 				/* Re-init any TinyMCE editors in this panel so they render correctly */
 				if (typeof tinymce !== 'undefined') {
