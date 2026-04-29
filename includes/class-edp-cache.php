@@ -43,10 +43,9 @@ final class EDP_Cache {
     /* ── Serve or buffer ── */
 
     public static function maybe_serve(): void {
-        header( 'X-EDP-Test: 1' ); // probe — remove after diagnosis
-        if ( is_user_logged_in() )    { header( 'X-EDP-Skip: logged-in' );   return; }
-        if ( ! self::is_enabled() )   { header( 'X-EDP-Skip: disabled' );    return; }
-        if ( ! self::is_cacheable() ) { header( 'X-EDP-Skip: not-cacheable,uri=' . ( $_SERVER['REQUEST_URI'] ?? '' ) ); return; }
+        if ( is_user_logged_in() )    return;
+        if ( ! self::is_enabled() )   return;
+        if ( ! self::is_cacheable() ) return;
 
         $key   = self::key_for_request();
         $entry = get_transient( $key );
