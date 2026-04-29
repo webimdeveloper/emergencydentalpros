@@ -47,7 +47,7 @@ final class EDP_Google_Places_Config
 
         if (isset($data['limit'])) {
             $lim = (int) $data['limit'];
-            $current['limit'] = max(1, min(5, $lim));
+            $current['limit'] = max(1, min(20, $lim));
         }
 
         if (array_key_exists('fetch_details', $data)) {
@@ -87,7 +87,7 @@ final class EDP_Google_Places_Config
     {
         $lim = (int) (self::get_all()['limit'] ?? 5);
 
-        return max(1, min(5, $lim));
+        return max(1, min(20, $lim));
     }
 
     public static function should_fetch_details(): bool
