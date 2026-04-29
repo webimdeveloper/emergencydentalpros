@@ -163,14 +163,6 @@ $context_vars = [
 						<hr class="edp-divider" />
 
 						<div class="edp-form-row">
-							<label for="edp_<?php echo esc_attr($key); ?>_communities_h2"><?php esc_html_e('Communities section — H2', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][communities_h2]" type="text"
-								id="edp_<?php echo esc_attr($key); ?>_communities_h2"
-								value="<?php echo esc_attr((string) ($t['communities_h2'] ?? '')); ?>" />
-							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-						</div>
-
-						<div class="edp-form-row">
 							<label><?php esc_html_e('Communities section — Text (HTML)', 'emergencydentalpros'); ?></label>
 							<?php
 							wp_editor(
@@ -187,14 +179,6 @@ $context_vars = [
 						</div>
 
 						<hr class="edp-divider" />
-
-						<div class="edp-form-row">
-							<label for="edp_city_landing_faq_h2"><?php esc_html_e('FAQ section — H2', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[templates][city_landing][faq_h2]" type="text"
-								id="edp_city_landing_faq_h2"
-								value="<?php echo esc_attr((string) ($t['faq_h2'] ?? '')); ?>" />
-							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-						</div>
 
 						<div class="edp-form-row">
 							<label for="edp_city_landing_faq_intro"><?php esc_html_e('FAQ section — Short description', 'emergencydentalpros'); ?></label>
