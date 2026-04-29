@@ -56,3 +56,19 @@ jobs:
             --exclude "*.md" \
             -e "ssh -p ${SSH_PORT}" \
             ./ "${SSH_USER}@${SSH_HOST}:${REMOTE_PLUGIN_PATH}"
+
+      - name: Invalidate OPcache
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PLUGIN_PATH: /var/www/dev.widev.pro/public_html/wp-content/plugins/emergencydentalpros/
+        run: |
+          TOKEN=$(openssl rand -hex 12)
+          REMOTE_FILE="${REMOTE_PLUGIN_PATH}edp-opc-${TOKEN}.php"
+          WEB_URL="https://dev.widev.pro/wp-content/plugins/emergencydentalpros/edp-opc-${TOKEN}.php"
+          ssh -p "${SSH_PORT}" -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" \
+            "printf '<?php opcache_reset(); echo \"ok\";' > ${REMOTE_FILE}"
+          curl -sf --max-time 10 "${WEB_URL}" && echo "OPcache reset via HTTP" || echo "OPcache reset skipped (not enabled)"
+          ssh -p "${SSH_PORT}" -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" \
+            "rm -f ${REMOTE_FILE}"
