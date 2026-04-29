@@ -28,9 +28,11 @@ final class EDP_Cache {
     /* ── Hooks ── */
 
     public static function register(): void {
-        add_action( 'template_redirect',                    [ self::class, 'maybe_serve'    ], 1 );
-        add_action( 'admin_post_edp_clear_page_cache',      [ self::class, 'handle_clear_all'    ] );
-        add_action( 'admin_post_edp_clear_page_cache_one',  [ self::class, 'handle_clear_one'    ] );
+        add_action( 'template_redirect',                   [ self::class, 'maybe_serve'      ], 1 );
+        add_action( 'admin_post_edp_clear_page_cache',     [ self::class, 'handle_clear_all' ] );
+        add_action( 'admin_post_edp_clear_page_cache_one', [ self::class, 'handle_clear_one' ] );
+        // Auto-clear a page's cache when it is saved/updated in the WP editor.
+        add_action( 'save_post', [ self::class, 'on_save_post' ], 10, 1 );
     }
 
     /* ── Serve or buffer ── */
@@ -119,6 +121,29 @@ final class EDP_Cache {
             ];
         }
         return $pages;
+    }
+
+    /**
+     * Clear the cache for a post when it is saved in the WP editor.
+     * Works for static city pages and any post type served at a
+     * /locations/{state}/{city}/ permalink.
+     */
+    public static function on_save_post( int $post_id ): void {
+        if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+            return;
+        }
+
+        $permalink = get_permalink( $post_id );
+        if ( ! $permalink ) {
+            return;
+        }
+
+        $path = (string) parse_url( $permalink, PHP_URL_PATH );
+        $path = '/' . trim( $path, '/' ) . '/';
+
+        if ( preg_match( '#^/locations/[a-z0-9-]+/[a-z0-9-]+/$#', $path ) ) {
+            self::clear_path( $path );
+        }
     }
 
     /* ── Admin-post handlers ── */
