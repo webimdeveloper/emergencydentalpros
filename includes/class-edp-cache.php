@@ -55,15 +55,22 @@ final class EDP_Cache {
         /*
          * Buffer the page output and store it on shutdown.
          *
-         * We use a shutdown action at priority 0 (before WP's wp_ob_end_flush_all
-         * at priority 1) rather than an ob_start callback, because ob_start
-         * callbacks can be unreliable inside WP's nested buffering stack.
+         * We run at shutdown priority 0 (before WP's wp_ob_end_flush_all at
+         * priority 1). We record our exact buffer level so that in the shutdown
+         * callback we can first flush any buffers WP opened during rendering
+         * (they sit on top of ours) — their content flows into our buffer —
+         * before we capture the whole page with ob_get_clean().
          */
         ob_start();
-        $ttl = self::ttl_seconds();
-        $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+        $ttl       = self::ttl_seconds();
+        $uri       = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+        $our_level = ob_get_level();
 
-        add_action( 'shutdown', static function () use ( $key, $ttl, $uri ): void {
+        add_action( 'shutdown', static function () use ( $key, $ttl, $uri, $our_level ): void {
+            // Flush any buffers opened after ours so their content flows into ours.
+            while ( ob_get_level() > $our_level ) {
+                ob_end_flush();
+            }
             $html = ob_get_clean();
             if ( $html === false || strlen( trim( $html ) ) < 500 ) {
                 // Nothing useful to cache — flush as-is.
