@@ -544,18 +544,19 @@ final class EDP_View_Controller
             }
 
             return [
-                'h1'               => $resolved['h1'],
-                'subtitle'         => $resolved['subtitle'] ?? '',
-                'body'             => $resolved['html'],
-                'zips'             => $zips,
-                'row'              => $row,
-                'source'           => $resolved['source'],
+                'h1'                => $resolved['h1'],
+                'subtitle'          => $resolved['subtitle'] ?? '',
+                'body'              => $resolved['html'],
+                'zips'              => $zips,
+                'row'               => $row,
+                'source'            => $resolved['source'],
                 'nearby_businesses' => $nearby,
-                'other_cities'     => $other_cities,
-                'communities_h2'   => $resolved['communities_h2'],
-                'communities_body' => $resolved['communities_body'],
-                'other_cities_h2'  => $resolved['other_cities_h2'],
-                'faq'              => $resolved['faq'] ?? ['enabled' => false, 'h2' => '', 'intro' => '', 'items' => []],
+                'other_cities'      => $other_cities,
+                'communities_h2'    => $resolved['communities_h2'],
+                'communities_body'  => $resolved['communities_body'],
+                'other_cities_h2'   => $resolved['other_cities_h2'],
+                'show_other_cities' => $resolved['show_other_cities'] ?? true,
+                'faq'               => $resolved['faq'] ?? ['enabled' => false, 'h2' => '', 'intro' => '', 'items' => []],
             ];
         }
 
