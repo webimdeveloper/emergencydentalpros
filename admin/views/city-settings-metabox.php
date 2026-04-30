@@ -27,6 +27,7 @@ $vars      = $row ? EDP_Template_Engine::context_from_city_row( $base, $row ) : 
 $ph_meta_title    = EDP_Template_Engine::replace( (string) ( $templates['meta_title']       ?? '' ), $vars );
 $ph_h1            = EDP_Template_Engine::replace( (string) ( $templates['h1']               ?? '' ), $vars );
 $ph_meta_desc     = EDP_Template_Engine::replace( (string) ( $templates['meta_description'] ?? '' ), $vars );
+$ph_body          = EDP_Template_Engine::replace( (string) ( $templates['body']             ?? '' ), $vars );
 $ph_comm_h2       = EDP_Template_Engine::replace( (string) ( $templates['communities_h2']   ?? '' ), $vars );
 $ph_comm_body     = EDP_Template_Engine::replace( (string) ( $templates['communities_body'] ?? '' ), $vars );
 $ph_other_h2      = EDP_Template_Engine::replace( (string) ( $templates['other_cities_h2']  ?? '' ), $vars );
@@ -35,6 +36,7 @@ $ph_other_h2      = EDP_Template_Engine::replace( (string) ( $templates['other_c
 $val_meta_title   = (string) get_post_meta( $post->ID, '_edp_meta_title',       true );
 $val_h1           = (string) get_post_meta( $post->ID, '_edp_h1',               true );
 $val_meta_desc    = (string) get_post_meta( $post->ID, '_edp_meta_description', true );
+$val_body         = (string) get_post_meta( $post->ID, '_edp_body',             true );
 $val_comm_h2      = (string) get_post_meta( $post->ID, '_edp_communities_h2',   true );
 $val_comm_body    = (string) get_post_meta( $post->ID, '_edp_communities_body', true );
 $val_other_h2     = (string) get_post_meta( $post->ID, '_edp_other_cities_h2',  true );
@@ -88,6 +90,30 @@ wp_nonce_field( 'edp_location_settings_' . $post->ID, 'edp_location_settings_non
     <input type="text" name="edp_h1" id="edp_h1"
         value="<?php echo esc_attr( $val_h1 ); ?>"
         placeholder="<?php echo esc_attr( $ph_h1 ); ?>" />
+</div>
+
+<div class="edp-mb-section-title"><?php esc_html_e( 'Main content', 'emergencydentalpros' ); ?></div>
+
+<div class="edp-mb-row">
+    <label><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
+    <?php if ( $ph_body !== '' ) : ?>
+        <p class="edp-mb-hint" style="margin-bottom:6px;">
+            <?php esc_html_e( 'Template default:', 'emergencydentalpros' ); ?>
+            <em><?php echo esc_html( wp_strip_all_tags( $ph_body ) ); ?></em>
+        </p>
+    <?php endif; ?>
+    <?php
+    wp_editor(
+        $val_body,
+        'edp_body',
+        [
+            'textarea_name' => 'edp_body',
+            'media_buttons' => false,
+            'textarea_rows' => 6,
+            'teeny'         => true,
+        ]
+    );
+    ?>
 </div>
 
 <div class="edp-mb-section-title"><?php esc_html_e( 'Communities section', 'emergencydentalpros' ); ?></div>

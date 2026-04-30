@@ -65,8 +65,21 @@ final class EDP_Content_Resolver
                     $is_cpt = $post->post_type === EDP_CPT::POST_TYPE;
 
                     $title = $is_cpt ? $default_title : get_the_title($post);
-                    $html  = apply_filters('the_content', $post->post_content);
                     $h1    = $is_cpt ? $default_h1 : $title;
+
+                    if ($is_cpt) {
+                        $body_meta = (string) get_post_meta($post->ID, '_edp_body', true);
+                        if ($body_meta !== '') {
+                            $html = $body_meta;
+                        } elseif (trim($post->post_content) !== '') {
+                            // Migration: existing content in the WP editor before _edp_body was introduced.
+                            $html = apply_filters('the_content', $post->post_content);
+                        } else {
+                            $html = $default_body;
+                        }
+                    } else {
+                        $html = apply_filters('the_content', $post->post_content);
+                    }
                     $faq   = $is_cpt
                         ? self::resolve_cpt_faq($post->ID, $global_faq, $vars)
                         : $global_faq;

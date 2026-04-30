@@ -18,6 +18,7 @@ final class EDP_CPT
         '_edp_meta_title',
         '_edp_meta_description',
         '_edp_h1',
+        '_edp_body',
         '_edp_communities_h2',
         '_edp_communities_body',
         '_edp_other_cities_h2',
@@ -39,7 +40,7 @@ final class EDP_CPT
                 'exclude_from_search' => true,
                 'has_archive'         => false,
                 'rewrite'             => false,
-                'supports'            => ['title', 'editor'],
+                'supports'            => ['title'],
                 'capability_type'     => 'post',
                 'map_meta_cap'        => true,
             ]
@@ -109,6 +110,7 @@ final class EDP_CPT
 
         $textarea_fields = [
             '_edp_meta_description' => 'edp_meta_description',
+            '_edp_body'             => 'edp_body',
             '_edp_communities_body' => 'edp_communities_body',
         ];
 
