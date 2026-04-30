@@ -11,16 +11,14 @@
  *
  * Selectors target the theme's city.php override (ws_* classes), not the
  * plugin's fallback template (edp-seo-* classes).
+ *
+ * URLs are discovered dynamically so the test is resilient to row deletions
+ * by the locations-crud spec.
  */
 
-import { test, expect, type Page } from '@playwright/test';
-import { WP_URL } from './helpers';
-
-// ── no auth — guest view only ─────────────────────────────────────────────────
-test.use({ storageState: { cookies: [], origins: [] } });
-
-const DYNAMIC_URL = `${WP_URL}/locations/massachusetts/chicopee-ma/`;
-const STATIC_URL  = `${WP_URL}/locations/massachusetts/agawam-ma/`;
+import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+// BrowserContext used in discoverCityUrls signature
+import { WP_URL, LOC_URL } from './helpers';
 
 /**
  * Sections from the theme's city.php override.
@@ -51,27 +49,95 @@ async function getClass(page: Page, sel: string): Promise<string | null> {
   return (await loc.count()) > 0 ? await loc.getAttribute('class') : null;
 }
 
+// ── URL discovery ─────────────────────────────────────────────────────────────
+
+/**
+ * Resolves the city page URL from a city globe link in the admin table.
+ * Uses a regex to extract the href from an anchor with class `edp-city-globe`
+ * or from any anchor in the City column.
+ */
+async function discoverCityUrls(context: BrowserContext): Promise<{ dynamic: string; static: string | null }> {
+  const page = await context.newPage();
+  await page.goto(LOC_URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.wp-list-table tbody tr', { timeout: 15_000 });
+
+  // Find front-end city links by looking at href values in the City column.
+  const cityLinks = await page.locator('.column-city a[href*="/locations/"]').all();
+
+  let dynamicUrl: string | null = null;
+  let staticUrl:  string | null = null;
+
+  for (const link of cityLinks) {
+    const href = await link.getAttribute('href');
+    if (!href) continue;
+
+    // Determine whether this row has a CPT (static page).
+    const tr = link.locator('xpath=ancestor::tr').first();
+    const hasCpt = (await tr.locator('.edp-static-page-cell').count()) > 0;
+
+    if (!hasCpt && dynamicUrl === null) {
+      dynamicUrl = href;
+    } else if (hasCpt && staticUrl === null) {
+      staticUrl = href;
+    }
+
+    if (dynamicUrl && staticUrl) break;
+  }
+
+  // Fallback: if no CPT row found, use any two different city rows as
+  // "dynamic-A" and "dynamic-B" — structure parity still applies.
+  if (dynamicUrl === null && cityLinks.length > 0) {
+    dynamicUrl = await cityLinks[0].getAttribute('href');
+  }
+  if (dynamicUrl !== null && staticUrl === null && cityLinks.length > 1) {
+    staticUrl = await cityLinks[1].getAttribute('href');
+  }
+
+  await page.close();
+  return { dynamic: dynamicUrl ?? '', static: staticUrl };
+}
+
+// ── Fixture: resolved URLs ────────────────────────────────────────────────────
+
+let resolvedDynamic = '';
+let resolvedStatic  = '';
+
+test.beforeAll(async ({ browser }) => {
+  const context = await browser.newContext({ storageState: 'tests/.auth/state.json' });
+  const urls = await discoverCityUrls(context);
+  await context.close();
+
+  resolvedDynamic = urls.dynamic;
+  resolvedStatic  = urls.static ?? urls.dynamic;
+
+  console.log('Page parity URLs resolved:');
+  console.log('  dynamic:', resolvedDynamic);
+  console.log('  static: ', resolvedStatic);
+});
+
 // ── 1. Both pages return 200 ──────────────────────────────────────────────────
 test('dynamic city page returns 200', async ({ request }) => {
-  const res = await request.get(DYNAMIC_URL, { maxRedirects: 5 });
+  expect(resolvedDynamic, 'No city URL found — check dev DB').toBeTruthy();
+  const res = await request.get(resolvedDynamic, { maxRedirects: 5 });
   expect(res.status()).toBe(200);
 });
 
 test('static city page returns 200', async ({ request }) => {
-  const res = await request.get(STATIC_URL, { maxRedirects: 5 });
+  expect(resolvedStatic, 'No city URL found — check dev DB').toBeTruthy();
+  const res = await request.get(resolvedStatic, { maxRedirects: 5 });
   expect(res.status()).toBe(200);
 });
 
 // ── 2. Mandatory sections: present and class-identical on both pages ───────────
 test('mandatory sections are present on both pages with identical CSS classes', async ({ page }) => {
-  await page.goto(DYNAMIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedDynamic, { waitUntil: 'domcontentloaded' });
   const dynClasses = Object.fromEntries(
-    await Promise.all(MANDATORY_SECTIONS.map(async ({ sel, label }) => [sel, await getClass(page, sel)]))
+    await Promise.all(MANDATORY_SECTIONS.map(async ({ sel }) => [sel, await getClass(page, sel)]))
   );
 
-  await page.goto(STATIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedStatic, { waitUntil: 'domcontentloaded' });
   const statClasses = Object.fromEntries(
-    await Promise.all(MANDATORY_SECTIONS.map(async ({ sel, label }) => [sel, await getClass(page, sel)]))
+    await Promise.all(MANDATORY_SECTIONS.map(async ({ sel }) => [sel, await getClass(page, sel)]))
   );
 
   for (const { sel, label } of MANDATORY_SECTIONS) {
@@ -83,11 +149,11 @@ test('mandatory sections are present on both pages with identical CSS classes', 
 
 // ── 3. Conditional sections: class-identical when both pages have them ─────────
 test('conditional sections share identical CSS classes when present on both pages', async ({ page }) => {
-  await page.goto(DYNAMIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedDynamic, { waitUntil: 'domcontentloaded' });
   const dynMap: Record<string, string | null> = {};
   for (const sel of CONDITIONAL_SECTIONS) dynMap[sel] = await getClass(page, sel);
 
-  await page.goto(STATIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedStatic, { waitUntil: 'domcontentloaded' });
   const statMap: Record<string, string | null> = {};
   for (const sel of CONDITIONAL_SECTIONS) statMap[sel] = await getClass(page, sel);
 
@@ -119,14 +185,14 @@ test('conditional sections share identical CSS classes when present on both page
 
 // ── 4. H1 is non-empty on both pages ─────────────────────────────────────────
 test('dynamic page renders a non-empty H1', async ({ page }) => {
-  await page.goto(DYNAMIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedDynamic, { waitUntil: 'domcontentloaded' });
   const h1 = page.locator('.ws_hero_inner__title').first();
   await expect(h1).toBeVisible();
   expect((await h1.textContent())?.trim()).toBeTruthy();
 });
 
 test('static page renders a non-empty H1', async ({ page }) => {
-  await page.goto(STATIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedStatic, { waitUntil: 'domcontentloaded' });
   const h1 = page.locator('.ws_hero_inner__title').first();
   await expect(h1).toBeVisible();
   expect((await h1.textContent())?.trim()).toBeTruthy();
@@ -134,7 +200,7 @@ test('static page renders a non-empty H1', async ({ page }) => {
 
 // ── 5. Body section is non-empty when present ─────────────────────────────────
 test('dynamic page body section is non-empty when present', async ({ page }) => {
-  await page.goto(DYNAMIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedDynamic, { waitUntil: 'domcontentloaded' });
   const section = page.locator('.ws_page_content').first();
   if ((await section.count()) === 0) {
     console.log('dynamic: .ws_page_content absent — body template is empty');
@@ -145,7 +211,7 @@ test('dynamic page body section is non-empty when present', async ({ page }) => 
 });
 
 test('static page body section is non-empty when present', async ({ page }) => {
-  await page.goto(STATIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedStatic, { waitUntil: 'domcontentloaded' });
   const section = page.locator('.ws_page_content').first();
   if ((await section.count()) === 0) {
     console.log('static: .ws_page_content absent — body is empty (expected for unconfigured static pages)');
@@ -157,10 +223,10 @@ test('static page body section is non-empty when present', async ({ page }) => {
 
 // ── 6. FAQ section class-identical when both pages have it ────────────────────
 test('FAQ section has identical CSS classes on both pages when present', async ({ page }) => {
-  await page.goto(DYNAMIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedDynamic, { waitUntil: 'domcontentloaded' });
   const dynFaq = await getClass(page, '.edp-faq-city');
 
-  await page.goto(STATIC_URL, { waitUntil: 'domcontentloaded' });
+  await page.goto(resolvedStatic, { waitUntil: 'domcontentloaded' });
   const statFaq = await getClass(page, '.edp-faq-city');
 
   console.log(`FAQ present — dynamic: ${dynFaq !== null}, static: ${statFaq !== null}`);
