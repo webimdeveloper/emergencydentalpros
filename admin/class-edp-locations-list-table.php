@@ -361,7 +361,13 @@ final class EDP_Locations_List_Table extends WP_List_Table
             . esc_html((string) ($item['city_name'] ?? ''))
             . '</a>';
 
-        return $city_link;
+        $delete_btn = '<button type="button" class="edp-row-delete-btn button-link-delete" '
+            . 'data-location-id="' . esc_attr((string) $id) . '" '
+            . 'data-nonce="' . esc_attr(wp_create_nonce('edp_delete_location_row')) . '">'
+            . esc_html__('Delete row', 'emergencydentalpros')
+            . '</button>';
+
+        return $city_link . $this->row_actions(['delete' => $delete_btn]);
     }
 
     /**
@@ -446,6 +452,10 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     /**
      * Map Post column: post ID input field; AJAX save on Enter/blur.
+     *
+     * For redirect-only rows (override_type='mapped') the value comes from
+     * custom_post_id. For CPT rows the redirect post ID lives in CPT meta so
+     * the static page and its redirect source can coexist.
      */
     public function column_edp_actions($item): string
     {
@@ -457,21 +467,35 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
         $pid  = isset($item['custom_post_id']) ? (int) $item['custom_post_id'] : 0;
         $type = isset($item['override_type']) ? (string) $item['override_type'] : '';
-        $val  = ($type === 'mapped' && $pid > 0) ? $pid : '';
+
+        if ($type === 'mapped' && $pid > 0) {
+            $val     = $pid;
+            $has_cpt = '0';
+        } elseif ($type === 'cpt' && $pid > 0) {
+            $redirect_pid = (int) get_post_meta($pid, '_edp_redirect_post_id', true);
+            $val          = $redirect_pid > 0 ? $redirect_pid : '';
+            $has_cpt      = '1';
+        } else {
+            $val     = '';
+            $has_cpt = '0';
+        }
 
         return '<div class="edp-map-post-wrap">'
             . sprintf(
                 '<input type="number" class="edp-map-post-input" '
                 . 'data-location-id="%1$d" '
+                . 'data-has-cpt="%4$s" '
                 . 'value="%2$s" '
                 . 'placeholder="%3$s" '
                 . 'min="1" />',
                 $id,
                 esc_attr((string) $val),
-                esc_attr__('Post ID', 'emergencydentalpros')
+                esc_attr__('Post ID', 'emergencydentalpros'),
+                esc_attr($has_cpt)
             )
             . '<button type="button" class="edp-map-clear-btn" '
             . 'data-location-id="' . esc_attr((string) $id) . '" '
+            . 'data-has-cpt="' . esc_attr($has_cpt) . '" '
             . 'title="' . esc_attr__('Clear mapping', 'emergencydentalpros') . '"'
             . ($val === '' ? ' style="display:none;"' : '')
             . '>&times;</button>'

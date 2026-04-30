@@ -344,10 +344,11 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 <script>
 (function () {
 	var nonces = {
-		mapPost:       <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
-		clearOverride: <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
-		createPage:    <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
-		deleteRow:     <?php echo wp_json_encode(wp_create_nonce('edp_delete_location_row')); ?>,
+		mapPost:          <?php echo wp_json_encode(wp_create_nonce('edp_map_post')); ?>,
+		clearOverride:    <?php echo wp_json_encode(wp_create_nonce('edp_clear_override')); ?>,
+		clearPostMapping: <?php echo wp_json_encode(wp_create_nonce('edp_clear_post_mapping')); ?>,
+		createPage:       <?php echo wp_json_encode(wp_create_nonce('edp_create_location_page')); ?>,
+		deleteRow:        <?php echo wp_json_encode(wp_create_nonce('edp_delete_location_row')); ?>,
 	};
 
 	var errMsg       = <?php echo wp_json_encode(__('An error occurred.', 'emergencydentalpros')); ?>;
@@ -414,7 +415,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				if (json.success) {
 					input.classList.remove('edp-input--error');
 					var clearBtn = document.querySelector('.edp-map-clear-btn[data-location-id="' + locationId + '"]');
-					if (clearBtn) { clearBtn.style.display = 'inline-flex'; }
+					if (clearBtn && !clearBtn.disabled) { clearBtn.style.display = 'inline-flex'; }
 				} else {
 					input.classList.add('edp-input--error');
 				}
@@ -1129,23 +1130,62 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		initFilterButtons();
 	}());
 
-	/* ── Map Post — clear (✕) button ─────────────────── */
-	document.querySelectorAll('.edp-map-clear-btn').forEach(function (btn) {
+	/* ── Delete row button ───────────────────────────── */
+	document.querySelectorAll('.edp-row-delete-btn').forEach(function (btn) {
 		btn.addEventListener('click', function () {
 			var locationId = this.dataset.locationId;
-			var wrap       = this.closest('.edp-map-post-wrap');
-			var input      = wrap ? wrap.querySelector('.edp-map-post-input') : null;
+			var nonce      = this.dataset.nonce;
+			var row        = this.closest('tr');
+
+			// eslint-disable-next-line no-alert
+			if (!confirm(confirmDeleteRow)) { return; }
 
 			btn.disabled = true;
 
 			fetch(ajaxurl, {
 				method: 'POST',
 				body: new URLSearchParams({
-					action:      'edp_clear_override',
-					nonce:       nonces.clearOverride,
+					action:      'edp_delete_location_row',
+					nonce:       nonce,
 					location_id: locationId,
 				}),
 			})
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						if (row) { row.remove(); }
+					} else {
+						btn.disabled = false;
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || errMsg);
+					}
+				})
+				.catch(function () {
+					btn.disabled = false;
+				});
+		});
+	});
+
+	/* ── Map Post — clear (✕) button ─────────────────── */
+	document.querySelectorAll('.edp-map-clear-btn').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			var locationId = this.dataset.locationId;
+			var hasCpt     = this.dataset.hasCpt === '1';
+			var wrap       = this.closest('.edp-map-post-wrap');
+			var input      = wrap ? wrap.querySelector('.edp-map-post-input') : null;
+
+			btn.disabled = true;
+
+			var body = new URLSearchParams({ location_id: locationId });
+			if (hasCpt) {
+				body.append('action', 'edp_clear_post_mapping');
+				body.append('nonce',  nonces.clearPostMapping);
+			} else {
+				body.append('action', 'edp_clear_override');
+				body.append('nonce',  nonces.clearOverride);
+			}
+
+			fetch(ajaxurl, { method: 'POST', body: body })
 				.then(function (r) { return r.json(); })
 				.then(function (json) {
 					if (json.success) {

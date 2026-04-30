@@ -62,6 +62,22 @@ wp_nonce_field( 'edp_location_settings_' . $post->ID, 'edp_location_settings_non
 </div>
 <?php endif; ?>
 
+<?php
+$redirect_post_id = (int) get_post_meta( $post->ID, '_edp_redirect_post_id', true );
+if ( $redirect_post_id > 0 ) {
+    $redirect_post = get_post( $redirect_post_id );
+    if ( $redirect_post instanceof WP_Post ) {
+        $old_url = get_permalink( $redirect_post_id ) ?: '#';
+        echo '<div class="edp-mb-page-link">';
+        echo '<span class="dashicons dashicons-randomize"></span> ';
+        esc_html_e( 'Redirect from:', 'emergencydentalpros' );
+        echo ' <a href="' . esc_url( $old_url ) . '" target="_blank" rel="noopener">';
+        echo esc_html( $redirect_post->post_title . ' (#' . $redirect_post_id . ')' );
+        echo '</a></div>';
+    }
+}
+?>
+
 <p class="edp-mb-global-note">
     <?php esc_html_e( 'Leave any field blank to inherit from the global City Landing template.', 'emergencydentalpros' ); ?>
 </p>

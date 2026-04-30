@@ -22,6 +22,7 @@ final class EDP_CPT
         '_edp_communities_h2',
         '_edp_communities_body',
         '_edp_other_cities_h2',
+        '_edp_redirect_post_id',
     ];
 
     public static function register(): void
