@@ -208,6 +208,11 @@
   max-width: 600px;
   box-sizing: border-box;
 }
+.edp-form-row .wp-editor-wrap,
+.edp-form-row .wp-editor-wrap textarea {
+  max-width: none;
+  width: 100%;
+}
 .edp-form-row input[type='file'] {
   padding: 8px 14px;
 }

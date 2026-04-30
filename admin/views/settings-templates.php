@@ -163,14 +163,6 @@ $context_vars = [
 						<hr class="edp-divider" />
 
 						<div class="edp-form-row">
-							<label for="edp_<?php echo esc_attr($key); ?>_communities_h2"><?php esc_html_e('Communities section — H2', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][communities_h2]" type="text"
-								id="edp_<?php echo esc_attr($key); ?>_communities_h2"
-								value="<?php echo esc_attr((string) ($t['communities_h2'] ?? '')); ?>" />
-							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {county_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-						</div>
-
-						<div class="edp-form-row">
 							<label><?php esc_html_e('Communities section — Text (HTML)', 'emergencydentalpros'); ?></label>
 							<?php
 							wp_editor(
@@ -187,14 +179,6 @@ $context_vars = [
 						</div>
 
 						<hr class="edp-divider" />
-
-						<div class="edp-form-row">
-							<label for="edp_city_landing_faq_h2"><?php esc_html_e('FAQ section — H2', 'emergencydentalpros'); ?></label>
-							<input name="edp_seo[templates][city_landing][faq_h2]" type="text"
-								id="edp_city_landing_faq_h2"
-								value="<?php echo esc_attr((string) ($t['faq_h2'] ?? '')); ?>" />
-							<p class="edp-hint"><?php esc_html_e('Variables: {city_name}, {state_name}, {state_short}', 'emergencydentalpros'); ?></p>
-						</div>
 
 						<div class="edp-form-row">
 							<label for="edp_city_landing_faq_intro"><?php esc_html_e('FAQ section — Short description', 'emergencydentalpros'); ?></label>
@@ -331,10 +315,116 @@ $context_vars = [
 
 		</div><!-- /.edp-tpl-layout -->
 
+		<?php /* ── Page Cache settings (inside the main save form) ── */ ?>
+		<?php $pc = $settings['page_cache'] ?? []; ?>
+		<div class="edp-card" style="margin-top:24px;">
+			<div class="edp-card-header"><?php esc_html_e('Page Cache', 'emergencydentalpros'); ?></div>
+			<div class="edp-card-body">
+				<p style="margin-top:0; color:#6b7280; font-size:13px;">
+					<?php esc_html_e('Caches the full HTML of each city landing page. Logged-in users always bypass the cache. Cache is cleared automatically whenever you save settings.', 'emergencydentalpros'); ?>
+				</p>
+				<div class="edp-form-row" style="flex-direction:row; align-items:center; gap:12px;">
+					<label for="edp_pc_enabled" style="font-weight:600; white-space:nowrap; margin-bottom:0;">
+						<?php esc_html_e('Enable page cache', 'emergencydentalpros'); ?>
+					</label>
+					<input type="hidden" name="edp_seo[page_cache][enabled]" value="0">
+					<input type="checkbox" id="edp_pc_enabled"
+						name="edp_seo[page_cache][enabled]" value="1"
+						<?php checked(!empty($pc['enabled'])); ?>>
+				</div>
+				<div class="edp-form-row">
+					<label for="edp_pc_ttl"><?php esc_html_e('Cache lifetime', 'emergencydentalpros'); ?></label>
+					<select name="edp_seo[page_cache][ttl]" id="edp_pc_ttl" style="max-width:200px;">
+						<?php foreach ([1 => '1 hour', 6 => '6 hours', 12 => '12 hours', 24 => '24 hours', 72 => '3 days', 168 => '7 days'] as $h => $label): ?>
+							<option value="<?php echo esc_attr((string) $h); ?>" <?php selected((int)($pc['ttl'] ?? 24), $h); ?>>
+								<?php echo esc_html($label); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="edp-hint"><?php esc_html_e('How long a cached page is served before the next visitor regenerates it.', 'emergencydentalpros'); ?></p>
+				</div>
+			</div>
+		</div>
+
 		<div class="edp-btn-row">
 			<button type="submit" class="edp-btn edp-btn-primary"><?php esc_html_e('Save', 'emergencydentalpros'); ?></button>
 		</div>
 	</form>
+
+	<?php /* ── Cache management — separate form, outside the main form ── */ ?>
+	<?php
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if (isset($_GET['cache_cleared'])): ?>
+		<div class="edp-notice edp-notice-success" style="margin-top:16px;">
+			<?php esc_html_e('Cache cleared.', 'emergencydentalpros'); ?>
+		</div>
+	<?php endif; ?>
+
+	<?php $cached_pages = EDP_Cache::get_cached_pages(); ?>
+	<div class="edp-card" style="margin-top:24px;">
+		<div class="edp-card-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+			<span>
+				<?php esc_html_e('Cached Pages', 'emergencydentalpros'); ?>
+				<span style="font-weight:400; font-size:12px; color:#6b7280; margin-left:6px;">
+					(<?php echo esc_html((string) count($cached_pages)); ?>)
+				</span>
+			</span>
+			<?php if ($cached_pages !== []): ?>
+				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin:0;">
+					<?php wp_nonce_field('edp_clear_page_cache', '_wpnonce', true, true); ?>
+					<input type="hidden" name="action" value="edp_clear_page_cache">
+					<button type="submit" class="edp-btn" style="font-size:12px; padding:4px 12px;">
+						<?php esc_html_e('Clear all', 'emergencydentalpros'); ?>
+					</button>
+				</form>
+			<?php endif; ?>
+		</div>
+		<div class="edp-card-body" style="padding:0;">
+			<?php if ($cached_pages === []): ?>
+				<p style="padding:16px; margin:0; color:#6b7280; font-size:13px;">
+					<?php esc_html_e('No pages cached yet. Enable the cache and visit a city page to populate it.', 'emergencydentalpros'); ?>
+				</p>
+			<?php else: ?>
+				<table class="widefat fixed striped" style="border:none; border-radius:0;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e('URL', 'emergencydentalpros'); ?></th>
+							<th style="width:140px;"><?php esc_html_e('Cached', 'emergencydentalpros'); ?></th>
+							<th style="width:80px;"><?php esc_html_e('Size', 'emergencydentalpros'); ?></th>
+							<th style="width:80px;"></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($cached_pages as $cp): ?>
+							<tr>
+								<td>
+									<a href="<?php echo esc_url(home_url($cp['url'])); ?>" target="_blank" rel="noopener">
+										<?php echo esc_html($cp['url']); ?>
+									</a>
+								</td>
+								<td style="color:#6b7280; font-size:12px;">
+									<?php echo esc_html(human_time_diff($cp['time']) . ' ago'); ?>
+								</td>
+								<td style="color:#6b7280; font-size:12px;">
+									<?php echo esc_html(number_format($cp['size'] / 1024, 1) . ' KB'); ?>
+								</td>
+								<td>
+									<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin:0;">
+										<?php wp_nonce_field('edp_clear_page_cache_one', '_wpnonce', true, true); ?>
+										<input type="hidden" name="action" value="edp_clear_page_cache_one">
+										<input type="hidden" name="cache_path" value="<?php echo esc_attr($cp['url']); ?>">
+										<button type="submit" class="button button-small">
+											<?php esc_html_e('Clear', 'emergencydentalpros'); ?>
+										</button>
+									</form>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+		</div>
+	</div>
 </div>
 
 <script>

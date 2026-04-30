@@ -37,8 +37,9 @@ final class EDP_Admin
         add_action('admin_post_edp_sheet_sa_save', [self::class, 'handle_sheet_sa_save']);
         add_action('admin_post_edp_sheet_sa_clear', [self::class, 'handle_sheet_sa_clear']);
         add_action('wp_ajax_edp_sheet_sync_v2', [self::class, 'ajax_sheet_sync_v2']);
-        add_action('wp_ajax_edp_save_post_mapping', [self::class, 'ajax_save_post_mapping']);
-        add_action('wp_ajax_edp_clear_override', [self::class, 'ajax_clear_override']);
+        add_action('wp_ajax_edp_save_post_mapping',  [self::class, 'ajax_save_post_mapping']);
+        add_action('wp_ajax_edp_clear_post_mapping', [self::class, 'ajax_clear_post_mapping']);
+        add_action('wp_ajax_edp_clear_override',     [self::class, 'ajax_clear_override']);
         add_action('wp_ajax_edp_create_location_page', [self::class, 'ajax_create_location_page']);
         add_action('wp_ajax_edp_delete_location_row', [self::class, 'ajax_delete_location_row']);
         add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
@@ -176,7 +177,15 @@ final class EDP_Admin
             }
         }
 
+        // Page cache settings
+        $pc = is_array($raw['page_cache'] ?? null) ? $raw['page_cache'] : [];
+        $merged['page_cache']['enabled'] = ! empty($pc['enabled']);
+        $merged['page_cache']['ttl']     = max(1, (int) ($pc['ttl'] ?? 24));
+
         EDP_Settings::save($merged);
+
+        // Invalidate any cached city pages whenever settings change.
+        EDP_Cache::clear_all();
 
         wp_safe_redirect(
             add_query_arg(
@@ -1132,19 +1141,48 @@ final class EDP_Admin
             wp_send_json_error(['message' => esc_html__('Static page already exists.', 'emergencydentalpros')]);
         }
 
-        $settings = EDP_Settings::get_all();
-        $tpl      = $settings['templates']['city_landing'] ?? [];
-        $base     = EDP_Template_Engine::base_vars();
-        $vars     = EDP_Template_Engine::context_from_city_row($base, $row);
-        $title    = EDP_Template_Engine::replace((string) ($tpl['meta_title'] ?? ''), $vars);
-        $body     = EDP_Template_Engine::replace((string) ($tpl['body'] ?? ''), $vars);
+        // If the row has a mapped post, pre-populate CPT fields from it.
+        $mapped_post_id  = 0;
+        $pre_h1          = '';
+        $pre_body        = '';
+        $pre_meta_title  = '';
+        $pre_meta_desc   = '';
+
+        if ((string) ($row['override_type'] ?? '') === 'mapped') {
+            $mapped_post_id = (int) ($row['custom_post_id'] ?? 0);
+        }
+
+        if ($mapped_post_id > 0) {
+            $mapped_post = get_post($mapped_post_id);
+            if ($mapped_post instanceof \WP_Post) {
+                $pre_h1   = $mapped_post->post_title;
+                $pre_body = wp_kses_post($mapped_post->post_content);
+
+                // Try Yoast SEO, then RankMath, then fall back to post title.
+                $pre_meta_title = (string) get_post_meta($mapped_post_id, '_yoast_wpseo_title',     true);
+                $pre_meta_desc  = (string) get_post_meta($mapped_post_id, '_yoast_wpseo_metadesc',  true);
+                if ($pre_meta_title === '') {
+                    $pre_meta_title = (string) get_post_meta($mapped_post_id, 'rank_math_title',       true);
+                }
+                if ($pre_meta_desc === '') {
+                    $pre_meta_desc = (string) get_post_meta($mapped_post_id, 'rank_math_description', true);
+                }
+                if ($pre_meta_title === '') {
+                    $pre_meta_title = $mapped_post->post_title;
+                }
+            }
+        }
+
+        // WP post title = human-readable city label for the admin list.
+        $city_label = trim(
+            (string) ($row['city_name'] ?? '') . ', ' . strtoupper((string) ($row['state_id'] ?? ''))
+        );
 
         $post_id = wp_insert_post(
             [
-                'post_type'    => EDP_CPT::POST_TYPE,
-                'post_status'  => 'publish',
-                'post_title'   => $title,
-                'post_content' => $body,
+                'post_type'   => EDP_CPT::POST_TYPE,
+                'post_status' => 'publish',
+                'post_title'  => $city_label !== ', ' ? $city_label : __('City page', 'emergencydentalpros'),
             ],
             true
         );
@@ -1154,6 +1192,16 @@ final class EDP_Admin
         }
 
         update_post_meta((int) $post_id, '_edp_location_id', $location_id);
+
+        if ($mapped_post_id > 0) {
+            // Seed editable fields from the original mapped post.
+            if ($pre_h1 !== '')         update_post_meta((int) $post_id, '_edp_h1',               $pre_h1);
+            if ($pre_body !== '')        update_post_meta((int) $post_id, '_edp_body',              $pre_body);
+            if ($pre_meta_title !== '')  update_post_meta((int) $post_id, '_edp_meta_title',        $pre_meta_title);
+            if ($pre_meta_desc !== '')   update_post_meta((int) $post_id, '_edp_meta_description',  $pre_meta_desc);
+            // Store original post ID so the redirect from the old URL keeps working.
+            update_post_meta((int) $post_id, '_edp_redirect_post_id', $mapped_post_id);
+        }
 
         global $wpdb;
         $table = EDP_Database::table_name();
@@ -1187,6 +1235,10 @@ final class EDP_Admin
 
     /**
      * AJAX: save a post mapping for a location (Map Post column).
+     *
+     * When a CPT static page already exists for this location the post ID is
+     * stored as _edp_redirect_post_id on the CPT (redirect only — CPT content
+     * is never overwritten). Otherwise the row is marked override_type='mapped'.
      */
     public static function ajax_save_post_mapping(): void
     {
@@ -1207,19 +1259,70 @@ final class EDP_Admin
             wp_send_json_error(['not_found' => true, 'message' => esc_html__('Post not found.', 'emergencydentalpros')]);
         }
 
-        global $wpdb;
-        $table = EDP_Database::table_name();
+        $row    = EDP_Database::get_row_by_id($location_id);
+        $cpt_id = ($row !== null && (string) ($row['override_type'] ?? '') === 'cpt')
+            ? (int) ($row['custom_post_id'] ?? 0)
+            : 0;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $wpdb->update(
-            $table,
-            ['custom_post_id' => $post_id, 'override_type' => 'mapped'],
-            ['id' => $location_id],
-            ['%d', '%s'],
-            ['%d']
-        );
+        if ($cpt_id > 0) {
+            // Static page exists — store redirect source in CPT meta, leave DB row untouched.
+            update_post_meta($cpt_id, '_edp_redirect_post_id', $post_id);
+        } else {
+            global $wpdb;
+            $table = EDP_Database::table_name();
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->update(
+                $table,
+                ['custom_post_id' => $post_id, 'override_type' => 'mapped'],
+                ['id' => $location_id],
+                ['%d', '%s'],
+                ['%d']
+            );
+        }
 
         wp_send_json_success(['post_id' => $post_id]);
+    }
+
+    /**
+     * AJAX: clear a post mapping (Map Post column × button).
+     *
+     * For CPT rows: removes _edp_redirect_post_id from the CPT meta.
+     * For redirect-only mapped rows: nulls custom_post_id / override_type.
+     */
+    public static function ajax_clear_post_mapping(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_clear_post_mapping', 'nonce');
+
+        $location_id = max(0, absint(wp_unslash($_POST['location_id'] ?? 0)));
+
+        if ($location_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid location.', 'emergencydentalpros')]);
+        }
+
+        $row    = EDP_Database::get_row_by_id($location_id);
+        $cpt_id = ($row !== null && (string) ($row['override_type'] ?? '') === 'cpt')
+            ? (int) ($row['custom_post_id'] ?? 0)
+            : 0;
+
+        if ($cpt_id > 0) {
+            delete_post_meta($cpt_id, '_edp_redirect_post_id');
+        } else {
+            global $wpdb;
+            $table = EDP_Database::table_name();
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE {$table} SET custom_post_id = NULL, override_type = NULL WHERE id = %d",
+                    $location_id
+                )
+            );
+        }
+
+        wp_send_json_success(['cleared' => true]);
     }
 
     /**

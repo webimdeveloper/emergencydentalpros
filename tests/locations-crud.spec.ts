@@ -93,7 +93,10 @@ test('Map Post: save on Enter shows ✕ button; ✕ clears value', async ({ page
 
   await goToLocations(page);
 
-  const input = page.locator('.edp-map-post-input').first();
+  // Pick a row whose Map Post input is empty so we start from a clean state
+  // and avoid the race where saveMapPost's response re-shows the clear button
+  // after edp_clear_override already hid it.
+  const input = page.locator('.edp-map-post-input[value=""], .edp-map-post-input:not([value])').first();
   const locationId = await input.getAttribute('data-location-id');
   expect(locationId).toBeTruthy();
 

@@ -57,7 +57,7 @@ final class EDP_Schema
         $dentist_graph = [
             '@context' => 'https://schema.org',
             '@type'    => 'Dentist',
-            'name'     => $page_title !== '' ? $page_title : $business,
+            'name'     => $business,
             'url'      => $page_url,
             'areaServed' => $area_served,
         ];

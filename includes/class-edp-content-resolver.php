@@ -55,51 +55,50 @@ final class EDP_Content_Resolver
 
         $post_id = isset($row['custom_post_id']) ? (int) $row['custom_post_id'] : 0;
 
+        // Non-CPT posts (mapped redirect sources) provide a redirect only — no content.
         if ($post_id > 0) {
             $post = get_post($post_id);
 
-            if ($post instanceof WP_Post && $post->post_status === 'publish') {
-                $allowed = in_array($post->post_type, ['page', 'post', EDP_CPT::POST_TYPE], true);
+            if ($post instanceof WP_Post && $post->post_status === 'publish'
+                && $post->post_type === EDP_CPT::POST_TYPE) {
 
-                if ($allowed) {
-                    $is_cpt = $post->post_type === EDP_CPT::POST_TYPE;
+                    $title = $default_title;
+                    $h1    = $default_h1;
 
-                    $title = $is_cpt ? $default_title : get_the_title($post);
-                    $html  = apply_filters('the_content', $post->post_content);
-                    $h1    = $is_cpt ? $default_h1 : $title;
-                    $faq   = $is_cpt
-                        ? self::resolve_cpt_faq($post->ID, $global_faq, $vars)
-                        : $global_faq;
-
-                    // CPT per-page overrides — empty meta falls back to template default.
-                    if ($is_cpt) {
-                        $meta_title = (string) get_post_meta($post->ID, '_edp_meta_title', true);
-                        if ($meta_title !== '') {
-                            $title = $meta_title;
-                        }
-
-                        $h1_override = (string) get_post_meta($post->ID, '_edp_h1', true);
-                        if ($h1_override !== '') {
-                            $h1 = $h1_override;
-                        }
-
-                        $meta_desc_override = (string) get_post_meta($post->ID, '_edp_meta_description', true);
-                        $meta_desc = $meta_desc_override !== '' ? $meta_desc_override : $default_meta_desc;
-
-                        $comm_h2_override = (string) get_post_meta($post->ID, '_edp_communities_h2', true);
-                        $comm_h2 = $comm_h2_override !== '' ? $comm_h2_override : $default_comm_h2;
-
-                        $comm_body_override = (string) get_post_meta($post->ID, '_edp_communities_body', true);
-                        $comm_body = $comm_body_override !== '' ? $comm_body_override : $default_comm_body;
-
-                        $other_h2_override = (string) get_post_meta($post->ID, '_edp_other_cities_h2', true);
-                        $other_h2 = $other_h2_override !== '' ? $other_h2_override : $default_other_h2;
+                    $body_meta = (string) get_post_meta($post->ID, '_edp_body', true);
+                    if ($body_meta !== '') {
+                        $html = $body_meta;
+                    } elseif (trim($post->post_content) !== '') {
+                        // Migration: content in WP editor before _edp_body meta was introduced.
+                        $html = apply_filters('the_content', $post->post_content);
                     } else {
-                        $meta_desc = $default_meta_desc;
-                        $comm_h2   = $default_comm_h2;
-                        $comm_body = $default_comm_body;
-                        $other_h2  = $default_other_h2;
+                        $html = $default_body;
                     }
+
+                    $faq = self::resolve_cpt_faq($post->ID, $global_faq, $vars);
+
+                    // Per-page overrides — empty meta falls back to template default.
+                    $meta_title_override = (string) get_post_meta($post->ID, '_edp_meta_title', true);
+                    if ($meta_title_override !== '') {
+                        $title = $meta_title_override;
+                    }
+
+                    $h1_override = (string) get_post_meta($post->ID, '_edp_h1', true);
+                    if ($h1_override !== '') {
+                        $h1 = $h1_override;
+                    }
+
+                    $meta_desc_override = (string) get_post_meta($post->ID, '_edp_meta_description', true);
+                    $meta_desc = $meta_desc_override !== '' ? $meta_desc_override : $default_meta_desc;
+
+                    $comm_h2_override = (string) get_post_meta($post->ID, '_edp_communities_h2', true);
+                    $comm_h2 = $comm_h2_override !== '' ? $comm_h2_override : $default_comm_h2;
+
+                    $comm_body_override = (string) get_post_meta($post->ID, '_edp_communities_body', true);
+                    $comm_body = $comm_body_override !== '' ? $comm_body_override : $default_comm_body;
+
+                    $other_h2_override = (string) get_post_meta($post->ID, '_edp_other_cities_h2', true);
+                    $other_h2 = $other_h2_override !== '' ? $other_h2_override : $default_other_h2;
 
                     $result = [
                         'title'            => $title,
@@ -110,7 +109,7 @@ final class EDP_Content_Resolver
                         'communities_h2'   => $comm_h2,
                         'communities_body' => $comm_body,
                         'other_cities_h2'  => $other_h2,
-                        'source'           => $is_cpt ? 'cpt' : 'mapped',
+                        'source'           => 'cpt',
                         'faq'              => $faq,
                     ];
 
@@ -119,7 +118,6 @@ final class EDP_Content_Resolver
                     }
 
                     return $result;
-                }
             }
         }
 

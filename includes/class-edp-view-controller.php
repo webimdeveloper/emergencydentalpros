@@ -370,6 +370,27 @@ final class EDP_View_Controller
 
         $location = EDP_Database::get_location_by_post_id($post_id);
 
+        // Also check if this post is a redirect source stored on a CPT (coexistent scenario).
+        if ($location === null) {
+            $cpt_ids = get_posts([
+                'post_type'      => EDP_CPT::POST_TYPE,
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+                'meta_query'     => [[
+                    'key'   => '_edp_redirect_post_id',
+                    'value' => $post_id,
+                    'type'  => 'NUMERIC',
+                ]],
+            ]);
+            if (!empty($cpt_ids)) {
+                $location_id = (int) get_post_meta($cpt_ids[0], '_edp_location_id', true);
+                if ($location_id > 0) {
+                    $location = EDP_Database::get_row_by_id($location_id);
+                }
+            }
+        }
+
         if ($location === null) {
             return;
         }

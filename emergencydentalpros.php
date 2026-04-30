@@ -38,6 +38,7 @@ require_once EDP_PLUGIN_DIR . 'includes/class-edp-pagespeed-client.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-cqs-scorer.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-view-controller.php';
 require_once EDP_PLUGIN_DIR . 'includes/class-edp-assets.php';
+require_once EDP_PLUGIN_DIR . 'includes/class-edp-cache.php';
 require_once EDP_PLUGIN_DIR . 'admin/class-edp-admin.php';
 
 register_activation_hook(
@@ -70,6 +71,7 @@ add_action(
 
         EDP_View_Controller::register();
         EDP_Assets::register();
+        EDP_Cache::register();
     },
     10
 );
