@@ -22,6 +22,7 @@ final class EDP_CPT
         '_edp_communities_h2',
         '_edp_communities_body',
         '_edp_other_cities_h2',
+        '_edp_show_other_cities',
         '_edp_redirect_post_id',
     ];
 
@@ -51,6 +52,7 @@ final class EDP_CPT
         add_action('save_post_' . self::POST_TYPE,      [self::class, 'save_metabox'], 10, 2);
         add_action('admin_head-post.php',               [self::class, 'hide_meta_boxes_css']);
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
+        add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
     }
 
     public static function register_metaboxes(): void
@@ -96,11 +98,17 @@ final class EDP_CPT
         }
 
         $text_fields = [
-            '_edp_meta_title'       => 'edp_meta_title',
-            '_edp_h1'               => 'edp_h1',
-            '_edp_communities_h2'   => 'edp_communities_h2',
-            '_edp_other_cities_h2'  => 'edp_other_cities_h2',
+            '_edp_meta_title'     => 'edp_meta_title',
+            '_edp_h1'             => 'edp_h1',
+            '_edp_communities_h2' => 'edp_communities_h2',
         ];
+
+        // Show/hide toggle for the Other Cities section (checkbox, default 1 = shown).
+        update_post_meta(
+            $post_id,
+            '_edp_show_other_cities',
+            isset($_POST['edp_show_other_cities']) ? 1 : 0
+        );
 
         foreach ($text_fields as $meta_key => $post_key) {
             $value = isset($_POST[$post_key])
@@ -123,7 +131,29 @@ final class EDP_CPT
         }
     }
 
-    /** Hides featured image and slug metaboxes for this CPT. */
+    /** Injects list/typography styles into the TinyMCE content iframe. */
+    public static function editor_content_style(array $settings): array
+    {
+        global $post;
+
+        if (!isset($post) || $post->post_type !== self::POST_TYPE) {
+            return $settings;
+        }
+
+        $css = 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.65;color:#3a3541;margin:10px 14px}'
+            . 'ol,ul{padding-left:1.6em;margin:0.5em 0}'
+            . 'ol{list-style:decimal}'
+            . 'ul{list-style:disc}'
+            . 'li{margin-bottom:0.3em}'
+            . 'p{margin:0 0 0.8em}'
+            . 'a{color:#6e39cb}';
+
+        $settings['content_style'] = ($settings['content_style'] ?? '') . ' ' . $css;
+
+        return $settings;
+    }
+
+    /** Hides featured image, slug, and title metaboxes for this CPT. */
     public static function hide_meta_boxes_css(): void
     {
         global $post;

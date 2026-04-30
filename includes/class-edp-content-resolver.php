@@ -100,17 +100,21 @@ final class EDP_Content_Resolver
                     $other_h2_override = (string) get_post_meta($post->ID, '_edp_other_cities_h2', true);
                     $other_h2 = $other_h2_override !== '' ? $other_h2_override : $default_other_h2;
 
+                    $show_oc_raw = get_post_meta($post->ID, '_edp_show_other_cities', true);
+                    $show_oc     = $show_oc_raw === '' ? true : (bool) (int) $show_oc_raw;
+
                     $result = [
-                        'title'            => $title,
-                        'h1'               => $h1,
-                        'subtitle'         => $default_subtitle,
-                        'html'             => $html,
-                        'meta_description' => $meta_desc,
-                        'communities_h2'   => $comm_h2,
-                        'communities_body' => $comm_body,
-                        'other_cities_h2'  => $other_h2,
-                        'source'           => 'cpt',
-                        'faq'              => $faq,
+                        'title'              => $title,
+                        'h1'                 => $h1,
+                        'subtitle'           => $default_subtitle,
+                        'html'               => $html,
+                        'meta_description'   => $meta_desc,
+                        'communities_h2'     => $comm_h2,
+                        'communities_body'   => $comm_body,
+                        'other_cities_h2'    => $other_h2,
+                        'show_other_cities'  => $show_oc,
+                        'source'             => 'cpt',
+                        'faq'                => $faq,
                     ];
 
                     if ($location_id > 0) {
@@ -122,16 +126,17 @@ final class EDP_Content_Resolver
         }
 
         $result = [
-            'title'            => $default_title,
-            'h1'               => $default_h1,
-            'subtitle'         => $default_subtitle,
-            'html'             => $default_body,
-            'meta_description' => $default_meta_desc,
-            'communities_h2'   => $default_comm_h2,
-            'communities_body' => $default_comm_body,
-            'other_cities_h2'  => $default_other_h2,
-            'source'           => 'global',
-            'faq'              => $global_faq,
+            'title'             => $default_title,
+            'h1'                => $default_h1,
+            'subtitle'          => $default_subtitle,
+            'html'              => $default_body,
+            'meta_description'  => $default_meta_desc,
+            'communities_h2'    => $default_comm_h2,
+            'communities_body'  => $default_comm_body,
+            'other_cities_h2'   => $default_other_h2,
+            'show_other_cities' => true,
+            'source'            => 'global',
+            'faq'               => $global_faq,
         ];
 
         if ($location_id > 0) {

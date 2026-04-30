@@ -1154,7 +1154,7 @@ a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   display: inline-flex;
   align-items: center;
   cursor: help;
-  color: var(--edp-muted);
+  color: var(--edp-brand);
   margin-left: 4px;
   font-weight: 400;
   font-size: 13px;

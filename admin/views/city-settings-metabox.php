@@ -24,13 +24,17 @@ $base      = EDP_Template_Engine::base_vars();
 $vars      = $row ? EDP_Template_Engine::context_from_city_row( $base, $row ) : $base;
 
 // Resolved template defaults.
-$ph_meta_title    = EDP_Template_Engine::replace( (string) ( $templates['meta_title']       ?? '' ), $vars );
-$ph_h1            = EDP_Template_Engine::replace( (string) ( $templates['h1']               ?? '' ), $vars );
-$ph_meta_desc     = EDP_Template_Engine::replace( (string) ( $templates['meta_description'] ?? '' ), $vars );
-$ph_body          = EDP_Template_Engine::replace( (string) ( $templates['body']             ?? '' ), $vars );
-$ph_comm_h2       = EDP_Template_Engine::replace( (string) ( $templates['communities_h2']   ?? '' ), $vars );
-$ph_comm_body     = EDP_Template_Engine::replace( (string) ( $templates['communities_body'] ?? '' ), $vars );
-$ph_other_h2      = EDP_Template_Engine::replace( (string) ( $templates['other_cities_h2']  ?? '' ), $vars );
+$ph_meta_title = EDP_Template_Engine::replace( (string) ( $templates['meta_title']       ?? '' ), $vars );
+$ph_h1         = EDP_Template_Engine::replace( (string) ( $templates['h1']               ?? '' ), $vars );
+$ph_meta_desc  = EDP_Template_Engine::replace( (string) ( $templates['meta_description'] ?? '' ), $vars );
+$ph_body       = EDP_Template_Engine::replace( (string) ( $templates['body']             ?? '' ), $vars );
+$ph_comm_body  = EDP_Template_Engine::replace( (string) ( $templates['communities_body'] ?? '' ), $vars );
+
+// Communities H2: fall back to raw template if county_name is empty in this row.
+$ph_comm_h2 = EDP_Template_Engine::replace( (string) ( $templates['communities_h2'] ?? '' ), $vars );
+if ( $ph_comm_h2 === '' ) {
+    $ph_comm_h2 = (string) ( $templates['communities_h2'] ?? '' );
+}
 
 // Saved per-page overrides.
 $val_meta_title   = (string) get_post_meta( $post->ID, '_edp_meta_title',       true );
@@ -39,7 +43,10 @@ $val_meta_desc    = (string) get_post_meta( $post->ID, '_edp_meta_description', 
 $val_body         = (string) get_post_meta( $post->ID, '_edp_body',             true );
 $val_comm_h2      = (string) get_post_meta( $post->ID, '_edp_communities_h2',   true );
 $val_comm_body    = (string) get_post_meta( $post->ID, '_edp_communities_body', true );
-$val_other_h2     = (string) get_post_meta( $post->ID, '_edp_other_cities_h2',  true );
+
+// Other cities show/hide toggle (default 1 = shown).
+$show_other_cities_raw = get_post_meta( $post->ID, '_edp_show_other_cities', true );
+$show_other_cities     = $show_other_cities_raw === '' ? 1 : (int) $show_other_cities_raw;
 
 // Front-end page URL.
 $page_url = '';
@@ -50,10 +57,13 @@ if ( $row ) {
     ) );
 }
 
-// Field coverage count.
-$all_overrides  = [ $val_meta_title, $val_meta_desc, $val_h1, $val_body, $val_comm_h2, $val_comm_body, $val_other_h2 ];
-$filled_count   = count( array_filter( $all_overrides, fn( $v ) => $v !== '' ) );
-$total_count    = count( $all_overrides );
+// Field coverage count (other_cities toggle counts when explicitly set to 0).
+$all_overrides = [ $val_meta_title, $val_meta_desc, $val_h1, $val_body, $val_comm_h2, $val_comm_body ];
+$filled_count  = count( array_filter( $all_overrides, fn( $v ) => $v !== '' ) );
+if ( $show_other_cities_raw !== '' ) {
+    $filled_count++;
+}
+$total_count = count( $all_overrides ) + 1; // +1 for other_cities toggle
 
 wp_nonce_field( 'edp_location_settings_' . $post->ID, 'edp_location_settings_nonce' );
 ?>
@@ -66,17 +76,17 @@ wp_nonce_field( 'edp_location_settings_' . $post->ID, 'edp_location_settings_non
 
 <?php if ( $row ) : ?>
 <div class="edp-mb-location-bar">
-    <?php if ( ! empty( $row['city'] ) ) : ?>
-        <span><strong><?php echo esc_html( $row['city'] ); ?></strong></span>
+    <?php if ( ! empty( $row['city_name'] ) ) : ?>
+        <span><strong><?php echo esc_html( $row['city_name'] ); ?></strong></span>
     <?php endif; ?>
-    <?php if ( ! empty( $row['state'] ) ) : ?>
-        <span><?php echo esc_html( $row['state'] ); ?></span>
+    <?php if ( ! empty( $row['state_name'] ) ) : ?>
+        <span><?php echo esc_html( $row['state_name'] ); ?></span>
     <?php endif; ?>
-    <?php if ( ! empty( $row['county'] ) ) : ?>
-        <span><?php echo esc_html( $row['county'] ); ?></span>
+    <?php if ( ! empty( $row['county_name'] ) ) : ?>
+        <span><?php echo esc_html( $row['county_name'] ); ?></span>
     <?php endif; ?>
-    <?php if ( ! empty( $row['zip'] ) ) : ?>
-        <span>ZIP: <?php echo esc_html( $row['zip'] ); ?></span>
+    <?php if ( ! empty( $row['main_zip'] ) ) : ?>
+        <span>ZIP: <?php echo esc_html( $row['main_zip'] ); ?></span>
     <?php endif; ?>
     <span><?php esc_html_e( 'Location ID', 'emergencydentalpros' ); ?> #<?php echo esc_html( (string) $location_id ); ?></span>
 </div>
@@ -194,35 +204,21 @@ if ( $redirect_post_id > 0 ) {
 </div>
 
 <div class="edp-mb-row">
-    <label><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
-    <?php if ( $val_comm_body === '' && $ph_comm_body !== '' ) : ?>
-        <p class="edp-mb-hint" style="margin-bottom:6px;"><?php esc_html_e( 'Showing template default — edit to override, clear to revert.', 'emergencydentalpros' ); ?></p>
-    <?php endif; ?>
-    <?php
-    wp_editor(
-        $val_comm_body !== '' ? $val_comm_body : $ph_comm_body,
-        'edp_communities_body',
-        [
-            'textarea_name' => 'edp_communities_body',
-            'media_buttons' => false,
-            'textarea_rows' => 4,
-            'teeny'         => true,
-        ]
-    );
-    ?>
+    <label for="edp_communities_body"><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
+    <textarea name="edp_communities_body" id="edp_communities_body" rows="3"
+        placeholder="<?php echo esc_attr( wp_strip_all_tags( $ph_comm_body ) ); ?>"><?php echo esc_textarea( $val_comm_body ); ?></textarea>
+    <p class="edp-mb-hint"><?php esc_html_e( 'Plain text with links — no rich formatting needed.', 'emergencydentalpros' ); ?></p>
 </div>
 
 <div class="edp-mb-section-title"><?php esc_html_e( 'Other cities section', 'emergencydentalpros' ); ?></div>
 
-<div class="edp-mb-row">
-    <label for="edp_other_cities_h2">
-        <?php esc_html_e( 'H2', 'emergencydentalpros' ); ?>
-        <span class="edp-mb-tip" data-tip="<?php esc_attr_e( 'Heading for the other cities section. Override to localise for this city.', 'emergencydentalpros' ); ?>">ⓘ</span>
+<div class="edp-toggle-row">
+    <label class="edp-toggle">
+        <input type="checkbox" name="edp_show_other_cities" id="edp_show_other_cities" value="1"
+            <?php checked( $show_other_cities, 1 ); ?> />
+        <span class="edp-toggle-slider"></span>
     </label>
-    <input type="text" name="edp_other_cities_h2" id="edp_other_cities_h2"
-        value="<?php echo esc_attr( $val_other_h2 ); ?>"
-        placeholder="<?php echo esc_attr( $ph_other_h2 ); ?>" />
-    <span class="edp-mb-counter" data-for="edp_other_cities_h2"></span>
+    <span class="edp-toggle-label"><?php esc_html_e( 'Show "Other Cities" section on this page', 'emergencydentalpros' ); ?></span>
 </div>
 
 <script>
@@ -246,7 +242,7 @@ if ( $redirect_post_id > 0 ) {
         else                                   counter.classList.add('edp-mb-counter--warn');
     }
 
-    ['edp_meta_title', 'edp_meta_description', 'edp_h1', 'edp_communities_h2', 'edp_other_cities_h2'].forEach(function (id) {
+    ['edp_meta_title', 'edp_meta_description', 'edp_h1', 'edp_communities_h2'].forEach(function (id) {
         var el = document.getElementById(id);
         if (!el) return;
         updateCounter(el);
