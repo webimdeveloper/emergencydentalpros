@@ -512,7 +512,7 @@
   color: var(--edp-type);
   border-bottom: 1px solid var(--edp-border);
   border-top: none;
-  padding: 14px 20px;
+  padding: 8px 14px;
   white-space: nowrap;
 }
 #edp-locations-wrap table.wp-list-table thead th a,
@@ -540,7 +540,7 @@
 #edp-locations-wrap table.wp-list-table tbody th {
   border-bottom: 1px solid var(--edp-surface);
   border-top: none;
-  padding: 14px 20px;
+  padding: 10px 14px;
   font-size: var(--edp-fs-base);
   color: var(--edp-muted);
   vertical-align: middle;
@@ -561,6 +561,22 @@
 #edp-locations-wrap table.wp-list-table .row-actions .delete a,
 #edp-locations-wrap table.wp-list-table .row-actions .trash a {
   color: var(--edp-err);
+}
+#edp-locations-wrap .edp-row-delete-btn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--edp-err);
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--edp-font);
+  font-size: inherit;
+  line-height: inherit;
+}
+#edp-locations-wrap .edp-row-delete-btn:hover {
+  background: none;
+  color: var(--edp-err);
+  text-decoration: underline;
 }
 
 /* ══════════════════════════════════════════════
@@ -730,7 +746,9 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
   background: none !important;
 }
 #edp-locations-wrap th.column-google .sorting-indicator,
-#edp-locations-wrap th.column-override .sorting-indicator {
+#edp-locations-wrap th.column-override .sorting-indicator,
+#edp-locations-wrap th.column-google .sorting-indicators,
+#edp-locations-wrap th.column-override .sorting-indicators {
   display: none;
 }
 #edp-locations-wrap th.column-google a,
@@ -742,14 +760,13 @@ a.edp-stat-filter-item:hover .edp-stat-filter-arrow {
   text-decoration: none;
 }
 .edp-col-arrow {
-  transform: rotate(90deg);
-  margin-left: 4px;
-  vertical-align: middle;
+  margin-left: 3px;
   font-size: 14px;
   width: 14px;
   height: 14px;
   color: var(--edp-muted);
   opacity: .6;
+  flex-shrink: 0;
 }
 a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   color: var(--edp-brand);
