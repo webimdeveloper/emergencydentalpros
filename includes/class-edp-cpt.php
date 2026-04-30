@@ -132,6 +132,6 @@ final class EDP_CPT
             return;
         }
 
-        echo '<style>#postimagediv,#slugdiv{display:none!important}</style>' . "\n";
+        echo '<style>#postimagediv,#slugdiv,#titlediv{display:none!important}</style>' . "\n";
     }
 }

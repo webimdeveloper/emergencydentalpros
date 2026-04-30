@@ -29,6 +29,21 @@ if ( $faq_items_raw !== '' ) {
 	}
 }
 
+// Resolve global template defaults for empty fields.
+$location_id     = (int) get_post_meta( $post->ID, '_edp_location_id', true );
+$faq_row         = $location_id > 0 ? EDP_Database::get_row_by_id( $location_id ) : null;
+$faq_settings    = EDP_Settings::get_all();
+$faq_templates   = $faq_settings['templates']['city_landing'] ?? [];
+$faq_base        = EDP_Template_Engine::base_vars();
+$faq_vars        = $faq_row ? EDP_Template_Engine::context_from_city_row( $faq_base, $faq_row ) : $faq_base;
+$ph_faq_h2       = EDP_Template_Engine::replace( (string) ( $faq_templates['faq_h2']    ?? '' ), $faq_vars );
+$ph_faq_intro    = EDP_Template_Engine::replace( (string) ( $faq_templates['faq_intro'] ?? '' ), $faq_vars );
+$def_faq_items   = is_array( $faq_templates['faq_items'] ?? null ) ? $faq_templates['faq_items'] : [];
+
+// Use global defaults when meta is empty.
+$using_default_items = empty( $faq_items ) && ! empty( $def_faq_items );
+$display_faq_items   = ! empty( $faq_items ) ? $faq_items : $def_faq_items;
+
 wp_nonce_field( 'edp_faq_metabox_' . $post->ID, 'edp_faq_metabox_nonce' );
 ?>
 <div>
@@ -50,18 +65,25 @@ wp_nonce_field( 'edp_faq_metabox_' . $post->ID, 'edp_faq_metabox_nonce' );
 
 		<div class="edp-mb-row">
 			<label for="edp_faq_h2"><?php esc_html_e( 'H2 (override)', 'emergencydentalpros' ); ?></label>
-			<input type="text" name="edp_faq_h2" id="edp_faq_h2" value="<?php echo esc_attr( $faq_h2 ); ?>" />
+			<input type="text" name="edp_faq_h2" id="edp_faq_h2"
+				value="<?php echo esc_attr( $faq_h2 ); ?>"
+				placeholder="<?php echo esc_attr( $ph_faq_h2 ); ?>" />
 		</div>
 
 		<div class="edp-mb-row">
 			<label for="edp_faq_intro"><?php esc_html_e( 'Short description (override)', 'emergencydentalpros' ); ?></label>
-			<input type="text" name="edp_faq_intro" id="edp_faq_intro" value="<?php echo esc_attr( $faq_intro ); ?>" />
+			<input type="text" name="edp_faq_intro" id="edp_faq_intro"
+				value="<?php echo esc_attr( $faq_intro ); ?>"
+				placeholder="<?php echo esc_attr( $ph_faq_intro ); ?>" />
 		</div>
 
 		<div class="edp-mb-row">
 			<label><?php esc_html_e( 'FAQ Items (override)', 'emergencydentalpros' ); ?></label>
+			<?php if ( $using_default_items ) : ?>
+				<p class="edp-mb-hint" style="margin-bottom:6px;"><?php esc_html_e( 'Showing global defaults — edit to override, remove all to revert.', 'emergencydentalpros' ); ?></p>
+			<?php endif; ?>
 			<div class="edp-faq-items-list" id="edp-cpt-faq-list">
-				<?php foreach ( $faq_items as $item ) :
+				<?php foreach ( $display_faq_items as $item ) :
 					$fq = (string) ( $item['q'] ?? '' );
 					$fa = (string) ( $item['a'] ?? '' );
 				?>
