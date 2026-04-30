@@ -1090,6 +1090,110 @@ a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   margin-top: 3px;
 }
 
+/* ── City title heading (replaces WP title input) ── */
+.edp-mb-city-title {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 8px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--edp-type);
+}
+.edp-mb-city-title .dashicons {
+  color: var(--edp-brand);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.edp-mb-coverage-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--edp-muted);
+  background: var(--edp-surface);
+  border: 1px solid var(--edp-border);
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+
+/* ── Location context bar ── */
+.edp-mb-location-bar {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--edp-muted);
+  padding: 6px 0 12px;
+  border-bottom: 1px solid var(--edp-border);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.edp-mb-location-bar strong {
+  color: var(--edp-type);
+}
+
+/* ── URL slug note ── */
+.edp-mb-url-note {
+  font-size: 11px;
+  color: var(--edp-muted);
+  margin: -8px 0 14px;
+  font-style: italic;
+}
+
+/* ── Section CQS points note ── */
+.edp-mb-cqs-note {
+  font-size: 11px;
+  color: var(--edp-muted);
+  float: right;
+  font-weight: 400;
+}
+
+/* ── Tooltip badge ── */
+.edp-mb-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  color: var(--edp-muted);
+  margin-left: 4px;
+  font-weight: 400;
+  font-size: 13px;
+}
+.edp-mb-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  background: #1e1e2e;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 99999;
+  min-width: 200px;
+  white-space: normal;
+  line-height: 1.4;
+  font-style: normal;
+}
+.edp-mb-tip:hover::after {
+  opacity: 1;
+}
+
+/* ── Live char counter ── */
+.edp-mb-counter {
+  font-size: 11px;
+  margin-top: 3px;
+  display: inline-block;
+  color: var(--edp-muted);
+}
+.edp-mb-counter--ok   { color: var(--edp-ok); }
+.edp-mb-counter--warn { color: var(--edp-warn); }
+.edp-mb-counter--err  { color: var(--edp-err); }
+
 /* Toggle (used in FAQ metabox) */
 .edp-toggle-row {
   display: flex;
