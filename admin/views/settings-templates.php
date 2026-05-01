@@ -141,7 +141,7 @@ $context_vars = [
 						<input name="edp_seo[templates][<?php echo esc_attr($key); ?>][subtitle]" type="text"
 							id="edp_<?php echo esc_attr($key); ?>_subtitle"
 							value="<?php echo esc_attr((string) ($t['subtitle'] ?? '')); ?>" />
-						<p class="edp-hint"><?php esc_html_e('Section heading displayed below H1 on the page.', 'emergencydentalpros'); ?></p>
+						<p class="edp-hint"><?php esc_html_e('Short description shown below the page title in the hero.', 'emergencydentalpros'); ?></p>
 					</div>
 
 					<div class="edp-form-row">
