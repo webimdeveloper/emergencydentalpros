@@ -48,7 +48,7 @@ final class EDP_Content_Resolver
         $default_body        = wpautop(EDP_Template_Engine::replace((string) ($templates['body'] ?? ''), $vars));
         $default_meta_desc   = EDP_Template_Engine::replace((string) ($templates['meta_description']?? ''), $vars);
         $default_comm_h2     = EDP_Template_Engine::replace((string) ($templates['communities_h2']  ?? ''), $vars);
-        $default_comm_body   = EDP_Template_Engine::replace((string) ($templates['communities_body']?? ''), $vars);
+        $default_comm_body   = wpautop(EDP_Template_Engine::replace((string) ($templates['communities_body']?? ''), $vars));
         $default_other_h2    = EDP_Template_Engine::replace((string) ($templates['other_cities_h2'] ?? ''), $vars);
 
         $global_faq = self::build_global_faq($templates, $vars);
@@ -95,7 +95,7 @@ final class EDP_Content_Resolver
                     $comm_h2 = $comm_h2_override !== '' ? $comm_h2_override : $default_comm_h2;
 
                     $comm_body_override = (string) get_post_meta($post->ID, '_edp_communities_body', true);
-                    $comm_body = $comm_body_override !== '' ? $comm_body_override : $default_comm_body;
+                    $comm_body = $comm_body_override !== '' ? wpautop($comm_body_override) : $default_comm_body;
 
                     $other_h2_override = (string) get_post_meta($post->ID, '_edp_other_cities_h2', true);
                     $other_h2 = $other_h2_override !== '' ? $other_h2_override : $default_other_h2;
@@ -160,7 +160,7 @@ final class EDP_Content_Resolver
         $items = array_map(function (array $item) use ($vars): array {
             return [
                 'q' => EDP_Template_Engine::replace((string) ($item['q'] ?? ''), $vars),
-                'a' => EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars),
+                'a' => wpautop(EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars)),
             ];
         }, $raw_items);
 
@@ -197,7 +197,7 @@ final class EDP_Content_Resolver
                 $items = array_map(function (array $item) use ($vars): array {
                     return [
                         'q' => EDP_Template_Engine::replace((string) ($item['q'] ?? ''), $vars),
-                        'a' => EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars),
+                        'a' => wpautop(EDP_Template_Engine::replace((string) ($item['a'] ?? ''), $vars)),
                     ];
                 }, $decoded);
             }
