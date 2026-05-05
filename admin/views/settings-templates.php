@@ -315,6 +315,41 @@ $context_vars = [
 
 		</div><!-- /.edp-tpl-layout -->
 
+		<?php /* ── URL Structure ── */ ?>
+		<?php $url_mode = $settings['url_mode'] ?? 'hierarchical'; $url_base = $settings['url_base'] ?? 'locations'; ?>
+		<div class="edp-card" style="margin-top:24px;">
+			<div class="edp-card-header"><?php esc_html_e('URL Structure', 'emergencydentalpros'); ?></div>
+			<div class="edp-card-body">
+				<div class="edp-form-row">
+					<label style="font-weight:600;"><?php esc_html_e('Location URL format', 'emergencydentalpros'); ?></label>
+					<label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-bottom:8px;">
+						<input type="radio" name="edp_seo[url_mode]" value="hierarchical" <?php checked($url_mode, 'hierarchical'); ?>>
+						<span>
+							<strong><?php esc_html_e('Hierarchical', 'emergencydentalpros'); ?></strong>
+							&nbsp;<code>/locations/alabama/auburn-al/</code>
+						</span>
+					</label>
+					<label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+						<input type="radio" name="edp_seo[url_mode]" value="flat" <?php checked($url_mode, 'flat'); ?>>
+						<span>
+							<strong><?php esc_html_e('Flat', 'emergencydentalpros'); ?></strong>
+							&nbsp;<code>/auburn-al/</code>&nbsp;&nbsp;<code>/alabama/</code>
+						</span>
+					</label>
+					<p class="edp-hint" style="margin-top:10px;">
+						⚠️ <?php esc_html_e('After switching modes, go to Settings › Permalinks and click Save to flush rewrite rules.', 'emergencydentalpros'); ?>
+					</p>
+				</div>
+				<div class="edp-form-row">
+					<label for="edp_url_base"><?php esc_html_e('States index slug', 'emergencydentalpros'); ?></label>
+					<input name="edp_seo[url_base]" type="text" id="edp_url_base"
+						value="<?php echo esc_attr($url_base); ?>"
+						style="max-width:200px;" placeholder="locations">
+					<p class="edp-hint"><?php esc_html_e('The URL slug for the all-states index page. Default: locations', 'emergencydentalpros'); ?></p>
+				</div>
+			</div>
+		</div>
+
 		<?php /* ── Page Cache settings (inside the main save form) ── */ ?>
 		<?php $pc = $settings['page_cache'] ?? []; ?>
 		<div class="edp-card" style="margin-top:24px;">

@@ -52,6 +52,8 @@ final class EDP_Settings
         return [
             'og_image_url'    => '',
             'twitter_site'    => '',
+            'url_mode'        => 'hierarchical',
+            'url_base'        => 'locations',
             'page_cache'      => [
                 'enabled' => false,
                 'ttl'     => 24,
@@ -126,6 +128,14 @@ final class EDP_Settings
 
         if (isset($data['og_image_url'])) {
             $out['og_image_url'] = esc_url_raw((string) $data['og_image_url']);
+        }
+
+        if (isset($data['url_mode']) && in_array($data['url_mode'], ['hierarchical', 'flat'], true)) {
+            $out['url_mode'] = $data['url_mode'];
+        }
+
+        if (isset($data['url_base'])) {
+            $out['url_base'] = sanitize_title((string) $data['url_base']) ?: 'locations';
         }
 
         if (isset($data['page_cache']) && is_array($data['page_cache'])) {
