@@ -179,12 +179,27 @@ final class EDP_Admin
             }
         }
 
+        // URL structure
+        $prev_mode = (string) ($merged['url_mode'] ?? 'hierarchical');
+        $prev_base = (string) ($merged['url_base'] ?? 'locations');
+        if (isset($raw['url_mode']) && in_array($raw['url_mode'], ['hierarchical', 'flat'], true)) {
+            $merged['url_mode'] = $raw['url_mode'];
+        }
+        if (isset($raw['url_base'])) {
+            $merged['url_base'] = sanitize_title((string) $raw['url_base']) ?: 'locations';
+        }
+
         // Page cache settings
         $pc = is_array($raw['page_cache'] ?? null) ? $raw['page_cache'] : [];
         $merged['page_cache']['enabled'] = ! empty($pc['enabled']);
         $merged['page_cache']['ttl']     = max(1, (int) ($pc['ttl'] ?? 24));
 
         EDP_Settings::save($merged);
+
+        // Flush rewrite rules whenever URL mode or base slug changes.
+        if ($merged['url_mode'] !== $prev_mode || $merged['url_base'] !== $prev_base) {
+            flush_rewrite_rules(false);
+        }
 
         // Invalidate any cached city pages whenever settings change.
         EDP_Cache::clear_all();
