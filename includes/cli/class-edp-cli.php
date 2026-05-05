@@ -137,4 +137,185 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	};
 
 	WP_CLI::add_command( 'edp-seo test-google', $edp_cli_test_google );
+
+	/**
+	 * Flush WordPress rewrite rules and report the active URL mode.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp edp flush-rules
+	 */
+	WP_CLI::add_command( 'edp flush-rules', static function (): void {
+		flush_rewrite_rules( false );
+		$mode = EDP_Rewrite::get_url_mode();
+		WP_CLI::success( 'Rewrite rules flushed. Active URL mode: ' . $mode );
+	} );
+
+	/**
+	 * List city slugs that conflict with existing WordPress pages.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp edp check-conflicts
+	 */
+	WP_CLI::add_command( 'edp check-conflicts', static function (): void {
+		if ( EDP_Rewrite::get_url_mode() !== 'flat' ) {
+			WP_CLI::warning( 'URL mode is not flat — conflict checking only applies in flat mode.' );
+			return;
+		}
+
+		global $wpdb;
+		$table = EDP_Database::table_name();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT id, city_name, city_slug, state_name FROM {$table} ORDER BY state_name, city_name", ARRAY_A );
+
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			WP_CLI::log( 'No locations in database.' );
+			return;
+		}
+
+		$slugs = array_column( $rows, 'city_slug' );
+		$conflict_map = EDP_Database::find_wp_slug_conflicts_bulk( $slugs );
+
+		if ( empty( $conflict_map ) ) {
+			WP_CLI::success( 'No conflicts found (' . count( $rows ) . ' locations checked).' );
+			return;
+		}
+
+		$table_data = [];
+		foreach ( $rows as $row ) {
+			$slug = (string) ( $row['city_slug'] ?? '' );
+			if ( ! isset( $conflict_map[ $slug ] ) ) {
+				continue;
+			}
+			$post = $conflict_map[ $slug ];
+			$table_data[] = [
+				'id'         => (string) ( $row['id'] ?? '' ),
+				'city'       => (string) ( $row['city_name'] ?? '' ),
+				'state'      => (string) ( $row['state_name'] ?? '' ),
+				'slug'       => $slug,
+				'wp_post_id' => (string) ( $post->ID ?? '' ),
+				'wp_title'   => (string) ( $post->post_title ?? '' ),
+				'wp_status'  => (string) ( $post->post_status ?? '' ),
+			];
+		}
+
+		WP_CLI\Utils\format_items( 'table', $table_data, [ 'id', 'city', 'state', 'slug', 'wp_post_id', 'wp_title', 'wp_status' ] );
+		WP_CLI::warning( count( $conflict_map ) . ' conflict(s) found out of ' . count( $rows ) . ' locations.' );
+	} );
+
+	/**
+	 * Switch the URL mode and flush rewrite rules.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <mode>
+	 * : URL mode: flat or hierarchical.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp edp set-url-mode flat
+	 *     wp edp set-url-mode hierarchical
+	 *
+	 * @param list<string> $args Positional args.
+	 */
+	WP_CLI::add_command( 'edp set-url-mode', static function ( array $args ): void {
+		$mode = isset( $args[0] ) ? strtolower( trim( (string) $args[0] ) ) : '';
+
+		if ( ! in_array( $mode, [ 'flat', 'hierarchical' ], true ) ) {
+			WP_CLI::error( 'Mode must be flat or hierarchical.' );
+		}
+
+		$settings = EDP_Settings::get_all();
+		$settings['url_mode'] = $mode;
+		EDP_Settings::save( $settings );
+		flush_rewrite_rules( false );
+		WP_CLI::success( 'URL mode set to ' . $mode . '. Rewrite rules flushed.' );
+	} );
+
+	/**
+	 * Migrate a conflicting WP page for a location (draft old page, create CPT).
+	 *
+	 * ## OPTIONS
+	 *
+	 * <location_id>
+	 * : Location row ID.
+	 *
+	 * [--dry-run]
+	 * : Show what would happen without making changes.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp edp migrate 42
+	 *     wp edp migrate 42 --dry-run
+	 *
+	 * @param list<string> $args Positional args.
+	 * @param array<string, mixed> $assoc_args Associative args.
+	 */
+	WP_CLI::add_command( 'edp migrate', static function ( array $args, array $assoc_args ): void {
+		$location_id = isset( $args[0] ) ? absint( $args[0] ) : 0;
+
+		if ( $location_id <= 0 ) {
+			WP_CLI::error( 'Provide a valid location ID.' );
+		}
+
+		$row = EDP_Database::get_row_by_id( $location_id );
+		if ( ! is_array( $row ) ) {
+			WP_CLI::error( 'Location not found: ' . $location_id );
+		}
+
+		$city_slug = sanitize_title( (string) ( $row['city_slug'] ?? '' ) );
+		$conflicts = EDP_Database::find_wp_slug_conflicts_bulk( [ $city_slug ] );
+
+		if ( empty( $conflicts[ $city_slug ] ) ) {
+			WP_CLI::success( 'No conflict found for slug: ' . $city_slug );
+			return;
+		}
+
+		$conflict_post = $conflicts[ $city_slug ];
+		$is_dry = isset( $assoc_args['dry-run'] );
+
+		WP_CLI::log( 'Location : ' . (string) ( $row['city_name'] ?? '' ) . ', ' . (string) ( $row['state_name'] ?? '' ) );
+		WP_CLI::log( 'Slug     : /' . $city_slug . '/' );
+		WP_CLI::log( 'Conflict : [' . (string) ( $conflict_post->ID ?? '' ) . '] ' . (string) ( $conflict_post->post_title ?? '' ) . ' (' . (string) ( $conflict_post->post_status ?? '' ) . ')' );
+
+		if ( $is_dry ) {
+			WP_CLI::log( '-- Dry run. No changes made.' );
+			return;
+		}
+
+		// Draft old page.
+		wp_update_post( [ 'ID' => (int) $conflict_post->ID, 'post_status' => 'draft' ] );
+
+		$imported_body = $conflict_post->post_content;
+		$post_id = wp_insert_post( [
+			'post_type'    => EDP_CPT::POST_TYPE,
+			'post_status'  => 'publish',
+			'post_title'   => (string) ( $row['city_name'] ?? '' ),
+			'post_name'    => $city_slug,
+			'post_content' => $imported_body,
+		] );
+
+		if ( is_wp_error( $post_id ) || ! $post_id ) {
+			wp_update_post( [ 'ID' => (int) $conflict_post->ID, 'post_status' => $conflict_post->post_status ] );
+			WP_CLI::error( 'Failed to create CPT.' );
+		}
+
+		update_post_meta( (int) $post_id, '_edp_location_id', $location_id );
+		update_post_meta( (int) $post_id, '_edp_redirect_post_id', (int) $conflict_post->ID );
+		if ( $imported_body !== '' ) {
+			update_post_meta( (int) $post_id, '_edp_body', wp_kses_post( $imported_body ) );
+		}
+
+		global $wpdb;
+		$wpdb->update(
+			EDP_Database::table_name(),
+			[ 'custom_post_id' => (int) $post_id, 'override_type' => 'cpt' ],
+			[ 'id' => $location_id ],
+			[ '%d', '%s' ],
+			[ '%d' ]
+		);
+
+		WP_CLI::success( 'Migrated. CPT ID: ' . (int) $post_id . '. Old page set to draft.' );
+	} );
 }
