@@ -57,6 +57,16 @@ jobs:
             -e "ssh -p ${SSH_PORT}" \
             ./ "${SSH_USER}@${SSH_HOST}:${REMOTE_PLUGIN_PATH}"
 
+      - name: Flush rewrite rules
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -p "${SSH_PORT}" -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" \
+            "wp --path=/var/www/dev.widev.pro/public_html rewrite flush --allow-root" \
+            || echo "WP-CLI rewrite flush skipped (wp-cli not available)"
+
       - name: Invalidate OPcache
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
