@@ -332,3 +332,200 @@ self::check($breakdown, 'category_key', 'Check label', $points, $pass_bool);
 1. Read the GET param in `EDP_Locations_List_Table::prepare_items()`.
 2. Append a condition to `$where_parts` (and `$where_values` if parameterised).
 3. Add a toggle link in `admin/views/locations.php` stat card.
+
+---
+
+## 17. URL Logic & Migration
+
+### 17.1 URL Modes
+
+The plugin supports two URL structures, switchable in **Local SEO → Settings → URL Structure**:
+
+| Mode | City URL | State URL | States index |
+|------|----------|-----------|--------------|
+| **Hierarchical** (default) | `/locations/{state_slug}/{city_slug}/` | `/locations/{state_slug}/` | `/locations/` |
+| **Flat** | `/{city_slug}/` | `/{state_slug}/` | `/locations/` |
+
+**City slug convention:** `{city}-{state-abbrev}` — e.g. `denton-tx`, `auburn-al`.
+
+The active mode is stored in `EDP_Settings` as `url_mode` (`'hierarchical'` or `'flat'`).  
+All URL generation goes through `EDP_Rewrite` static helpers — never hardcode `/locations/` paths:
+
+```php
+EDP_Rewrite::city_url($row);          // array with city_slug + state_slug keys
+EDP_Rewrite::state_url($state_slug);
+EDP_Rewrite::states_url();
+```
+
+Switching mode automatically flushes rewrite rules (handled in `EDP_Admin::handle_save_settings()`).
+
+---
+
+### 17.2 Routing — How a Request Reaches the Plugin
+
+In flat mode the plugin registers a top-priority rewrite rule:
+```
+^([a-z0-9-]+)/?$ → index.php?edp_city_slug=$1
+```
+
+`EDP_View_Controller::bootstrap()` (fires at `template_redirect` priority 0) dispatches on `get_query_var`:
+
+| Query var | Route | Handler |
+|-----------|-------|---------|
+| `edp_city_slug` | `VIEW_CITY_FLAT` | Look up city by slug only; serve CPT / mapped / global template |
+| `edp_state_slug` | `VIEW_STATE` | Look up state by slug; render state city list |
+| `edp_states_list` | `VIEW_STATES_LIST` | Render all-states index |
+| `edp_auto` | `VIEW_AUTO` | Shared city/state handler for hierarchical mode |
+
+In hierarchical mode, `VIEW_AUTO` uses both `edp_state_slug` and `edp_city_slug` query vars (set by the `/locations/{state}/{city}/` rewrite rule).
+
+---
+
+### 17.3 Content Resolution for a City Page
+
+`EDP_Content_Resolver::resolve_city($row)` applies a three-tier cascade:
+
+```
+1. CPT post (override_type = 'cpt')
+      └─ meta: _edp_body, _edp_meta_title, _edp_meta_description on the post
+2. Mapped WP page (override_type = 'mapped')
+      └─ post_content + Yoast/RankMath meta from the WP page
+3. Global template
+      └─ EDP_Template_Engine renders {tokens} from the location row + settings
+```
+
+The resolver reads `custom_post_id` and `override_type` from the location row.
+
+---
+
+### 17.4 Conflict Detection (Flat Mode Only)
+
+When flat mode is active, a city slug like `denton-tx` must not be claimed by an existing WordPress page — otherwise WordPress serves the old page instead of the plugin's route.
+
+`EDP_Database::find_wp_slug_conflicts_bulk(array $slugs): array` runs a single `IN` query:
+
+```sql
+SELECT ID, post_name, post_title, post_status, post_type
+FROM wp_posts
+WHERE post_name IN ('denton-tx', 'auburn-al', ...)
+  AND post_status NOT IN ('trash', 'auto-draft')
+  AND post_type IN ('page', 'post')
+```
+
+> **Note:** `draft` IS included — only a trashed or auto-draft post does not conflict.  
+> A drafted page with its original slug still conflicts until the slug is renamed.
+
+The admin Locations table displays a **⚠ Conflict** badge for each matching row (flat mode only, via `column_url_conflict()` in `EDP_Locations_List_Table`).
+
+An admin can **Ignore** a conflict (stored in `wp_options edp_ignored_conflicts`) or **Migrate**.
+
+---
+
+### 17.5 Scenario A — Migrate (Same Slug)
+
+Use case: a WordPress page at `/denton-tx/` needs to be replaced by the plugin's city page at the same URL.
+
+**What happens on "Migrate & Take Over":**
+
+```
+1. Snapshot:  $content = old_page->post_content
+              $seo_title, $seo_desc from Yoast (_yoast_wpseo_title) or RankMath (rank_math_title)
+
+2. Archive old page:
+   wp_update_post([
+     'ID'          => $old_page_id,
+     'post_status' => 'draft',
+     'post_name'   => 'denton-tx--migrated',   ← slug freed immediately
+   ])
+   → Recoverable: WP Admin → Pages → Drafts (search "denton-tx--migrated")
+   → Slug freed: no collision for the new CPT
+
+3. Create CPT:
+   wp_insert_post([
+     'post_type'   => 'edp_seo_city',
+     'post_status' => 'publish',
+     'post_name'   => 'denton-tx',         ← correct slug, now available
+     'post_content' => $content,
+   ])
+   On failure → restore old page (status=publish, post_name=denton-tx) → return error
+
+4. Store CPT meta:
+   _edp_location_id      = $location_id
+   _edp_archived_post_id = $old_page_id    (reference, not used for routing)
+   _edp_body             = wp_kses_post($content)
+   _edp_meta_title       = sanitize_text_field($seo_title)
+   _edp_meta_description = sanitize_textarea_field($seo_desc)
+
+5. Update location row:  custom_post_id = $cpt_id, override_type = 'cpt'
+
+6. Remove slug from edp_ignored_conflicts option
+
+7. flush_rewrite_rules(false)
+```
+
+**Admin sees after reload:**
+- Conflict badge gone (`denton-tx--migrated` no longer matches the conflict query)
+- Override column → "Static Page" link to the new CPT
+- `/denton-tx/` → plugin intercepts → CPT body served
+
+**Same logic applies to `wp edp migrate {location_id}` CLI command.**
+
+---
+
+### 17.6 Scenario B — Adopt Non-Standard Slug (Custom URL)
+
+Use case: an existing WP page lives at `/denton-texas-24-7/` (non-standard slug, not matching `xxx-yy`). The admin wants the plugin to manage this URL — injecting FAQ, schema, etc. — without changing the URL or redirecting away.
+
+This is the **Map Post** flow, extended with "Keep original URL":
+
+```
+Admin: Local SEO → Locations → Map Post
+       Enter post ID of /denton-texas-24-7/ page
+       Toggle "Keep original URL" → Save
+```
+
+**Result in DB:**
+- Location row: `custom_post_id = $wp_page_id`, `override_type = 'mapped'`
+- WP page post meta: `_edp_no_redirect = 1`
+
+**Routing after:**
+
+| URL | Behaviour |
+|-----|-----------|
+| `/denton-texas-24-7/` | Served by WordPress normally. Plugin injects `wp_head` tags (canonical, meta desc, LocalBusiness schema) and `the_content` filter (appends FAQ) via hook registration |
+| `/denton-tx/` (plugin canonical) | Plugin detects `override_type='mapped'` + `_edp_no_redirect=1` → 301 **to** `/denton-texas-24-7/` |
+
+**Why:** avoids duplicate content (`/denton-tx/` now 301s to the canonical old URL), preserves SEO rankings at the old URL, and enables plugin content injection without moving the page.
+
+> **Status:** Scenario B UI and routing are planned; `_edp_no_redirect` hook injection is not yet implemented. See `includes/class-edp-view-controller.php → redirect_mapped_posts()`.
+
+---
+
+### 17.7 Decision Tree — Which Scenario to Use
+
+```
+Does the old WP page slug match the city slug exactly?
+├── YES → Scenario A (Migrate & Take Over)
+│         Result: slug freed, old page archived as draft, CPT owns the URL.
+└── NO  → Does the admin want the plugin to manage that old URL?
+          ├── NO  → Leave alone. Two separate URLs coexist with different content.
+          └── YES → Scenario B (Map Post + "Keep original URL")
+                    Result: old URL canonical, /city-slug/ 301s to it.
+```
+
+---
+
+### 17.8 Rewrite Rule Priority & Conflicts with Other Plugins
+
+The plugin registers its city rewrite rule at `'top'` priority (WordPress `add_rewrite_rule` first arg `'top'`). This means it fires before any page/CPT rules.
+
+Potential conflicts:
+- **Yoast SEO / RankMath breadcrumb canonical** — these plugins respect WordPress's canonical URL; since the plugin outputs its own `<link rel="canonical">` via `EDP_View_Controller::output_canonical()`, ensure only one canonical tag is present.
+- **Any plugin that also registers top-priority catch-all rewrite rules** — last-registered wins for equal-priority rules. Check `$wp_rewrite->rules` after plugin activation if routing breaks unexpectedly.
+- **`.htaccess` caching layers** — page cache plugins may cache `/denton-tx/` before and after migration. Always run `flush_rewrite_rules()` (already done in migration) and purge the page cache for that URL.
+
+After switching URL modes or migrating, always verify with:
+```
+wp rewrite flush --allow-root
+wp eval 'echo EDP_Rewrite::city_url(["state_slug"=>"tx","city_slug"=>"denton-tx"]);'
+```

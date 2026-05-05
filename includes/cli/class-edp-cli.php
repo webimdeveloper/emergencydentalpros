@@ -284,10 +284,20 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			return;
 		}
 
-		// Draft old page.
-		wp_update_post( [ 'ID' => (int) $conflict_post->ID, 'post_status' => 'draft' ] );
+		// Snapshot content before any DB change.
+		$imported_body  = $conflict_post->post_content;
+		$pre_meta_title = (string) get_post_meta( (int) $conflict_post->ID, '_yoast_wpseo_title', true )
+			?: (string) get_post_meta( (int) $conflict_post->ID, 'rank_math_title', true );
+		$pre_meta_desc  = (string) get_post_meta( (int) $conflict_post->ID, '_yoast_wpseo_metadesc', true )
+			?: (string) get_post_meta( (int) $conflict_post->ID, 'rank_math_description', true );
 
-		$imported_body = $conflict_post->post_content;
+		// Draft old page AND rename its slug so the city slug is freed immediately.
+		wp_update_post( [
+			'ID'          => (int) $conflict_post->ID,
+			'post_status' => 'draft',
+			'post_name'   => $city_slug . '--migrated',
+		] );
+
 		$post_id = wp_insert_post( [
 			'post_type'    => EDP_CPT::POST_TYPE,
 			'post_status'  => 'publish',
@@ -297,14 +307,24 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		] );
 
 		if ( is_wp_error( $post_id ) || ! $post_id ) {
-			wp_update_post( [ 'ID' => (int) $conflict_post->ID, 'post_status' => $conflict_post->post_status ] );
+			wp_update_post( [
+				'ID'          => (int) $conflict_post->ID,
+				'post_status' => $conflict_post->post_status,
+				'post_name'   => $city_slug,
+			] );
 			WP_CLI::error( 'Failed to create CPT.' );
 		}
 
 		update_post_meta( (int) $post_id, '_edp_location_id', $location_id );
-		update_post_meta( (int) $post_id, '_edp_redirect_post_id', (int) $conflict_post->ID );
+		update_post_meta( (int) $post_id, '_edp_archived_post_id', (int) $conflict_post->ID );
 		if ( $imported_body !== '' ) {
 			update_post_meta( (int) $post_id, '_edp_body', wp_kses_post( $imported_body ) );
+		}
+		if ( $pre_meta_title !== '' ) {
+			update_post_meta( (int) $post_id, '_edp_meta_title', sanitize_text_field( $pre_meta_title ) );
+		}
+		if ( $pre_meta_desc !== '' ) {
+			update_post_meta( (int) $post_id, '_edp_meta_description', sanitize_textarea_field( $pre_meta_desc ) );
 		}
 
 		global $wpdb;
@@ -316,6 +336,14 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			[ '%d' ]
 		);
 
-		WP_CLI::success( 'Migrated. CPT ID: ' . (int) $post_id . '. Old page set to draft.' );
+		// Remove from ignored conflicts if previously ignored.
+		$ignored = get_option( 'edp_ignored_conflicts', [] );
+		if ( is_array( $ignored ) && in_array( $city_slug, $ignored, true ) ) {
+			update_option( 'edp_ignored_conflicts', array_values( array_diff( $ignored, [ $city_slug ] ) ) );
+		}
+
+		flush_rewrite_rules( false );
+
+		WP_CLI::success( 'Migrated. CPT ID: ' . (int) $post_id . '. Old page archived as draft (' . $city_slug . '--migrated).' );
 	} );
 }

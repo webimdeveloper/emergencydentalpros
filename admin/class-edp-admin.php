@@ -1844,35 +1844,43 @@ final class EDP_Admin
             wp_send_json_error(['message' => esc_html__('Conflict post not found.', 'emergencydentalpros')]);
         }
 
-        // Draft the old page to free the slug.
+        $city_slug = sanitize_title((string) ($row['city_slug'] ?? ''));
+
+        // Snapshot content before any DB change.
+        $imported_body  = $conflict_post->post_content;
+        $pre_meta_title = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_title', true)
+            ?: (string) get_post_meta($conflict_post_id, 'rank_math_title', true);
+        $pre_meta_desc  = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_metadesc', true)
+            ?: (string) get_post_meta($conflict_post_id, 'rank_math_description', true);
+
+        // Draft old page AND rename its slug so the city slug is freed immediately.
+        // A plain draft keeps post_name intact, causing WordPress to append "-2" to the new CPT slug.
         wp_update_post([
             'ID'          => $conflict_post_id,
             'post_status' => 'draft',
+            'post_name'   => $city_slug . '--migrated',
         ]);
 
-        // Import body content and meta from the old page.
-        $imported_body      = $conflict_post->post_content;
-        $pre_meta_title     = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_title', true)
-            ?: (string) get_post_meta($conflict_post_id, 'rank_math_title', true);
-        $pre_meta_desc      = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_metadesc', true)
-            ?: (string) get_post_meta($conflict_post_id, 'rank_math_description', true);
-
         $post_id = wp_insert_post([
-            'post_type'   => EDP_CPT::POST_TYPE,
-            'post_status' => 'publish',
-            'post_title'  => (string) ($row['city_name'] ?? ''),
-            'post_name'   => sanitize_title((string) ($row['city_slug'] ?? '')),
+            'post_type'    => EDP_CPT::POST_TYPE,
+            'post_status'  => 'publish',
+            'post_title'   => (string) ($row['city_name'] ?? ''),
+            'post_name'    => $city_slug,
             'post_content' => $imported_body,
         ]);
 
         if (is_wp_error($post_id) || !$post_id) {
-            // Restore original page status on failure.
-            wp_update_post(['ID' => $conflict_post_id, 'post_status' => $conflict_post->post_status]);
+            // Restore old page to its original published state.
+            wp_update_post([
+                'ID'          => $conflict_post_id,
+                'post_status' => $conflict_post->post_status,
+                'post_name'   => $city_slug,
+            ]);
             wp_send_json_error(['message' => esc_html__('Failed to create location page.', 'emergencydentalpros')]);
         }
 
         update_post_meta((int) $post_id, '_edp_location_id', $location_id);
-        update_post_meta((int) $post_id, '_edp_redirect_post_id', $conflict_post_id);
+        update_post_meta((int) $post_id, '_edp_archived_post_id', $conflict_post_id);
         if ($imported_body !== '') {
             update_post_meta((int) $post_id, '_edp_body', wp_kses_post($imported_body));
         }
@@ -1891,6 +1899,14 @@ final class EDP_Admin
             ['%d', '%s'],
             ['%d']
         );
+
+        // Remove from ignored conflicts if it was previously ignored.
+        $ignored = get_option('edp_ignored_conflicts', []);
+        if (is_array($ignored) && in_array($city_slug, $ignored, true)) {
+            update_option('edp_ignored_conflicts', array_values(array_diff($ignored, [$city_slug])));
+        }
+
+        flush_rewrite_rules(false);
 
         wp_send_json_success(['post_id' => (int) $post_id]);
     }

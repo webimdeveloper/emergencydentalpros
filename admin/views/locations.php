@@ -1314,9 +1314,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		<h2 id="edp-modal-heading"><?php esc_html_e('Migrate Location Page', 'emergencydentalpros'); ?></h2>
 		<p><?php esc_html_e('Existing WP page:', 'emergencydentalpros'); ?> <strong class="edp-modal-title"></strong></p>
 		<ul>
-			<li><?php esc_html_e('Set existing page to Draft (content preserved)', 'emergencydentalpros'); ?></li>
-			<li><?php esc_html_e('Create a new Location Page at the same slug', 'emergencydentalpros'); ?></li>
-			<li><?php esc_html_e('Import existing page body as location content', 'emergencydentalpros'); ?></li>
+			<li><?php esc_html_e('Move existing page to Draft — recoverable from WP Admin → Pages → Drafts', 'emergencydentalpros'); ?></li>
+			<li><?php esc_html_e('Plugin takes over this URL — same address, no redirect', 'emergencydentalpros'); ?></li>
+			<li><?php esc_html_e('Imported body and SEO meta preserved in the location', 'emergencydentalpros'); ?></li>
 		</ul>
 		<div class="edp-modal-footer">
 			<button type="button" class="button edp-modal-cancel-btn"><?php esc_html_e('Cancel', 'emergencydentalpros'); ?></button>
