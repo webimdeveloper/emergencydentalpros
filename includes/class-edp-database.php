@@ -455,6 +455,49 @@ final class EDP_Database
     }
 
     /**
+     * Given a list of city slugs, return a map of slug => WP_Post for any
+     * published/draft WP page or post whose post_name matches.
+     * Used for flat-URL conflict detection.
+     *
+     * @param list<string> $slugs
+     * @return array<string, WP_Post>  keyed by slug
+     */
+    public static function find_wp_slug_conflicts_bulk(array $slugs): array
+    {
+        if (empty($slugs)) {
+            return [];
+        }
+
+        global $wpdb;
+
+        $placeholders = implode(',', array_fill(0, count($slugs), '%s'));
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $sql = $wpdb->prepare(
+            "SELECT ID, post_name, post_title, post_status, post_type
+             FROM {$wpdb->posts}
+             WHERE post_name IN ($placeholders)
+               AND post_type NOT IN ('revision','attachment','nav_menu_item','edp_seo_city')
+               AND post_status NOT IN ('trash','auto-draft')",
+            ...$slugs
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_results($sql);
+
+        $map = [];
+        if (is_array($rows)) {
+            foreach ($rows as $post) {
+                if ($post instanceof WP_Post || (is_object($post) && isset($post->post_name))) {
+                    $map[(string) $post->post_name] = $post;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public static function get_row_by_id(int $id): ?array

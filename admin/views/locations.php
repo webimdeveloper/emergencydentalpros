@@ -1220,4 +1220,107 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 		}
 	}
 }());
+
+/* ── Flat URL conflict: Migrate & Ignore ── */
+(function () {
+	var overlay   = document.getElementById('edp-migrate-modal');
+	var migrateConfirmBtn = overlay ? overlay.querySelector('.edp-modal-confirm-btn') : null;
+	var modalTitle = overlay ? overlay.querySelector('.edp-modal-title') : null;
+	var pendingBtn = null;
+
+	function closeModal() {
+		if (overlay) {
+			overlay.classList.remove('is-open');
+		}
+		pendingBtn = null;
+	}
+
+	if (overlay) {
+		overlay.addEventListener('click', function (e) {
+			if (e.target === overlay) { closeModal(); }
+		});
+		var cancelBtn = overlay.querySelector('.edp-modal-cancel-btn');
+		if (cancelBtn) { cancelBtn.addEventListener('click', closeModal); }
+	}
+
+	document.addEventListener('click', function (e) {
+		/* Migrate & Take Over */
+		var migrateBtn = e.target.closest('.edp-migrate-btn');
+		if (migrateBtn && overlay) {
+			var postTitle = migrateBtn.dataset.conflictPostTitle || '';
+			if (modalTitle) { modalTitle.textContent = postTitle; }
+			overlay.classList.add('is-open');
+			pendingBtn = migrateBtn;
+			return;
+		}
+
+		/* Ignore */
+		var ignoreBtn = e.target.closest('.edp-ignore-conflict-btn');
+		if (ignoreBtn) {
+			var slug  = ignoreBtn.dataset.citySlug || '';
+			var nonce = ignoreBtn.dataset.nonce || '';
+			var body  = new FormData();
+			body.append('action', 'edp_ignore_conflict');
+			body.append('city_slug', slug);
+			body.append('nonce', nonce);
+			ignoreBtn.disabled = true;
+			fetch(ajaxurl, { method: 'POST', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					if (json.success) {
+						var cell = ignoreBtn.closest('td');
+						if (cell) { cell.innerHTML = '<span class="edp-conflict-ignored">&#9888; <?php echo esc_js(__('Ignored', 'emergencydentalpros')); ?></span>'; }
+					} else {
+						ignoreBtn.disabled = false;
+					}
+				})
+				.catch(function () { ignoreBtn.disabled = false; });
+		}
+	});
+
+	if (migrateConfirmBtn) {
+		migrateConfirmBtn.addEventListener('click', function () {
+			if (!pendingBtn) { return; }
+			var locationId    = pendingBtn.dataset.locationId || '';
+			var conflictPostId = pendingBtn.dataset.conflictPostId || '';
+			var nonce         = pendingBtn.dataset.nonce || '';
+			var body = new FormData();
+			body.append('action', 'edp_migrate_and_create');
+			body.append('location_id', locationId);
+			body.append('conflict_post_id', conflictPostId);
+			body.append('nonce', nonce);
+			migrateConfirmBtn.disabled = true;
+			fetch(ajaxurl, { method: 'POST', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (json) {
+					migrateConfirmBtn.disabled = false;
+					if (json.success) {
+						closeModal();
+						window.location.reload();
+					} else {
+						// eslint-disable-next-line no-alert
+						alert((json.data && json.data.message) || '<?php echo esc_js(__('Migration failed.', 'emergencydentalpros')); ?>');
+					}
+				})
+				.catch(function () { migrateConfirmBtn.disabled = false; });
+		});
+	}
+}());
 </script>
+
+<!-- Migrate modal -->
+<div id="edp-migrate-modal" class="edp-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="edp-modal-heading">
+	<div class="edp-modal">
+		<h2 id="edp-modal-heading"><?php esc_html_e('Migrate Location Page', 'emergencydentalpros'); ?></h2>
+		<p><?php esc_html_e('Existing WP page:', 'emergencydentalpros'); ?> <strong class="edp-modal-title"></strong></p>
+		<ul>
+			<li><?php esc_html_e('Set existing page to Draft (content preserved)', 'emergencydentalpros'); ?></li>
+			<li><?php esc_html_e('Create a new Location Page at the same slug', 'emergencydentalpros'); ?></li>
+			<li><?php esc_html_e('Import existing page body as location content', 'emergencydentalpros'); ?></li>
+		</ul>
+		<div class="edp-modal-footer">
+			<button type="button" class="button edp-modal-cancel-btn"><?php esc_html_e('Cancel', 'emergencydentalpros'); ?></button>
+			<button type="button" class="button button-primary edp-modal-confirm-btn"><?php esc_html_e('Migrate &amp; Take Over', 'emergencydentalpros'); ?></button>
+		</div>
+	</div>
+</div>

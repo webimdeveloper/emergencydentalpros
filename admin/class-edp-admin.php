@@ -45,6 +45,8 @@ final class EDP_Admin
         add_action('wp_ajax_edp_delete_all_rows', [self::class, 'ajax_delete_all_rows']);
         add_action('wp_ajax_edp_check_pagespeed', [self::class, 'ajax_check_pagespeed']);
         add_action('wp_ajax_edp_analyze_cqs',    [self::class, 'ajax_analyze_cqs']);
+        add_action('wp_ajax_edp_migrate_and_create', [self::class, 'ajax_migrate_and_create']);
+        add_action('wp_ajax_edp_ignore_conflict',    [self::class, 'ajax_ignore_conflict']);
         add_action('add_meta_boxes', [self::class, 'register_faq_metabox']);
         add_action('save_post_' . EDP_CPT::POST_TYPE, [self::class, 'save_faq_metabox'], 10, 1);
 
@@ -1797,5 +1799,114 @@ final class EDP_Admin
         }
 
         update_post_meta($post_id, '_edp_faq_items', wp_json_encode($clean));
+    }
+
+    /**
+     * AJAX: draft an old WP page and create a location CPT that takes over its slug.
+     */
+    public static function ajax_migrate_and_create(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        check_ajax_referer('edp_migrate_location', 'nonce');
+
+        $location_id     = absint($_POST['location_id'] ?? 0);
+        $conflict_post_id = absint($_POST['conflict_post_id'] ?? 0);
+
+        if ($location_id <= 0 || $conflict_post_id <= 0) {
+            wp_send_json_error(['message' => esc_html__('Invalid parameters.', 'emergencydentalpros')]);
+        }
+
+        $row = EDP_Database::get_row_by_id($location_id);
+        if (!is_array($row)) {
+            wp_send_json_error(['message' => esc_html__('Location not found.', 'emergencydentalpros')]);
+        }
+
+        $conflict_post = get_post($conflict_post_id);
+        if (!$conflict_post instanceof WP_Post) {
+            wp_send_json_error(['message' => esc_html__('Conflict post not found.', 'emergencydentalpros')]);
+        }
+
+        // Draft the old page to free the slug.
+        wp_update_post([
+            'ID'          => $conflict_post_id,
+            'post_status' => 'draft',
+        ]);
+
+        // Import body content and meta from the old page.
+        $imported_body      = $conflict_post->post_content;
+        $pre_meta_title     = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_title', true)
+            ?: (string) get_post_meta($conflict_post_id, 'rank_math_title', true);
+        $pre_meta_desc      = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_metadesc', true)
+            ?: (string) get_post_meta($conflict_post_id, 'rank_math_description', true);
+
+        $post_id = wp_insert_post([
+            'post_type'   => EDP_CPT::POST_TYPE,
+            'post_status' => 'publish',
+            'post_title'  => (string) ($row['city_name'] ?? ''),
+            'post_name'   => sanitize_title((string) ($row['city_slug'] ?? '')),
+            'post_content' => $imported_body,
+        ]);
+
+        if (is_wp_error($post_id) || !$post_id) {
+            // Restore original page status on failure.
+            wp_update_post(['ID' => $conflict_post_id, 'post_status' => $conflict_post->post_status]);
+            wp_send_json_error(['message' => esc_html__('Failed to create location page.', 'emergencydentalpros')]);
+        }
+
+        update_post_meta((int) $post_id, '_edp_location_id', $location_id);
+        update_post_meta((int) $post_id, '_edp_redirect_post_id', $conflict_post_id);
+        if ($imported_body !== '') {
+            update_post_meta((int) $post_id, '_edp_body', wp_kses_post($imported_body));
+        }
+        if ($pre_meta_title !== '') {
+            update_post_meta((int) $post_id, '_edp_meta_title', sanitize_text_field($pre_meta_title));
+        }
+        if ($pre_meta_desc !== '') {
+            update_post_meta((int) $post_id, '_edp_meta_description', sanitize_textarea_field($pre_meta_desc));
+        }
+
+        global $wpdb;
+        $wpdb->update(
+            EDP_Database::table_name(),
+            ['custom_post_id' => (int) $post_id, 'override_type' => 'cpt'],
+            ['id' => $location_id],
+            ['%d', '%s'],
+            ['%d']
+        );
+
+        wp_send_json_success(['post_id' => (int) $post_id]);
+    }
+
+    /**
+     * AJAX: mark a slug conflict as ignored (stored in a WP option).
+     */
+    public static function ajax_ignore_conflict(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => esc_html__('Forbidden', 'emergencydentalpros')], 403);
+        }
+
+        $slug = sanitize_title((string) ($_POST['city_slug'] ?? ''));
+
+        if ($slug === '') {
+            wp_send_json_error(['message' => esc_html__('Invalid slug.', 'emergencydentalpros')]);
+        }
+
+        check_ajax_referer('edp_ignore_conflict_' . $slug, 'nonce');
+
+        $ignored = get_option('edp_ignored_conflicts', []);
+        if (!is_array($ignored)) {
+            $ignored = [];
+        }
+
+        if (!in_array($slug, $ignored, true)) {
+            $ignored[] = $slug;
+            update_option('edp_ignored_conflicts', $ignored, false);
+        }
+
+        wp_send_json_success();
     }
 }

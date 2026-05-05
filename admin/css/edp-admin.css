@@ -2350,3 +2350,80 @@ a.edp-stat-filter-item.is-active .edp-stat-filter-arrow {
   object-fit: cover;
 }
 
+/* ── Flat URL conflict column ─────────────────────────────── */
+.edp-conflict-ok {
+  color: #00a32a;
+  vertical-align: middle;
+}
+.edp-conflict-badge {
+  display: inline-block;
+  background: #f0b849;
+  color: #1d2327;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.edp-conflict-ignored {
+  color: #8c8f94;
+  font-size: 12px;
+}
+.edp-conflict-detail {
+  margin-top: 3px;
+  font-size: 12px;
+}
+.edp-conflict-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.edp-ignore-conflict-btn {
+  font-size: 12px;
+  color: #8c8f94;
+}
+.edp-ignore-conflict-btn:hover {
+  color: #d63638;
+}
+
+/* ── Migrate modal ───────────────────────────────────────── */
+.edp-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+.edp-modal-overlay.is-open {
+  display: flex;
+}
+.edp-modal {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.25);
+  padding: 24px 28px;
+  max-width: 480px;
+  width: 100%;
+}
+.edp-modal h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.edp-modal ul {
+  margin: 0 0 16px 18px;
+  padding: 0;
+}
+.edp-modal ul li {
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.edp-modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+

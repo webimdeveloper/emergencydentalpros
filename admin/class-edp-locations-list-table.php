@@ -36,6 +36,9 @@ final class EDP_Locations_List_Table extends WP_List_Table
     /** @var array<int, array<string, mixed>> location id => CQS cache row */
     public $cqs_map = [];
 
+    /** @var array<string, object> city_slug => WP_Post for conflict detection (flat mode only) */
+    public $conflict_map = [];
+
     /**
      * @param string $screen_hook Return value of add_submenu_page for this screen (required so
      *                            get_column_headers() and manage_{$screen->id}_columns work).
@@ -65,7 +68,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     public function get_columns(): array
     {
-        return [
+        $cols = [
             'cb'          => '<input type="checkbox" />',
             'id'          => __('ID', 'emergencydentalpros'),
             'state'       => __('State', 'emergencydentalpros'),
@@ -76,6 +79,12 @@ final class EDP_Locations_List_Table extends WP_List_Table
             'cqs'         => __('CQS', 'emergencydentalpros'),
             'edp_actions' => __('Map Post', 'emergencydentalpros'),
         ];
+
+        if (EDP_Rewrite::get_url_mode() === 'flat') {
+            $cols['url_conflict'] = __('URL', 'emergencydentalpros');
+        }
+
+        return $cols;
     }
 
     public function no_items(): void
@@ -264,6 +273,16 @@ final class EDP_Locations_List_Table extends WP_List_Table
         $this->pagespeed_map     = EDP_Database::get_pagespeed_for_locations($ids);
         $this->cqs_map           = EDP_Database::get_cqs_for_locations($ids);
 
+        if (EDP_Rewrite::get_url_mode() === 'flat') {
+            $city_slugs = [];
+            foreach ($this->items as $it) {
+                if (is_array($it) && !empty($it['city_slug'])) {
+                    $city_slugs[] = sanitize_title((string) $it['city_slug']);
+                }
+            }
+            $this->conflict_map = EDP_Database::find_wp_slug_conflicts_bulk($city_slugs);
+        }
+
         $this->set_pagination_args(
             [
                 'total_items' => $total,
@@ -366,6 +385,52 @@ final class EDP_Locations_List_Table extends WP_List_Table
             . '</button>';
 
         return $city_link . $this->row_actions(['delete' => $delete_btn]);
+    }
+
+    public function column_url_conflict($item): string
+    {
+        $slug     = sanitize_title((string) ($item['city_slug'] ?? ''));
+        $loc_id   = (int) ($item['id'] ?? 0);
+        $ignored  = get_option('edp_ignored_conflicts', []);
+        $is_ignored = is_array($ignored) && in_array($slug, $ignored, true);
+
+        if (!isset($this->conflict_map[$slug])) {
+            return '<span class="edp-conflict-ok dashicons dashicons-yes-alt" title="' . esc_attr__('No conflict', 'emergencydentalpros') . '"></span>';
+        }
+
+        $conflict_post = $this->conflict_map[$slug];
+        $post_id    = (int) $conflict_post->ID;
+        $post_title = (string) $conflict_post->post_title;
+        $edit_url   = get_edit_post_link($post_id);
+
+        if ($is_ignored) {
+            return '<span class="edp-conflict-ignored" title="' . esc_attr__('Conflict ignored', 'emergencydentalpros') . '">&#9888; '
+                . esc_html__('Ignored', 'emergencydentalpros')
+                . '</span>';
+        }
+
+        $migrate_btn = '<button type="button" class="edp-migrate-btn button button-small" '
+            . 'data-location-id="' . esc_attr((string) $loc_id) . '" '
+            . 'data-conflict-post-id="' . esc_attr((string) $post_id) . '" '
+            . 'data-conflict-post-title="' . esc_attr($post_title) . '" '
+            . 'data-city-slug="' . esc_attr($slug) . '" '
+            . 'data-nonce="' . esc_attr(wp_create_nonce('edp_migrate_location')) . '">'
+            . esc_html__('Migrate & Take Over', 'emergencydentalpros')
+            . '</button>';
+
+        $ignore_btn = '<button type="button" class="edp-ignore-conflict-btn button-link" '
+            . 'data-city-slug="' . esc_attr($slug) . '" '
+            . 'data-nonce="' . esc_attr(wp_create_nonce('edp_ignore_conflict_' . $slug)) . '">'
+            . esc_html__('Ignore', 'emergencydentalpros')
+            . '</button>';
+
+        $edit_link = $edit_url
+            ? '<a href="' . esc_url($edit_url) . '">' . esc_html($post_title) . '</a>'
+            : esc_html($post_title);
+
+        return '<span class="edp-conflict-badge">&#9888; ' . esc_html__('Conflict', 'emergencydentalpros') . '</span>'
+            . '<div class="edp-conflict-detail">' . $edit_link . '</div>'
+            . '<div class="edp-conflict-actions">' . $migrate_btn . ' ' . $ignore_btn . '</div>';
     }
 
     /**
