@@ -1558,7 +1558,7 @@ final class EDP_Admin
             wp_send_json_error(['message' => __('Location not found.', 'emergencydentalpros')]);
         }
 
-        $url    = home_url(user_trailingslashit('locations/' . rawurlencode((string) $row['state_slug']) . '/' . rawurlencode((string) $row['city_slug'])));
+        $url = EDP_Rewrite::city_url($row);
         $client = new EDP_Pagespeed_Client($api_key);
 
         // Allow long execution — each PSI call takes 5–15 s.

@@ -33,7 +33,7 @@ $states = isset($edp_data['states']) && is_array($edp_data['states']) ? $edp_dat
 					if ($slug === '') {
 						continue;
 					}
-					$url = home_url(user_trailingslashit('locations/' . rawurlencode($slug)));
+					$url = EDP_Rewrite::state_url( $slug );
 					?>
 					<li><a href="<?php echo esc_url($url); ?>"><?php echo esc_html($name); ?></a></li>
 				<?php endforeach; ?>

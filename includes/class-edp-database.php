@@ -432,6 +432,29 @@ final class EDP_Database
     }
 
     /**
+     * Look up a city by city_slug alone (used in flat URL mode).
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function get_city_row_by_slug(string $city_slug): ?array
+    {
+        global $wpdb;
+
+        $table = self::table_name();
+        $city_slug = sanitize_title($city_slug);
+
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE city_slug = %s LIMIT 1",
+            $city_slug
+        );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $row = $wpdb->get_row($sql, ARRAY_A);
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public static function get_row_by_id(int $id): ?array

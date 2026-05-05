@@ -34,11 +34,7 @@ final class EDP_Schema
         $state_slug = isset($row['state_slug']) ? (string) $row['state_slug']             : '';
         $city_slug  = isset($row['city_slug'])  ? (string) $row['city_slug']              : '';
 
-        $page_url = home_url(
-            user_trailingslashit(
-                'locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)
-            )
-        );
+        $page_url = EDP_Rewrite::city_url($row);
 
         $area_served = [
             [
@@ -81,13 +77,13 @@ final class EDP_Schema
                     '@type'    => 'ListItem',
                     'position' => 2,
                     'name'     => 'Locations',
-                    'item'     => home_url(user_trailingslashit('locations')),
+                    'item'     => EDP_Rewrite::states_url(),
                 ],
                 [
                     '@type'    => 'ListItem',
                     'position' => 3,
                     'name'     => $state_name !== '' ? $state_name : $state_id,
-                    'item'     => home_url(user_trailingslashit('locations/' . rawurlencode($state_slug))),
+                    'item'     => EDP_Rewrite::state_url($state_slug),
                 ],
                 [
                     '@type'    => 'ListItem',

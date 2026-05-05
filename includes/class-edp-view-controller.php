@@ -89,6 +89,45 @@ final class EDP_View_Controller
                 ];
                 break;
 
+            case EDP_Rewrite::VIEW_CITY_FLAT:
+                $slug = sanitize_title((string) get_query_var(EDP_Rewrite::Q_SLUG));
+
+                if ($slug === '') {
+                    self::set_404();
+
+                    return;
+                }
+
+                $row = EDP_Database::get_city_row_by_slug($slug);
+
+                if ($row === null || ($row['page_status'] ?? 'published') === 'draft') {
+                    self::set_404();
+
+                    return;
+                }
+
+                self::$ctx = [
+                    'view' => 'city',
+                    'state_slug' => (string) ($row['state_slug'] ?? ''),
+                    'city_slug' => $slug,
+                    'row' => $row,
+                ];
+                break;
+
+            case EDP_Rewrite::VIEW_AUTO:
+                $slug = sanitize_title((string) get_query_var(EDP_Rewrite::Q_SLUG));
+
+                if ($slug === '' || !EDP_Database::state_exists($slug)) {
+                    // Not our URL — let WordPress handle it.
+                    return;
+                }
+
+                self::$ctx = [
+                    'view' => 'state',
+                    'state_slug' => $slug,
+                ];
+                break;
+
             default:
                 self::set_404();
         }
@@ -215,15 +254,13 @@ final class EDP_View_Controller
         $view = (string) (self::$ctx['view'] ?? '');
 
         if ($view === 'state-list') {
-            $url = home_url(user_trailingslashit('locations'));
+            $url = EDP_Rewrite::states_url();
         } elseif ($view === 'state') {
             $slug = (string) (self::$ctx['state_slug'] ?? '');
-            $url  = home_url(user_trailingslashit('locations/' . rawurlencode($slug)));
+            $url  = EDP_Rewrite::state_url($slug);
         } elseif ($view === 'city') {
-            $row  = self::$ctx['row'] ?? [];
-            $url  = home_url(user_trailingslashit(
-                'locations/' . rawurlencode((string) ($row['state_slug'] ?? '')) . '/' . rawurlencode((string) ($row['city_slug'] ?? ''))
-            ));
+            $row = (array) (self::$ctx['row'] ?? []);
+            $url = EDP_Rewrite::city_url($row);
         } else {
             return;
         }
@@ -268,15 +305,13 @@ final class EDP_View_Controller
 
         $current_url = '';
         if ($view === 'state-list') {
-            $current_url = home_url(user_trailingslashit('locations'));
+            $current_url = EDP_Rewrite::states_url();
         } elseif ($view === 'state') {
             $slug        = (string) (self::$ctx['state_slug'] ?? '');
-            $current_url = home_url(user_trailingslashit('locations/' . rawurlencode($slug)));
+            $current_url = EDP_Rewrite::state_url($slug);
         } elseif ($view === 'city') {
-            $row         = self::$ctx['row'] ?? [];
-            $current_url = home_url(user_trailingslashit(
-                'locations/' . rawurlencode((string) ($row['state_slug'] ?? '')) . '/' . rawurlencode((string) ($row['city_slug'] ?? ''))
-            ));
+            $row         = (array) (self::$ctx['row'] ?? []);
+            $current_url = EDP_Rewrite::city_url($row);
         }
 
         echo '<meta property="og:type" content="website" />' . "\n";
@@ -402,9 +437,7 @@ final class EDP_View_Controller
             return;
         }
 
-        $url = home_url(user_trailingslashit(
-            'locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)
-        ));
+        $url = EDP_Rewrite::city_url($location);
 
         wp_redirect($url, 301);
         exit;

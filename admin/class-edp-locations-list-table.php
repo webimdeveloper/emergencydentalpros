@@ -351,9 +351,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
 
     public function column_city($item): string
     {
-        $state_slug = sanitize_title((string) ($item['state_slug'] ?? ''));
-        $city_slug  = sanitize_title((string) ($item['city_slug'] ?? ''));
-        $url        = home_url(user_trailingslashit('locations/' . rawurlencode($state_slug) . '/' . rawurlencode($city_slug)));
+        $url = EDP_Rewrite::city_url($item);
         $id         = (int) ($item['id'] ?? 0);
 
         $city_link = '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">'

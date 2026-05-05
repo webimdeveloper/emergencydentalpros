@@ -35,7 +35,7 @@ $state_slug = isset($state['state_slug']) ? sanitize_title((string) $state['stat
 					if ($cs === '' || $state_slug === '') {
 						continue;
 					}
-					$url = home_url(user_trailingslashit('locations/' . rawurlencode($state_slug) . '/' . rawurlencode($cs)));
+					$url = EDP_Rewrite::city_url( $city );
 					?>
 					<li><a href="<?php echo esc_url($url); ?>"><?php echo esc_html($cn); ?></a></li>
 				<?php endforeach; ?>

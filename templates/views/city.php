@@ -61,10 +61,8 @@ $faq_intro        = isset($faq['intro']) ? (string) $faq['intro'] : '';
 					if (!is_array($oc)) {
 						continue;
 					}
-					$oc_name       = (string) ($oc['city_name'] ?? '');
-					$oc_city_slug  = (string) ($oc['city_slug'] ?? '');
-					$oc_state_slug = (string) ($row['state_slug'] ?? '');
-					$oc_url        = home_url( user_trailingslashit( 'locations/' . $oc_state_slug . '/' . $oc_city_slug ) );
+					$oc_name = (string) ($oc['city_name'] ?? '');
+					$oc_url  = EDP_Rewrite::city_url( $oc );
 					?>
 					<li class="edp-city-item">
 						<a href="<?php echo esc_url($oc_url); ?>"><?php echo esc_html($oc_name); ?></a>

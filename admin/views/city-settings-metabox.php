@@ -51,10 +51,7 @@ $show_other_cities     = $show_other_cities_raw === '' ? 1 : (int) $show_other_c
 // Front-end page URL.
 $page_url = '';
 if ( $row ) {
-    $page_url = home_url( user_trailingslashit(
-        'locations/' . rawurlencode( (string) ( $row['state_slug'] ?? '' ) )
-        . '/' . rawurlencode( (string) ( $row['city_slug'] ?? '' ) )
-    ) );
+    $page_url = EDP_Rewrite::city_url( $row );
 }
 
 // Field coverage count (other_cities toggle counts when explicitly set to 0).
