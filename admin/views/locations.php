@@ -1222,7 +1222,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 }());
 
 /* ── Flat URL conflict: Migrate & Ignore ── */
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
 	var overlay   = document.getElementById('edp-migrate-modal');
 	var migrateConfirmBtn = overlay ? overlay.querySelector('.edp-modal-confirm-btn') : null;
 	var modalTitle = overlay ? overlay.querySelector('.edp-modal-title') : null;
@@ -1305,7 +1305,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 				.catch(function () { migrateConfirmBtn.disabled = false; });
 		});
 	}
-}());
+});
 </script>
 
 <!-- Migrate modal -->
