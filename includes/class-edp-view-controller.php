@@ -101,6 +101,33 @@ final class EDP_View_Controller
                 $row = EDP_Database::get_city_row_by_slug($slug);
 
                 if ($row === null || ($row['page_status'] ?? 'published') === 'draft') {
+                    // Before 404-ing, check if a real WP page has this slug.
+                    // In flat mode the catch-all rewrite rule intercepts all single-segment
+                    // URLs (including /services/, /about/ etc.) before WordPress can route
+                    // them to pages. Re-query as a page so the correct template renders.
+                    $page = get_page_by_path($slug, OBJECT, 'page');
+                    if ($page instanceof \WP_Post && $page->post_status === 'publish') {
+                        global $wp_query, $post;
+                        // Directly wire up the WP_Query state so body_class(), the_content()
+                        // and get_page_template() all see this as a singular page request.
+                        $wp_query->is_page        = true;
+                        $wp_query->is_singular    = true;
+                        $wp_query->is_home        = false;
+                        $wp_query->is_archive     = false;
+                        $wp_query->is_404         = false;
+                        $wp_query->posts          = [$page];
+                        $wp_query->post           = $page;
+                        $wp_query->post_count     = 1;
+                        $wp_query->found_posts    = 1;
+                        $wp_query->queried_object    = $page;
+                        $wp_query->queried_object_id = $page->ID;
+                        $wp_query->query_vars['page_id'] = $page->ID;
+                        $post = $page; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+                        setup_postdata($post);
+
+                        return; // Let WP template hierarchy pick the correct template.
+                    }
+
                     self::set_404();
 
                     return;
@@ -118,7 +145,32 @@ final class EDP_View_Controller
                 $slug = sanitize_title((string) get_query_var(EDP_Rewrite::Q_SLUG));
 
                 if ($slug === '' || !EDP_Database::state_exists($slug)) {
-                    // Not our URL — let WordPress handle it.
+                    // strip_conflicting_query_vars already removed 'pagename', so the main
+                    // query ran as home/blog. Check for a real WP page and wire up $wp_query
+                    // so the correct page template renders instead of a 404 or blog fallback.
+                    if ($slug !== '') {
+                        $page = get_page_by_path($slug, OBJECT, 'page');
+                        if ($page instanceof \WP_Post && $page->post_status === 'publish') {
+                            global $wp_query, $post;
+                            $wp_query->is_page           = true;
+                            $wp_query->is_singular       = true;
+                            $wp_query->is_home           = false;
+                            $wp_query->is_archive        = false;
+                            $wp_query->is_404            = false;
+                            $wp_query->posts             = [$page];
+                            $wp_query->post              = $page;
+                            $wp_query->post_count        = 1;
+                            $wp_query->found_posts       = 1;
+                            $wp_query->queried_object    = $page;
+                            $wp_query->queried_object_id = $page->ID;
+                            $wp_query->query_vars['page_id'] = $page->ID;
+                            $post = $page; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+                            setup_postdata($post);
+
+                            return;
+                        }
+                    }
+
                     return;
                 }
 
