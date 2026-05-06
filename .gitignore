@@ -22,4 +22,5 @@ local_seo_plugin_features_DEEP.html
 test-results/
 
 # PHP dependencies
-vendor/
+vendor/tests/.auth/
+package-lock.json
