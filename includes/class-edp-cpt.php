@@ -54,8 +54,6 @@ final class EDP_CPT
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
         add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
         add_filter('use_block_editor_for_post_type',    [self::class, 'disable_block_editor'], 10, 2);
-        // Force all metaboxes into the main column regardless of per-user drag state.
-        add_filter('get_user_option_meta-box-order_' . self::POST_TYPE, [self::class, 'force_metabox_order']);
     }
 
     public static function register_metaboxes(): void
@@ -68,16 +66,6 @@ final class EDP_CPT
             'normal',
             'high'
         );
-    }
-
-    /** Forces all metaboxes into the main column so dragging cannot break the layout. */
-    public static function force_metabox_order(): array
-    {
-        return [
-            'normal'   => 'submitdiv,edp_location_settings,edp_faq_metabox',
-            'side'     => '',
-            'advanced' => '',
-        ];
     }
 
     public static function render_settings_metabox(\WP_Post $post): void
@@ -187,8 +175,15 @@ final class EDP_CPT
         echo '<style>'
             . '#postimagediv,#slugdiv,#titlediv{display:none!important}'
             . '#postbox-container-1{display:none!important}'
-            . '#post-body-content{margin-right:0!important}'
+            . '#post-body-content{margin-right:0!important;float:none!important;width:100%!important}'
             . '#postbox-container-2{float:none!important;width:100%!important;margin:0!important}'
             . '</style>' . "\n";
+
+        // Move anything WordPress placed in the side column into the main column.
+        echo '<script>document.addEventListener("DOMContentLoaded",function(){'
+            . 'var s=document.getElementById("postbox-container-1");'
+            . 'var m=document.getElementById("postbox-container-2");'
+            . 'if(s&&m){while(s.firstChild){m.prepend(s.firstChild);}s.style.display="none";}'
+            . '});</script>' . "\n";
     }
 }
