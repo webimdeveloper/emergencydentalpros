@@ -169,6 +169,7 @@ final class EDP_Admin
             $merged['templates'][$ctx]['body']             = (string) ($t['body'] ?? '');
 
             if ($ctx === 'city_landing') {
+                $merged['templates'][$ctx]['video_url']        = (string) ($t['video_url'] ?? '');
                 $merged['templates'][$ctx]['communities_h2']   = (string) ($t['communities_h2'] ?? '');
                 $merged['templates'][$ctx]['communities_body'] = (string) ($t['communities_body'] ?? '');
                 $merged['templates'][$ctx]['other_cities_h2']  = (string) ($t['other_cities_h2'] ?? '');

@@ -144,6 +144,19 @@ $context_vars = [
 						<p class="edp-hint"><?php esc_html_e('Section heading displayed below H1 on the page.', 'emergencydentalpros'); ?></p>
 					</div>
 
+					<?php if ($key === 'city_landing'): ?>
+					<div class="edp-form-row">
+						<label for="edp_<?php echo esc_attr($key); ?>_video_url"><?php esc_html_e('YouTube Video URL', 'emergencydentalpros'); ?></label>
+						<input type="url"
+							id="edp_<?php echo esc_attr($key); ?>_video_url"
+							name="edp_seo[templates][<?php echo esc_attr($key); ?>][video_url]"
+							value="<?php echo esc_attr((string) ($t['video_url'] ?? '')); ?>"
+							placeholder="https://www.youtube.com/watch?v=..."
+							class="regular-text" />
+						<p class="edp-hint"><?php esc_html_e('Default video shown on all city pages. Leave empty to hide the video section. Individual static pages can override or disable this.', 'emergencydentalpros'); ?></p>
+					</div>
+					<?php endif; ?>
+
 					<div class="edp-form-row">
 						<label><?php esc_html_e('Content (HTML)', 'emergencydentalpros'); ?></label>
 						<?php

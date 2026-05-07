@@ -628,10 +628,14 @@ final class EDP_View_Controller
                 $other_cities = array_slice($other_cities, 0, 12);
             }
 
+            $settings  = EDP_Settings::get_all();
+            $video_url = (string) ($settings['templates']['city_landing']['video_url'] ?? '');
+
             return [
                 'h1'               => $resolved['h1'],
                 'subtitle'         => $resolved['subtitle'] ?? '',
                 'body'             => $resolved['html'],
+                'video_url'        => $video_url,
                 'zips'             => $zips,
                 'row'              => $row,
                 'source'           => $resolved['source'],
