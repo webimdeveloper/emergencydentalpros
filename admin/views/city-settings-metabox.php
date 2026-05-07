@@ -27,7 +27,6 @@ $vars      = $row ? EDP_Template_Engine::context_from_city_row( $base, $row ) : 
 $ph_meta_title = EDP_Template_Engine::replace( (string) ( $templates['meta_title']       ?? '' ), $vars );
 $ph_h1         = EDP_Template_Engine::replace( (string) ( $templates['h1']               ?? '' ), $vars );
 $ph_meta_desc  = EDP_Template_Engine::replace( (string) ( $templates['meta_description'] ?? '' ), $vars );
-$ph_body       = EDP_Template_Engine::replace( (string) ( $templates['body']             ?? '' ), $vars );
 $ph_comm_body  = EDP_Template_Engine::replace( (string) ( $templates['communities_body'] ?? '' ), $vars );
 
 // Communities H2: fall back to raw template if county_name is empty in this row.
@@ -40,7 +39,6 @@ if ( $ph_comm_h2 === '' ) {
 $val_meta_title   = (string) get_post_meta( $post->ID, '_edp_meta_title',       true );
 $val_h1           = (string) get_post_meta( $post->ID, '_edp_h1',               true );
 $val_meta_desc    = (string) get_post_meta( $post->ID, '_edp_meta_description', true );
-$val_body         = (string) get_post_meta( $post->ID, '_edp_body',             true );
 $val_comm_h2      = (string) get_post_meta( $post->ID, '_edp_communities_h2',   true );
 $val_comm_body    = (string) get_post_meta( $post->ID, '_edp_communities_body', true );
 
@@ -55,7 +53,7 @@ if ( $row ) {
 }
 
 // Field coverage count (other_cities toggle counts when explicitly set to 0).
-$all_overrides = [ $val_meta_title, $val_meta_desc, $val_h1, $val_body, $val_comm_h2, $val_comm_body ];
+$all_overrides = [ $val_meta_title, $val_meta_desc, $val_h1, $val_comm_h2, $val_comm_body ];
 $filled_count  = count( array_filter( $all_overrides, fn( $v ) => $v !== '' ) );
 if ( $show_other_cities_raw !== '' ) {
     $filled_count++;
@@ -161,30 +159,6 @@ if ( $redirect_post_id > 0 ) {
         value="<?php echo esc_attr( $val_h1 ); ?>"
         placeholder="<?php echo esc_attr( $ph_h1 ); ?>" />
     <span class="edp-mb-counter" data-for="edp_h1"></span>
-</div>
-
-<div class="edp-mb-section-title">
-    <?php esc_html_e( 'Main content', 'emergencydentalpros' ); ?>
-    <span class="edp-mb-cqs-note"><?php esc_html_e( 'up to 25 CQS points', 'emergencydentalpros' ); ?></span>
-</div>
-
-<div class="edp-mb-row">
-    <label><?php esc_html_e( 'Body text', 'emergencydentalpros' ); ?></label>
-    <?php if ( $val_body === '' && $ph_body !== '' ) : ?>
-        <p class="edp-mb-hint" style="margin-bottom:6px;"><?php esc_html_e( 'Showing template default — edit to override, clear to revert.', 'emergencydentalpros' ); ?></p>
-    <?php endif; ?>
-    <?php
-    wp_editor(
-        $val_body !== '' ? $val_body : $ph_body,
-        'edp_body',
-        [
-            'textarea_name' => 'edp_body',
-            'media_buttons' => false,
-            'textarea_rows' => 6,
-            'teeny'         => true,
-        ]
-    );
-    ?>
 </div>
 
 <div class="edp-mb-section-title"><?php esc_html_e( 'Communities section', 'emergencydentalpros' ); ?></div>

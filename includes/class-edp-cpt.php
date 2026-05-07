@@ -42,7 +42,7 @@ final class EDP_CPT
                 'exclude_from_search' => true,
                 'has_archive'         => false,
                 'rewrite'             => false,
-                'supports'            => ['title'],
+                'supports'            => ['title', 'editor'],
                 'capability_type'     => 'post',
                 'map_meta_cap'        => true,
             ]
@@ -122,7 +122,6 @@ final class EDP_CPT
 
         $textarea_fields = [
             '_edp_meta_description' => 'edp_meta_description',
-            '_edp_body'             => 'edp_body',
             '_edp_communities_body' => 'edp_communities_body',
         ];
 
@@ -131,6 +130,11 @@ final class EDP_CPT
                 ? wp_kses_post(wp_unslash((string) $_POST[$post_key]))
                 : '';
             update_post_meta($post_id, $meta_key, $value);
+        }
+
+        // Sync WP editor (post_content) → _edp_body so the content resolver finds it.
+        if (isset($_POST['content'])) {
+            update_post_meta($post_id, '_edp_body', wp_kses_post(wp_unslash((string) $_POST['content'])));
         }
     }
 
