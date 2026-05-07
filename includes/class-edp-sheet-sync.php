@@ -10,7 +10,7 @@
  *   - One row, action=FALSE               → skip, no write-back
  *   - One row, action=TRUE                → process normally
  *   - Multiple rows, one TRUE + others FALSE → process the TRUE row, ignore FALSE
- *   - Multiple rows, two+ TRUE            → error all TRUE rows, skip all
+ *   - Multiple rows, two+ TRUE            → merge counties + ZIPs into one DB row, write back OK to all
  *
  * @package EmergencyDentalPros
  */
@@ -164,12 +164,19 @@ final class EDP_Sheet_Sync {
 			$active = array_values( array_filter( $slug_rows, fn( $r ) => $r['action'] === 'true' ) );
 
 			if ( count( $active ) > 1 ) {
-				// Conflict — multiple action=TRUE rows for the same slug.
-				foreach ( $active as $r ) {
-					$error_writebacks[ $r['sheet_row'] ] = 'ERROR: duplicate action=TRUE for slug ' . $city_slug . '. Fix duplicates and retry.';
-					$errors++;
-				}
-				$skipped += count( $slug_rows ) - count( $active );
+				// Multiple action=TRUE rows for the same slug — merge counties + ZIPs into one DB row.
+				$county_names = array_values( array_unique( array_filter(
+					array_column( $active, 'county_name' )
+				) ) );
+
+				$merged_row                    = $active[0];
+				$merged_row['county_name']     = $county_names[0] ?? '';
+				$merged_row['county_names_all'] = implode( ', ', $county_names );
+				$merged_row['zips_raw']         = implode( ',', array_column( $active, 'zips_raw' ) );
+				$merged_row['_extra_sheet_rows'] = array_column( $active, 'sheet_row' );
+
+				$process_queue[] = $merged_row;
+				$skipped        += count( $slug_rows ) - count( $active ); // false rows
 				continue;
 			}
 
@@ -203,20 +210,22 @@ final class EDP_Sheet_Sync {
 			}
 
 			// Build human-readable sync_note.
-			$note = 'OK ' . gmdate( 'Y-m-d' );
+			$note       = 'OK ' . gmdate( 'Y-m-d' );
+			$extra_rows = $r['_extra_sheet_rows'] ?? [ $r['sheet_row'] ];
 
-			if ( $r['faq'] !== strtolower( $r['faq'] ) ) {
-				// faq was downgraded (e.g. static → kept at current) — we already handled this in resolve_faq_type.
+			if ( count( $extra_rows ) > 1 ) {
+				$county_names_all = $r['county_names_all'] ?? '';
+				if ( $county_names_all !== '' ) {
+					$note .= ' (merged: ' . $county_names_all . ')';
+				}
 			}
 
-			// Warn if the sheet asked for faq=static but no content exists yet.
-			$faq_from_sheet = strtolower( (string) ( array_column( $process_queue, null, 'city_slug' )[ $r['city_slug'] ]['faq'] ?? $r['faq'] ) );
-			unset( $faq_from_sheet ); // not needed — note is already correct
-
-			$success_writebacks[ $r['sheet_row'] ] = [
-				'city_slug' => $r['city_slug'],
-				'note'      => $note,
-			];
+			foreach ( $extra_rows as $row_num ) {
+				$success_writebacks[ $row_num ] = [
+					'city_slug' => $r['city_slug'],
+					'note'      => $note,
+				];
+			}
 
 			$processed++;
 		}
@@ -302,20 +311,21 @@ final class EDP_Sheet_Sync {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $wpdb->prepare(
 			"INSERT INTO {$table}
-			(state_slug, state_name, state_id, city_slug, city_name, zips, county_name,
+			(state_slug, state_name, state_id, city_slug, city_name, zips, county_name, county_names_all,
 			 main_zip, page_status, google_places, faq_type, updated_at)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON DUPLICATE KEY UPDATE
-			  state_slug    = VALUES(state_slug),
-			  state_name    = VALUES(state_name),
-			  city_name     = IF(custom_post_id IS NULL OR custom_post_id = 0, VALUES(city_name), city_name),
-			  zips          = VALUES(zips),
-			  county_name   = VALUES(county_name),
-			  main_zip      = VALUES(main_zip),
-			  page_status   = VALUES(page_status),
-			  google_places = VALUES(google_places),
-			  faq_type      = VALUES(faq_type),
-			  updated_at    = VALUES(updated_at)",
+			  state_slug      = VALUES(state_slug),
+			  state_name      = VALUES(state_name),
+			  city_name       = IF(custom_post_id IS NULL OR custom_post_id = 0, VALUES(city_name), city_name),
+			  zips            = VALUES(zips),
+			  county_name     = VALUES(county_name),
+			  county_names_all = VALUES(county_names_all),
+			  main_zip        = VALUES(main_zip),
+			  page_status     = VALUES(page_status),
+			  google_places   = VALUES(google_places),
+			  faq_type        = VALUES(faq_type),
+			  updated_at      = VALUES(updated_at)",
 			$state_slug,
 			$r['state_name'],
 			$r['state_id'],
@@ -323,6 +333,7 @@ final class EDP_Sheet_Sync {
 			$r['city'],
 			$zips_json,
 			$r['county_name'],
+			$r['county_names_all'] ?? '',
 			$r['main_zip'],
 			$r['status'],
 			$r['google_places'],

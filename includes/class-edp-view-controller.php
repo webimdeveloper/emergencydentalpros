@@ -551,7 +551,7 @@ final class EDP_View_Controller
             $t = $templates['states_index'] ?? [];
             $h1       = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $base);
             $subtitle = EDP_Template_Engine::replace((string) ($t['subtitle'] ?? ''), $base);
-            $body     = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $base);
+            $body     = wpautop(EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $base));
 
             $cities_by_state = EDP_Database::get_all_cities_grouped_by_state();
             $total_cities = array_sum(array_map('count', $cities_by_state));
@@ -578,7 +578,7 @@ final class EDP_View_Controller
             $t = $templates['state_cities'] ?? [];
             $h1       = EDP_Template_Engine::replace((string) ($t['h1'] ?? ''), $vars);
             $subtitle = EDP_Template_Engine::replace((string) ($t['subtitle'] ?? ''), $vars);
-            $body     = EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $vars);
+            $body     = wpautop(EDP_Template_Engine::replace((string) ($t['body'] ?? ''), $vars));
 
             return [
                 'h1'       => $h1,

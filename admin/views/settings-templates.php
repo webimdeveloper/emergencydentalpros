@@ -13,9 +13,9 @@ if (!defined('ABSPATH')) {
 }
 
 $contexts = [
-	'states_index' => __('States Index', 'emergencydentalpros'),
-	'state_cities' => __('State + Cities', 'emergencydentalpros'),
-	'city_landing' => __('City Landing', 'emergencydentalpros'),
+	'states_index' => __('Locations', 'emergencydentalpros'),
+	'state_cities' => __('State', 'emergencydentalpros'),
+	'city_landing' => __('City', 'emergencydentalpros'),
 ];
 
 $context_vars = [
@@ -50,9 +50,9 @@ $context_vars = [
 			</div>
 		</div>
 		*/ ?>
-		<div class="edp-stat-row">
-			<?php /* Plugin Documentation — full width when Settings card is hidden */ ?>
-			<div class="edp-stat-card" style="flex:1 1 100%;"><?php /* was flex child next to Settings */ ?>
+		<div class="edp-stat-row" style="grid-template-columns: 1fr;">
+			<?php /* Plugin Documentation — full width, Settings card hidden */ ?>
+			<div class="edp-stat-card">
 				<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
 				<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
 				<div class="edp-doc-links">

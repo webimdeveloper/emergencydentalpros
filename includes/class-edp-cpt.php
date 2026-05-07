@@ -53,6 +53,9 @@ final class EDP_CPT
         add_action('admin_head-post.php',               [self::class, 'hide_meta_boxes_css']);
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
         add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
+        // Force classic editor — CPT has no block editor support and meta boxes
+        // behave correctly only in the classic layout (normal/side contexts).
+        add_filter('use_block_editor_for_post_type', [self::class, 'disable_block_editor'], 10, 2);
     }
 
     public static function register_metaboxes(): void
@@ -151,6 +154,11 @@ final class EDP_CPT
         $settings['content_style'] = ($settings['content_style'] ?? '') . ' ' . $css;
 
         return $settings;
+    }
+
+    public static function disable_block_editor(bool $use, string $type): bool
+    {
+        return $type === self::POST_TYPE ? false : $use;
     }
 
     /** Hides featured image, slug, and title metaboxes for this CPT. */

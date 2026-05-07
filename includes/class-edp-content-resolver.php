@@ -67,7 +67,7 @@ final class EDP_Content_Resolver
 
                     $body_meta = (string) get_post_meta($post->ID, '_edp_body', true);
                     if ($body_meta !== '') {
-                        $html = $body_meta;
+                        $html = wpautop($body_meta);
                     } elseif (trim($post->post_content) !== '') {
                         // Migration: content in WP editor before _edp_body meta was introduced.
                         $html = apply_filters('the_content', $post->post_content);
