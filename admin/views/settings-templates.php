@@ -39,29 +39,20 @@ $context_vars = [
 		<input type="hidden" name="action" value="edp_seo_save_settings" />
 
 		<?php /* ---- Settings + Docs row ---- */ ?>
+		<?php /* MVP: Settings card hidden — OG image and Twitter handle not needed yet
 		<div class="edp-stat-row">
 			<div class="edp-card" style="margin-bottom:0;">
-				<div class="edp-card-header"><?php esc_html_e('Settings', 'emergencydentalpros'); ?></div>
+				<div class="edp-card-header">Settings</div>
 				<div class="edp-card-body">
-					<div class="edp-form-row">
-						<label for="edp_og_image_url"><?php esc_html_e('Default OG image URL', 'emergencydentalpros'); ?></label>
-						<input name="edp_seo[og_image_url]" type="text" id="edp_og_image_url"
-							value="<?php echo esc_attr((string) ($settings['og_image_url'] ?? '')); ?>"
-							placeholder="https://example.com/og-image.jpg" />
-						<p class="edp-hint"><?php esc_html_e('Output as og:image and twitter:card image on all location pages. Recommended: 1200×630 px.', 'emergencydentalpros'); ?></p>
-					</div>
-					<div class="edp-form-row">
-						<label for="edp_twitter_site"><?php esc_html_e('Twitter / X handle', 'emergencydentalpros'); ?></label>
-						<input name="edp_seo[twitter_site]" type="text" id="edp_twitter_site"
-							value="<?php echo esc_attr((string) ($settings['twitter_site'] ?? '')); ?>"
-							placeholder="@YourHandle" />
-						<p class="edp-hint"><?php esc_html_e('Output as twitter:site meta tag. Include or omit the @ — it will be normalised.', 'emergencydentalpros'); ?></p>
-					</div>
+					OG image URL field...
+					Twitter / X handle field...
 				</div>
 			</div>
-
-			<?php /* Plugin Documentation */ ?>
-			<div class="edp-stat-card">
+		</div>
+		*/ ?>
+		<div class="edp-stat-row">
+			<?php /* Plugin Documentation — full width when Settings card is hidden */ ?>
+			<div class="edp-stat-card" style="flex:1 1 100%;"><?php /* was flex child next to Settings */ ?>
 				<p class="edp-stat-card-title"><?php esc_html_e('Plugin Documentation', 'emergencydentalpros'); ?></p>
 				<p class="edp-stat-card-sub"><?php esc_html_e('Admin guides for managing locations and understanding the plugin architecture.', 'emergencydentalpros'); ?></p>
 				<div class="edp-doc-links">
@@ -328,40 +319,20 @@ $context_vars = [
 
 		</div><!-- /.edp-tpl-layout -->
 
-		<?php /* ── URL Structure ── */ ?>
+		<?php /* ── URL Structure — MVP: hidden; flat mode is hardcoded, no client toggle needed yet ── */ ?>
+		<?php /* Preserve current saved values as hidden inputs so they survive saves without the UI */ ?>
 		<?php $url_mode = $settings['url_mode'] ?? 'hierarchical'; $url_base = $settings['url_base'] ?? 'locations'; ?>
+		<input type="hidden" name="edp_seo[url_mode]" value="<?php echo esc_attr($url_mode); ?>">
+		<input type="hidden" name="edp_seo[url_base]" value="<?php echo esc_attr($url_base); ?>">
+		<?php /*
 		<div class="edp-card" style="margin-top:24px;">
-			<div class="edp-card-header"><?php esc_html_e('URL Structure', 'emergencydentalpros'); ?></div>
+			<div class="edp-card-header">URL Structure</div>
 			<div class="edp-card-body">
-				<div class="edp-form-row">
-					<label style="font-weight:600;"><?php esc_html_e('Location URL format', 'emergencydentalpros'); ?></label>
-					<label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-bottom:8px;">
-						<input type="radio" name="edp_seo[url_mode]" value="hierarchical" <?php checked($url_mode, 'hierarchical'); ?>>
-						<span>
-							<strong><?php esc_html_e('Hierarchical', 'emergencydentalpros'); ?></strong>
-							&nbsp;<code>/locations/alabama/auburn-al/</code>
-						</span>
-					</label>
-					<label style="display:flex; align-items:center; gap:8px; font-weight:400;">
-						<input type="radio" name="edp_seo[url_mode]" value="flat" <?php checked($url_mode, 'flat'); ?>>
-						<span>
-							<strong><?php esc_html_e('Flat', 'emergencydentalpros'); ?></strong>
-							&nbsp;<code>/auburn-al/</code>&nbsp;&nbsp;<code>/alabama/</code>
-						</span>
-					</label>
-					<p class="edp-hint" style="margin-top:10px;">
-						⚠️ <?php esc_html_e('After switching modes, go to Settings › Permalinks and click Save to flush rewrite rules.', 'emergencydentalpros'); ?>
-					</p>
-				</div>
-				<div class="edp-form-row">
-					<label for="edp_url_base"><?php esc_html_e('States index slug', 'emergencydentalpros'); ?></label>
-					<input name="edp_seo[url_base]" type="text" id="edp_url_base"
-						value="<?php echo esc_attr($url_base); ?>"
-						style="max-width:200px;" placeholder="locations">
-					<p class="edp-hint"><?php esc_html_e('The URL slug for the all-states index page. Default: locations', 'emergencydentalpros'); ?></p>
-				</div>
+				... hierarchical / flat radio buttons ...
+				... url_base input ...
 			</div>
 		</div>
+		*/ ?>
 
 		<?php /* ── Page Cache settings (inside the main save form) ── */ ?>
 		<?php $pc = $settings['page_cache'] ?? []; ?>
