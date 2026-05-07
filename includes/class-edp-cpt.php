@@ -48,33 +48,41 @@ final class EDP_CPT
             ]
         );
 
-        add_action('add_meta_boxes_' . self::POST_TYPE, [self::class, 'register_metaboxes']);
-        add_action('save_post_' . self::POST_TYPE,      [self::class, 'save_metabox'], 10, 2);
+        add_action('edit_form_after_editor',         [self::class, 'render_edit_section']);
+        add_action('save_post_' . self::POST_TYPE,  [self::class, 'save_metabox'], 10, 2);
         add_action('admin_head-post.php',               [self::class, 'hide_meta_boxes_css']);
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
         add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
         add_filter('use_block_editor_for_post_type',    [self::class, 'disable_block_editor'], 10, 2);
     }
 
-    public static function register_metaboxes(): void
+    /** Renders all location fields directly after the editor — no metabox chrome. */
+    public static function render_edit_section(\WP_Post $post): void
     {
-        add_meta_box(
-            'edp_location_settings',
-            __('Location Page Settings', 'emergencydentalpros'),
-            [self::class, 'render_settings_metabox'],
-            self::POST_TYPE,
-            'normal',
-            'high'
-        );
-    }
-
-    public static function render_settings_metabox(\WP_Post $post): void
-    {
-        $view = EDP_PLUGIN_DIR . 'admin/views/city-settings-metabox.php';
-
-        if (is_readable($view)) {
-            include $view;
+        if ($post->post_type !== self::POST_TYPE) {
+            return;
         }
+
+        echo '<div class="edp-edit-section">';
+
+        $settings_view = EDP_PLUGIN_DIR . 'admin/views/city-settings-metabox.php';
+        if (is_readable($settings_view)) {
+            include $settings_view;
+        }
+
+        echo '<div class="edp-mb-section-title">' . esc_html__('FAQ Section', 'emergencydentalpros') . '</div>';
+
+        $faq_view = EDP_PLUGIN_DIR . 'admin/views/city-faq-metabox.php';
+        if (is_readable($faq_view)) {
+            include $faq_view;
+        }
+
+        echo '<p class="edp-save-bar">'
+            . '<input type="submit" name="save" class="button button-primary button-large" value="'
+            . esc_attr__('Update', 'emergencydentalpros') . '">'
+            . '</p>';
+
+        echo '</div>';
     }
 
     public static function save_metabox(int $post_id, \WP_Post $post): void
@@ -174,16 +182,10 @@ final class EDP_CPT
 
         echo '<style>'
             . '#postimagediv,#slugdiv,#titlediv{display:none!important}'
-            . '#postbox-container-1{display:none!important}'
-            . '#post-body-content{margin-right:0!important;float:none!important;width:100%!important}'
-            . '#postbox-container-2{float:none!important;width:100%!important;margin:0!important}'
+            . '#postbox-container-1,#postbox-container-2{display:none!important}'
+            . '#post-body-content{float:none!important;width:100%!important;margin-right:0!important}'
+            . '.edp-edit-section{max-width:960px}'
+            . '.edp-save-bar{margin-top:20px}'
             . '</style>' . "\n";
-
-        // Move anything WordPress placed in the side column into the main column.
-        echo '<script>document.addEventListener("DOMContentLoaded",function(){'
-            . 'var s=document.getElementById("postbox-container-1");'
-            . 'var m=document.getElementById("postbox-container-2");'
-            . 'if(s&&m){while(s.firstChild){m.prepend(s.firstChild);}s.style.display="none";}'
-            . '});</script>' . "\n";
     }
 }

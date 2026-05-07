@@ -47,7 +47,6 @@ final class EDP_Admin
         add_action('wp_ajax_edp_analyze_cqs',    [self::class, 'ajax_analyze_cqs']);
         add_action('wp_ajax_edp_migrate_and_create', [self::class, 'ajax_migrate_and_create']);
         add_action('wp_ajax_edp_ignore_conflict',    [self::class, 'ajax_ignore_conflict']);
-        add_action('add_meta_boxes', [self::class, 'register_faq_metabox']);
         add_action('save_post_' . EDP_CPT::POST_TYPE, [self::class, 'save_faq_metabox'], 10, 1);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
