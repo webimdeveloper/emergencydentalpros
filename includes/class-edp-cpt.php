@@ -183,8 +183,8 @@ final class EDP_CPT
         echo '<style>'
             . '#postimagediv,#slugdiv,#titlediv{display:none!important}'
             . '#postbox-container-1,#postbox-container-2{display:none!important}'
+            . '#poststuff #post-body.columns-2{margin-right:0!important}'
             . '#post-body-content{float:none!important;width:100%!important;margin-right:0!important}'
-            . '.edp-edit-section{max-width:960px}'
             . '.edp-save-bar{margin-top:20px}'
             . '</style>' . "\n";
     }
