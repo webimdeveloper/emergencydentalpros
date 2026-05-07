@@ -52,7 +52,6 @@ final class EDP_CPT
         add_action('save_post_' . self::POST_TYPE,  [self::class, 'save_metabox'], 10, 2);
         add_action('admin_head-post.php',               [self::class, 'hide_meta_boxes_css']);
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
-        add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
         add_filter('use_block_editor_for_post_type',    [self::class, 'disable_block_editor'], 10, 2);
     }
 
@@ -142,28 +141,6 @@ final class EDP_CPT
         if (isset($_POST['content'])) {
             update_post_meta($post_id, '_edp_body', wp_kses_post(wp_unslash((string) $_POST['content'])));
         }
-    }
-
-    /** Injects list/typography styles into the TinyMCE content iframe. */
-    public static function editor_content_style(array $settings): array
-    {
-        global $post;
-
-        if (!isset($post) || $post->post_type !== self::POST_TYPE) {
-            return $settings;
-        }
-
-        $css = 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.65;color:#3a3541;margin:10px 14px}'
-            . 'ol,ul{padding-left:1.6em;margin:0.5em 0}'
-            . 'ol{list-style:decimal}'
-            . 'ul{list-style:disc}'
-            . 'li{margin-bottom:0.3em}'
-            . 'p{margin:0 0 0.8em}'
-            . 'a{color:#6e39cb}';
-
-        $settings['content_style'] = ($settings['content_style'] ?? '') . ' ' . $css;
-
-        return $settings;
     }
 
     public static function disable_block_editor(bool $use, string $type): bool
