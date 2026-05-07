@@ -573,8 +573,20 @@ final class EDP_Admin
 
         $location_count   = EDP_Database::count_rows();
         $count_static     = EDP_Database::count_static_pages();
-        $count_mapped     = EDP_Database::count_mapped_posts();
         $count_custom_faq = EDP_Database::count_with_custom_faq();
+
+        $count_conflict = 0;
+        if (EDP_Rewrite::get_url_mode() === 'flat') {
+            $all_slugs = $wpdb->get_col('SELECT city_slug FROM ' . EDP_Database::table_name());
+            if (is_array($all_slugs) && !empty($all_slugs)) {
+                $cmap    = EDP_Database::find_wp_slug_conflicts_bulk($all_slugs);
+                $ignored = get_option('edp_ignored_conflicts', []);
+                if (is_array($ignored) && !empty($ignored)) {
+                    $cmap = array_diff_key($cmap, array_flip($ignored));
+                }
+                $count_conflict = count($cmap);
+            }
+        }
         $default_csv = EDP_PLUGIN_DIR . 'raw_data.csv';
         $default_csv_ok = is_readable($default_csv);
         $import_log = get_option(self::OPTION_IMPORT_LOG, []);
@@ -643,8 +655,8 @@ final class EDP_Admin
             self::bulk_fetch_google();
         } elseif ($action === 'create_pages') {
             self::bulk_create_pages();
-        } elseif ($action === 'analyze_content') {
-            self::bulk_analyze_content();
+        } elseif ($action === 'migrate_rows') {
+            self::bulk_migrate_rows();
         } elseif ($action === 'delete_rows') {
             self::bulk_delete_rows();
         }
@@ -1827,7 +1839,7 @@ final class EDP_Admin
 
         check_ajax_referer('edp_migrate_location', 'nonce');
 
-        $location_id     = absint($_POST['location_id'] ?? 0);
+        $location_id      = absint($_POST['location_id'] ?? 0);
         $conflict_post_id = absint($_POST['conflict_post_id'] ?? 0);
 
         if ($location_id <= 0 || $conflict_post_id <= 0) {
@@ -1844,17 +1856,38 @@ final class EDP_Admin
             wp_send_json_error(['message' => esc_html__('Conflict post not found.', 'emergencydentalpros')]);
         }
 
-        $city_slug = sanitize_title((string) ($row['city_slug'] ?? ''));
+        $result = self::do_migrate_location($row, $conflict_post);
 
-        // Snapshot content before any DB change.
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => esc_html($result->get_error_message())]);
+        }
+
+        flush_rewrite_rules(false);
+        wp_send_json_success(['post_id' => $result]);
+    }
+
+    /**
+     * Shared migration logic: draft old WP page, create CPT with its slug + imported content.
+     *
+     * @param array<string,mixed> $row
+     * @return int|\WP_Error New CPT post ID on success.
+     */
+    private static function do_migrate_location(array $row, WP_Post $conflict_post)
+    {
+        $location_id      = (int) ($row['id'] ?? 0);
+        $conflict_post_id = (int) $conflict_post->ID;
+        $city_slug        = sanitize_title((string) ($row['city_slug'] ?? ''));
+
         $imported_body  = $conflict_post->post_content;
+        $pre_h1         = $conflict_post->post_title;
         $pre_meta_title = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_title', true)
             ?: (string) get_post_meta($conflict_post_id, 'rank_math_title', true);
-        $pre_meta_desc  = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_metadesc', true)
+        if ($pre_meta_title === '') {
+            $pre_meta_title = $conflict_post->post_title;
+        }
+        $pre_meta_desc = (string) get_post_meta($conflict_post_id, '_yoast_wpseo_metadesc', true)
             ?: (string) get_post_meta($conflict_post_id, 'rank_math_description', true);
 
-        // Draft old page AND rename its slug so the city slug is freed immediately.
-        // A plain draft keeps post_name intact, causing WordPress to append "-2" to the new CPT slug.
         wp_update_post([
             'ID'          => $conflict_post_id,
             'post_status' => 'draft',
@@ -1870,19 +1903,23 @@ final class EDP_Admin
         ]);
 
         if (is_wp_error($post_id) || !$post_id) {
-            // Restore old page to its original published state.
             wp_update_post([
                 'ID'          => $conflict_post_id,
                 'post_status' => $conflict_post->post_status,
                 'post_name'   => $city_slug,
             ]);
-            wp_send_json_error(['message' => esc_html__('Failed to create location page.', 'emergencydentalpros')]);
+            return is_wp_error($post_id)
+                ? $post_id
+                : new WP_Error('insert_failed', esc_html__('Failed to create location page.', 'emergencydentalpros'));
         }
 
         update_post_meta((int) $post_id, '_edp_location_id', $location_id);
         update_post_meta((int) $post_id, '_edp_archived_post_id', $conflict_post_id);
         if ($imported_body !== '') {
             update_post_meta((int) $post_id, '_edp_body', wp_kses_post($imported_body));
+        }
+        if ($pre_h1 !== '') {
+            update_post_meta((int) $post_id, '_edp_h1', sanitize_text_field($pre_h1));
         }
         if ($pre_meta_title !== '') {
             update_post_meta((int) $post_id, '_edp_meta_title', sanitize_text_field($pre_meta_title));
@@ -1900,15 +1937,77 @@ final class EDP_Admin
             ['%d']
         );
 
-        // Remove from ignored conflicts if it was previously ignored.
         $ignored = get_option('edp_ignored_conflicts', []);
         if (is_array($ignored) && in_array($city_slug, $ignored, true)) {
             update_option('edp_ignored_conflicts', array_values(array_diff($ignored, [$city_slug])));
         }
 
-        flush_rewrite_rules(false);
+        return (int) $post_id;
+    }
 
-        wp_send_json_success(['post_id' => (int) $post_id]);
+    /**
+     * Bulk action: migrate all selected rows that have a slug conflict.
+     */
+    private static function bulk_migrate_rows(): void
+    {
+        check_admin_referer('bulk-locations');
+
+        $ids = isset($_REQUEST['location'])
+            ? array_values(array_filter(array_map('intval', (array) wp_unslash($_REQUEST['location']))))
+            : [];
+
+        if ($ids === []) {
+            wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&google_none=1'));
+            exit;
+        }
+
+        $migrated = 0;
+        $skipped  = 0;
+        $rows     = [];
+
+        foreach ($ids as $id) {
+            $row = EDP_Database::get_row_by_id($id);
+            if ($row !== null) {
+                $rows[$id] = $row;
+            }
+        }
+
+        $slugs        = array_map(fn($r) => sanitize_title((string) ($r['city_slug'] ?? '')), $rows);
+        $conflict_map = EDP_Database::find_wp_slug_conflicts_bulk(array_values($slugs));
+
+        foreach ($rows as $location_id => $row) {
+            $slug = sanitize_title((string) ($row['city_slug'] ?? ''));
+
+            if ((string) ($row['override_type'] ?? '') === 'cpt' && (int) ($row['custom_post_id'] ?? 0) > 0) {
+                $skipped++;
+                continue;
+            }
+
+            if (!isset($conflict_map[$slug])) {
+                $skipped++;
+                continue;
+            }
+
+            $conflict_post = get_post((int) $conflict_map[$slug]->ID);
+            if (!$conflict_post instanceof WP_Post) {
+                $skipped++;
+                continue;
+            }
+
+            $result = self::do_migrate_location($row, $conflict_post);
+            if (is_wp_error($result)) {
+                $skipped++;
+            } else {
+                $migrated++;
+            }
+        }
+
+        if ($migrated > 0) {
+            flush_rewrite_rules(false);
+        }
+
+        wp_safe_redirect(admin_url('admin.php?page=edp-seo-locations&migrated=' . $migrated . '&skipped=' . $skipped));
+        exit;
     }
 
     /**

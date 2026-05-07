@@ -286,8 +286,12 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 		// Snapshot content before any DB change.
 		$imported_body  = $conflict_post->post_content;
+		$pre_h1         = $conflict_post->post_title;
 		$pre_meta_title = (string) get_post_meta( (int) $conflict_post->ID, '_yoast_wpseo_title', true )
 			?: (string) get_post_meta( (int) $conflict_post->ID, 'rank_math_title', true );
+		if ( $pre_meta_title === '' ) {
+			$pre_meta_title = $conflict_post->post_title;
+		}
 		$pre_meta_desc  = (string) get_post_meta( (int) $conflict_post->ID, '_yoast_wpseo_metadesc', true )
 			?: (string) get_post_meta( (int) $conflict_post->ID, 'rank_math_description', true );
 
@@ -319,6 +323,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		update_post_meta( (int) $post_id, '_edp_archived_post_id', (int) $conflict_post->ID );
 		if ( $imported_body !== '' ) {
 			update_post_meta( (int) $post_id, '_edp_body', wp_kses_post( $imported_body ) );
+		}
+		if ( $pre_h1 !== '' ) {
+			update_post_meta( (int) $post_id, '_edp_h1', sanitize_text_field( $pre_h1 ) );
 		}
 		if ( $pre_meta_title !== '' ) {
 			update_post_meta( (int) $post_id, '_edp_meta_title', sanitize_text_field( $pre_meta_title ) );

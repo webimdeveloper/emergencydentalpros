@@ -18,8 +18,9 @@ $zips             = isset($edp_data['zips']) && is_array($edp_data['zips']) ? $e
 $nearby           = isset($edp_data['nearby_businesses']) && is_array($edp_data['nearby_businesses']) ? $edp_data['nearby_businesses'] : [];
 $communities_h2   = isset($edp_data['communities_h2']) ? (string) $edp_data['communities_h2'] : '';
 $communities_body = isset($edp_data['communities_body']) ? (string) $edp_data['communities_body'] : '';
-$other_cities_h2  = isset($edp_data['other_cities_h2']) ? (string) $edp_data['other_cities_h2'] : '';
-$other_cities     = isset($edp_data['other_cities']) && is_array($edp_data['other_cities']) ? $edp_data['other_cities'] : [];
+$other_cities_h2    = isset($edp_data['other_cities_h2']) ? (string) $edp_data['other_cities_h2'] : '';
+$other_cities       = isset($edp_data['other_cities']) && is_array($edp_data['other_cities']) ? $edp_data['other_cities'] : [];
+$show_other_cities  = isset($edp_data['show_other_cities']) ? (bool) $edp_data['show_other_cities'] : true;
 $row              = isset($edp_data['row']) && is_array($edp_data['row']) ? $edp_data['row'] : [];
 $faq              = isset($edp_data['faq']) && is_array($edp_data['faq']) ? $edp_data['faq'] : [];
 $faq_enabled      = !empty($faq['enabled']);
@@ -50,7 +51,7 @@ $faq_intro        = isset($faq['intro']) ? (string) $faq['intro'] : '';
 		</section>
 	<?php endif; ?>
 
-	<?php if ($other_cities !== []) : ?>
+	<?php if ($other_cities !== [] && $show_other_cities) : ?>
 		<section class="edp-seo-other-cities edp-block-order-other-cities" aria-label="<?php esc_attr_e('Other cities', 'emergencydentalpros'); ?>">
 			<?php if ($other_cities_h2 !== '') : ?>
 				<h2 class="edp-seo-h2"><?php echo esc_html($other_cities_h2); ?></h2>

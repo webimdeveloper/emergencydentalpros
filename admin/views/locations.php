@@ -62,6 +62,18 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 	<?php endif; ?>
 
 	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if (isset($_GET['migrated'])) : ?>
+		<div class="edp-notice edp-notice-success">
+			<?php printf(
+				/* translators: 1: migrated count, 2: skipped count */
+				esc_html__('Migrated %1$d location(s). Skipped %2$d (no conflict or already has a static page).', 'emergencydentalpros'),
+				(int) $_GET['migrated'],
+				(int) ($_GET['skipped'] ?? 0)
+			); ?>
+		</div>
+	<?php endif; ?>
+
+	<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 	<?php if (isset($_GET['rows_deleted'])) : ?>
 		<div class="edp-notice edp-notice-success">
 			<?php printf(
@@ -74,17 +86,17 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 	<?php
 	// phpcs:disable WordPress.Security.NonceVerification.Recommended
-	$_filter_static = isset($_GET['has_static']) && $_GET['has_static'] === '1';
-	$_filter_mapped = isset($_GET['has_mapped']) && $_GET['has_mapped'] === '1';
-	$_filter_faq    = isset($_GET['has_faq'])    && $_GET['has_faq']    === '1';
-	$_any_filter    = $_filter_static || $_filter_mapped || $_filter_faq;
+	$_filter_static   = isset($_GET['has_static'])   && $_GET['has_static']   === '1';
+	$_filter_conflict = isset($_GET['has_conflict']) && $_GET['has_conflict'] === '1';
+	$_filter_faq      = isset($_GET['has_faq'])      && $_GET['has_faq']      === '1';
+	$_any_filter      = $_filter_static || $_filter_conflict || $_filter_faq;
 	// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 	if ($_any_filter) :
 		$_filter_labels = [];
-		if ($_filter_static) { $_filter_labels[] = __('Static pages', 'emergencydentalpros'); }
-		if ($_filter_mapped) { $_filter_labels[] = __('Mapped post IDs', 'emergencydentalpros'); }
-		if ($_filter_faq)    { $_filter_labels[] = __('Custom FAQ', 'emergencydentalpros'); }
+		if ($_filter_static)   { $_filter_labels[] = __('Static pages', 'emergencydentalpros'); }
+		if ($_filter_conflict) { $_filter_labels[] = __('URL Conflicts', 'emergencydentalpros'); }
+		if ($_filter_faq)      { $_filter_labels[] = __('Custom FAQ', 'emergencydentalpros'); }
 	?>
 		<div class="edp-notice edp-notice-info" style="display:flex;align-items:center;gap:8px;">
 			<span class="dashicons dashicons-filter" aria-hidden="true"></span>
@@ -150,30 +162,33 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 
 				$_filters = [
 					[
-						'icon'     => 'dashicons-admin-page',
-						'label'    => __('Static pages', 'emergencydentalpros'),
-						'sub'      => __('Dedicated CPT page created for this location.', 'emergencydentalpros'),
-						'count'    => $count_static,
-						'param'    => 'has_static',
-						'active'   => $_filter_static,
+						'icon'   => 'dashicons-admin-page',
+						'label'  => __('Static pages', 'emergencydentalpros'),
+						'sub'    => __('Dedicated CPT page created for this location.', 'emergencydentalpros'),
+						'count'  => $count_static,
+						'param'  => 'has_static',
+						'active' => $_filter_static,
 					],
 					[
-						'icon'     => 'dashicons-admin-post',
-						'label'    => __('Mapped post IDs', 'emergencydentalpros'),
-						'sub'      => __('Location linked to an existing WordPress post.', 'emergencydentalpros'),
-						'count'    => $count_mapped,
-						'param'    => 'has_mapped',
-						'active'   => $_filter_mapped,
-					],
-					[
-						'icon'     => 'dashicons-editor-help',
-						'label'    => __('Custom FAQ', 'emergencydentalpros'),
-						'sub'      => __('Static page has a custom FAQ section enabled.', 'emergencydentalpros'),
-						'count'    => $count_custom_faq,
-						'param'    => 'has_faq',
-						'active'   => $_filter_faq,
+						'icon'   => 'dashicons-editor-help',
+						'label'  => __('Custom FAQ', 'emergencydentalpros'),
+						'sub'    => __('Static page has a custom FAQ section enabled.', 'emergencydentalpros'),
+						'count'  => $count_custom_faq,
+						'param'  => 'has_faq',
+						'active' => $_filter_faq,
 					],
 				];
+
+				if (EDP_Rewrite::get_url_mode() === 'flat') {
+					$_filters[] = [
+						'icon'   => 'dashicons-warning',
+						'label'  => __('URL Conflicts', 'emergencydentalpros'),
+						'sub'    => __('WordPress page with the same slug needs migration.', 'emergencydentalpros'),
+						'count'  => $count_conflict,
+						'param'  => 'has_conflict',
+						'active' => $_filter_conflict,
+					];
+				}
 
 				foreach ($_filters as $_f) :
 					$_is_active = (bool) $_f['active'];
@@ -1210,7 +1225,7 @@ $edp_google_notice = isset($edp_google_notice) && is_array($edp_google_notice) ?
 /* ── coverage-filter auto-scroll ── */
 (function () {
 	var params = new URLSearchParams(window.location.search);
-	if (params.get('has_faq') === '1' || params.get('has_static') === '1' || params.get('has_mapped') === '1') {
+	if (params.get('has_faq') === '1' || params.get('has_static') === '1' || params.get('has_conflict') === '1') {
 		var wrap = document.getElementById('edp-locations-wrap');
 		if (wrap) {
 			var table = wrap.querySelector('.wp-list-table');

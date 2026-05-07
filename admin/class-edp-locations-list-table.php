@@ -78,7 +78,7 @@ final class EDP_Locations_List_Table extends WP_List_Table
             // MVP: columns hidden until features are ready for client
             // 'seo'         => __('SEO', 'emergencydentalpros'),
             // 'cqs'         => __('CQS', 'emergencydentalpros'),
-            'edp_actions' => __('Map Post', 'emergencydentalpros'),
+            // 'edp_actions' => __('Map Post', 'emergencydentalpros'),
         ];
 
         if (EDP_Rewrite::get_url_mode() === 'flat') {
@@ -129,10 +129,10 @@ final class EDP_Locations_List_Table extends WP_List_Table
     public function get_bulk_actions(): array
     {
         return [
-            'fetch_google'    => __('Fetch Google', 'emergencydentalpros'),
-            'create_pages'    => __('Create Pages', 'emergencydentalpros'),
-            'analyze_content' => __('Analyze Content', 'emergencydentalpros'),
-            'delete_rows'     => __('Delete Rows', 'emergencydentalpros'),
+            'fetch_google'  => __('Fetch Google', 'emergencydentalpros'),
+            'create_pages'  => __('Create Pages', 'emergencydentalpros'),
+            'migrate_rows'  => __('Migrate & Take Over', 'emergencydentalpros'),
+            'delete_rows'   => __('Delete Rows', 'emergencydentalpros'),
         ];
     }
 
@@ -166,11 +166,12 @@ final class EDP_Locations_List_Table extends WP_List_Table
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $city_filter = isset($_GET['city_filter']) ? sanitize_text_field(wp_unslash($_GET['city_filter'])) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        $has_faq_filter    = isset($_GET['has_faq'])    && $_GET['has_faq']    === '1';
+        $has_faq_filter      = isset($_GET['has_faq'])      && $_GET['has_faq']      === '1';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        $has_static_filter = isset($_GET['has_static']) && $_GET['has_static'] === '1';
+        $has_static_filter   = isset($_GET['has_static'])   && $_GET['has_static']   === '1';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        $has_mapped_filter = isset($_GET['has_mapped']) && $_GET['has_mapped'] === '1';
+        $has_conflict_filter = EDP_Rewrite::get_url_mode() === 'flat'
+            && isset($_GET['has_conflict']) && $_GET['has_conflict'] === '1';
 
         // Sort (WP_List_Table standard params).
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -197,9 +198,23 @@ final class EDP_Locations_List_Table extends WP_List_Table
             $where_parts[] = 'l.custom_post_id > 0';
         }
 
-        if ($has_mapped_filter) {
-            $where_parts[] = "l.override_type = 'mapped'";
-            $where_parts[] = 'l.custom_post_id > 0';
+        if ($has_conflict_filter) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $all_slugs    = $wpdb->get_col("SELECT city_slug FROM {$table}");
+            $conflict_map = EDP_Database::find_wp_slug_conflicts_bulk(is_array($all_slugs) ? $all_slugs : []);
+            $ignored_opt  = get_option('edp_ignored_conflicts', []);
+            if (is_array($ignored_opt) && !empty($ignored_opt)) {
+                $conflict_map = array_diff_key($conflict_map, array_flip($ignored_opt));
+            }
+            $conflict_slugs = array_keys($conflict_map);
+            if (empty($conflict_slugs)) {
+                $where_parts[] = '1=0';
+            } else {
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $phd           = implode(',', array_fill(0, count($conflict_slugs), '%s'));
+                $where_parts[] = "l.city_slug IN ({$phd})";
+                $where_values  = array_merge($where_values, $conflict_slugs);
+            }
         }
 
         if ($has_faq_filter) {
