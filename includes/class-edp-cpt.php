@@ -49,14 +49,11 @@ final class EDP_CPT
         );
 
         add_action('add_meta_boxes_' . self::POST_TYPE, [self::class, 'register_metaboxes']);
-        add_action('add_meta_boxes_' . self::POST_TYPE, [self::class, 'move_publish_to_main'], 20);
         add_action('save_post_' . self::POST_TYPE,      [self::class, 'save_metabox'], 10, 2);
         add_action('admin_head-post.php',               [self::class, 'hide_meta_boxes_css']);
         add_action('admin_head-post-new.php',           [self::class, 'hide_meta_boxes_css']);
         add_filter('tiny_mce_before_init',              [self::class, 'editor_content_style']);
         add_filter('use_block_editor_for_post_type',    [self::class, 'disable_block_editor'], 10, 2);
-        // Force single-column layout — ignore any per-user screen option saved for this screen.
-        add_filter('get_user_option_screen_layout_' . self::POST_TYPE, '__return_one');
     }
 
     public static function register_metaboxes(): void
@@ -69,13 +66,6 @@ final class EDP_CPT
             'normal',
             'high'
         );
-    }
-
-    /** Moves the Publish metabox from the side panel into the main column. */
-    public static function move_publish_to_main(): void
-    {
-        remove_meta_box('submitdiv', self::POST_TYPE, 'side');
-        add_meta_box('submitdiv', __('Publish'), 'post_submit_meta_box', self::POST_TYPE, 'normal', 'high');
     }
 
     public static function render_settings_metabox(\WP_Post $post): void
@@ -184,9 +174,9 @@ final class EDP_CPT
 
         echo '<style>'
             . '#postimagediv,#slugdiv,#titlediv{display:none!important}'
-            . '#postbox-container-1{display:none!important}'
-            . '#postbox-container-2{width:100%!important;float:none!important}'
-            . '#post-body-content{margin-right:0!important}'
+            . '#post-body{display:block!important}'
+            . '#post-body-content,#postbox-container-1,#postbox-container-2{'
+            .   'float:none!important;width:100%!important;min-width:0!important;margin:0!important}'
             . '</style>' . "\n";
     }
 }
