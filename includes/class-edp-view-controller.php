@@ -128,6 +128,28 @@ final class EDP_View_Controller
                         return; // Let WP template hierarchy pick the correct template.
                     }
 
+                    // Also check for a regular blog post before 404-ing.
+                    $post_obj = get_page_by_path($slug, OBJECT, 'post');
+                    if ($post_obj instanceof \WP_Post && $post_obj->post_status === 'publish') {
+                        global $wp_query, $post;
+                        $wp_query->is_single         = true;
+                        $wp_query->is_singular       = true;
+                        $wp_query->is_home           = false;
+                        $wp_query->is_archive        = false;
+                        $wp_query->is_404            = false;
+                        $wp_query->posts             = [$post_obj];
+                        $wp_query->post              = $post_obj;
+                        $wp_query->post_count        = 1;
+                        $wp_query->found_posts       = 1;
+                        $wp_query->queried_object    = $post_obj;
+                        $wp_query->queried_object_id = $post_obj->ID;
+                        $wp_query->query_vars['p']   = $post_obj->ID;
+                        $post = $post_obj; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+                        setup_postdata($post);
+
+                        return;
+                    }
+
                     self::set_404();
 
                     return;
@@ -165,6 +187,28 @@ final class EDP_View_Controller
                             $wp_query->queried_object_id = $page->ID;
                             $wp_query->query_vars['page_id'] = $page->ID;
                             $post = $page; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+                            setup_postdata($post);
+
+                            return;
+                        }
+
+                        // Also check for a regular blog post before falling through to blog listing.
+                        $post_obj = get_page_by_path($slug, OBJECT, 'post');
+                        if ($post_obj instanceof \WP_Post && $post_obj->post_status === 'publish') {
+                            global $wp_query, $post;
+                            $wp_query->is_single         = true;
+                            $wp_query->is_singular       = true;
+                            $wp_query->is_home           = false;
+                            $wp_query->is_archive        = false;
+                            $wp_query->is_404            = false;
+                            $wp_query->posts             = [$post_obj];
+                            $wp_query->post              = $post_obj;
+                            $wp_query->post_count        = 1;
+                            $wp_query->found_posts       = 1;
+                            $wp_query->queried_object    = $post_obj;
+                            $wp_query->queried_object_id = $post_obj->ID;
+                            $wp_query->query_vars['p']   = $post_obj->ID;
+                            $post = $post_obj; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
                             setup_postdata($post);
 
                             return;
