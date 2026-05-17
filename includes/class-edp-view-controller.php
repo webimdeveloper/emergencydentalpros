@@ -215,6 +215,8 @@ final class EDP_View_Controller
                         }
                     }
 
+                    self::set_404();
+
                     return;
                 }
 

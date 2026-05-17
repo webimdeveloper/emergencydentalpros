@@ -2,7 +2,7 @@
   "cookies": [
     {
       "name": "wordpress_sec_7bdc9cd8451a55811041da22c906026d",
-      "value": "admin%7C1776756284%7CuPQkqycW5ozBYuPjjNSa2RDni9ydPge3agvSYC4f8IM%7C95be279d45fced0e797362a9950f5129ef4f5b1aad885106c1c9dd39243d64a2",
+      "value": "admin%7C1778172305%7C2BNhaewGlC0vqYANAuW47JjRBfWCP4Ftm3N6JRuAYwc%7Ccac195d7ad9ea26a9bd21149518eab858a74cf7812b2a4220778807ac70d5e16",
       "domain": "dev.widev.pro",
       "path": "/wp-content/plugins",
       "expires": -1,
@@ -12,7 +12,7 @@
     },
     {
       "name": "wordpress_sec_7bdc9cd8451a55811041da22c906026d",
-      "value": "admin%7C1776756284%7CuPQkqycW5ozBYuPjjNSa2RDni9ydPge3agvSYC4f8IM%7C95be279d45fced0e797362a9950f5129ef4f5b1aad885106c1c9dd39243d64a2",
+      "value": "admin%7C1778172305%7C2BNhaewGlC0vqYANAuW47JjRBfWCP4Ftm3N6JRuAYwc%7Ccac195d7ad9ea26a9bd21149518eab858a74cf7812b2a4220778807ac70d5e16",
       "domain": "dev.widev.pro",
       "path": "/wp-admin",
       "expires": -1,
@@ -32,7 +32,7 @@
     },
     {
       "name": "wordpress_logged_in_7bdc9cd8451a55811041da22c906026d",
-      "value": "admin%7C1776756284%7CuPQkqycW5ozBYuPjjNSa2RDni9ydPge3agvSYC4f8IM%7C3aadbe6a2b7e32ced51c0b3b10d4ef4cb3103d4c8a5505996b7b1ba6d21cbf25",
+      "value": "admin%7C1778172305%7C2BNhaewGlC0vqYANAuW47JjRBfWCP4Ftm3N6JRuAYwc%7C820befdb5193c91b98b0b617036613187653b1339cad7e1888ad875683f457aa",
       "domain": "dev.widev.pro",
       "path": "/",
       "expires": -1,
@@ -41,25 +41,25 @@
       "sameSite": "Lax"
     },
     {
-      "name": "wp-settings-time-1",
-      "value": "1776583484",
+      "name": "wp-settings-1",
+      "value": "editor%3Dhtml%26libraryContent%3Dbrowse%26hidetb%3D1",
       "domain": "dev.widev.pro",
       "path": "/",
-      "expires": 1808119484.697484,
+      "expires": 1809535505.105733,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wp-settings-time-1",
+      "value": "1777999505",
+      "domain": "dev.widev.pro",
+      "path": "/",
+      "expires": 1809535505.105845,
       "httpOnly": false,
       "secure": true,
       "sameSite": "Lax"
     }
   ],
-  "origins": [
-    {
-      "origin": "https://dev.widev.pro",
-      "localStorage": [
-        {
-          "name": "qm-admin-panel",
-          "value": ""
-        }
-      ]
-    }
-  ]
+  "origins": []
 }

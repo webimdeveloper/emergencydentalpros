@@ -30,6 +30,39 @@ final class EDP_Rewrite
         add_action('init', [self::class, 'add_rules'], 5);
         add_filter('request', [self::class, 'backfill_request'], 0);
         add_action('init', [self::class, 'maybe_flush_rewrite_rules'], 99);
+        add_filter('pre_handle_404', [self::class, 'skip_404_for_sitemaps'], 0);
+    }
+
+    /**
+     * Prevent WordPress handle_404() from marking sitemap requests as 404.
+     * Apache's PATH_INFO mangling can strip .xml from REQUEST_URI so WP_Query
+     * never sees the sitemap query var — this filter catches that gap.
+     *
+     * @param bool $preempt
+     * @return bool
+     */
+    public static function skip_404_for_sitemaps(bool $preempt): bool
+    {
+        if ($preempt) {
+            return $preempt;
+        }
+
+        $rel = self::get_request_path_relative_to_home();
+
+        if ($rel === null) {
+            return $preempt;
+        }
+
+        if (
+            $rel === 'wp-sitemap.xml' ||
+            $rel === 'wp-sitemap.xsl' ||
+            $rel === 'wp-sitemap-index.xsl' ||
+            preg_match('#^wp-sitemap-.+\.xml$#', $rel)
+        ) {
+            return true; // Skip 404 handling; WP_Sitemaps::render_sitemaps() will serve the response.
+        }
+
+        return $preempt;
     }
 
     /**
@@ -52,6 +85,25 @@ final class EDP_Rewrite
         $rel = self::get_request_path_relative_to_home();
 
         if ($rel === null) {
+            return $query_vars;
+        }
+
+        // PATH_INFO mangling in Apache can strip .xml extensions from REQUEST_URI, causing
+        // WP's parse_request to miss the built-in sitemap rewrite rules. Inject them here
+        // so wp-sitemap.xml and sub-sitemaps always resolve correctly.
+        if ($rel === 'wp-sitemap.xml') {
+            $query_vars['sitemap'] = 'index';
+            return $query_vars;
+        }
+        if (preg_match('#^wp-sitemap-([a-z]+?)-([a-z\d_-]+?)-(\d+?)\.xml$#', $rel, $m)) {
+            $query_vars['sitemap']         = $m[1];
+            $query_vars['sitemap-subtype'] = $m[2];
+            $query_vars['paged']           = $m[3];
+            return $query_vars;
+        }
+        if (preg_match('#^wp-sitemap-([a-z]+?)-(\d+?)\.xml$#', $rel, $m)) {
+            $query_vars['sitemap'] = $m[1];
+            $query_vars['paged']   = $m[2];
             return $query_vars;
         }
 
@@ -179,6 +231,10 @@ final class EDP_Rewrite
         $vars[] = self::Q_STATE;
         $vars[] = self::Q_CITY;
         $vars[] = self::Q_SLUG;
+
+        // Ensure WP core sitemap query vars survive alongside our custom vars.
+        $vars[] = 'sitemap';
+        $vars[] = 'sitemap-subtype';
 
         return $vars;
     }
